@@ -1,0 +1,20 @@
+@import '../../styles/variables';
+
+.checkbox {
+    background: none!important;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    svg:first-child {
+        outline: 1px solid $gold;
+        border-radius: 3px;
+        padding: 0.2em;
+        transition: color 0.1s;
+    }
+
+    &:not(.checked) svg:first-child { color: transparent }
+}

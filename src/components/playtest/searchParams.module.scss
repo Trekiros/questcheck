@@ -1,0 +1,38 @@
+@import '../../styles/mixins';
+
+.searchParams {
+    @include scrollable;
+    background: linear-gradient(270deg, #fff3 0%, #0003 4px);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 1em;
+    padding-right: 0;
+
+    h2 { border-bottom: 1px solid white; text-align: center; padding-bottom: 4px;}
+    h3 { margin: 0 }
+
+    section {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dates {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+
+        input {
+            width: 100%;
+        }
+    }
+
+    ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+
+        li svg { margin: 0 }
+    }
+}

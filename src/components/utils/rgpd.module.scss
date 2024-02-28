@@ -1,0 +1,75 @@
+@import '../../styles/mixins';
+
+.rgpd {
+    z-index: 1000;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 2em;
+    background: #655;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2em;
+    
+    background: #544;
+    box-shadow: 0 0 100px 0px black;
+
+    > * {
+        width: min(100%, 1200px);
+    }
+
+    .header {
+        h3 { margin: 0 }
+    }
+
+    a {
+        color: #fff;
+        transition: color 0.2s;
+
+        &:hover { color: #aaa }
+    }
+
+    .choices {
+        @include slideIn;
+        display: flex;
+        flex-direction: column;
+        
+        .choice button {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 2em 1fr 2em;
+            align-items: center;
+            direction: rtl;
+
+            text-align: left;
+            font-weight: normal;
+            
+            span { direction: ltr }
+            svg { margin: 0 }
+        }
+    }
+
+    .buttons {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        @media (width < calc(750px + 5em)) {
+            flex-direction: column-reverse;
+        }
+
+        button {
+            width: 250px;
+            text-wrap: nowrap;
+        }
+
+        .accept {
+            &:not(:disabled) { background: #8f85 }
+            &:hover { background: #8f88 }
+        }
+    }
+}

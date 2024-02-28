@@ -1,0 +1,37 @@
+.popper svg {
+    fill: #544!important;
+    stroke: #544!important;
+    color: #544!important;
+}
+
+.calendar {
+    background: #544;
+    border: none;
+    
+    :global(.react-datepicker__header) {
+        background: #544;
+
+        :global(.react-datepicker__day-name),
+        :global(.react-datepicker__current-month) {
+            color: #fff;
+        }
+    }
+}
+
+.day {
+    color: #fff;
+    font-weight: normal;
+
+    &:global(.react-datepicker__day--disabled) { color: #888 }
+    &:global(.react-datepicker__day--keyboard-selected) { background: unset }
+    &.active { background: #fffa; color: #333 }
+    &:hover:not(:global(.react-datepicker__day--disabled)) { background: #fff3 }
+}
+
+.month {
+    background: #322;
+}
+
+.clearBtn {
+    display: initial;
+}

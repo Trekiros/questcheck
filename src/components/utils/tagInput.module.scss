@@ -1,0 +1,61 @@
+@import '../../styles/mixins';
+
+.tagInput {
+    @include clickable;
+    padding: 4px;
+    text-align: left;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0;
+}
+
+.tagList {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 1;
+    gap: 6px;
+}
+
+.tagListItem {
+    display: flex;
+    text-wrap: nowrap;
+    > button { padding: 6px; font-weight: normal;}
+}
+
+.input {
+    min-width: 60px;
+    display: inline-block;
+    background: none!important;
+}
+
+.listBox {
+    position: fixed;
+    width: 400px;
+    max-height: 200px;
+    @include scrollable;
+
+    background: #544;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 8px;
+    gap: 6px;
+
+    z-index: 1;
+}
+
+.option {
+    display: initial;
+    text-wrap: nowrap;
+    padding: 6px;
+    background: #0004;
+    border-radius: 4px;
+}
+
+.highlight {
+    background: #fff5;
+    color: #fff;
+    padding: 0 2px;
+}

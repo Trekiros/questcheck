@@ -1,0 +1,36 @@
+@import '../../styles/variables';
+
+.topNav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #544;
+    height: $topNavHeight;
+
+    $vpad: 8px;
+    padding: $vpad 1em;
+
+
+    .logo {
+        font-size: $topNavHeight * 0.4;
+        font-family: mc;
+        font-weight: normal;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+
+        img {
+            height: calc($topNavHeight - $vpad * 2);
+            width: calc(($topNavHeight - $vpad * 2) * 45 / 64)
+        }
+    }
+
+    .actions {
+        display: flex;
+        align-items: center;
+    }
+}
