@@ -1,0 +1,28 @@
+.itemContainer {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    gap: 0.5em;
+
+    > * { min-width: 0 }
+
+    > svg {
+        height: 2em;
+        align-self: flex-start;
+        color: #fff1
+    }
+
+    .item {
+        flex-grow: 1;
+        background: none;
+        border-radius: 0;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        font-weight: unset;
+        text-align: unset;
+        cursor: initial;
+        user-select: text;
+
+        > * { flex-grow: 1 }
+    }
+}

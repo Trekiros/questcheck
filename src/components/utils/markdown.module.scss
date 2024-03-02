@@ -1,0 +1,43 @@
+@import '../../styles/mixins';
+
+.markdown {
+    max-height: 600px;
+    @include scrollable;
+
+    blockquote {
+        box-sizing: border-box;
+        padding: 0 1em;
+        margin: 1em 0;
+        border-left: 1px solid #fff5;
+
+        :first-child { margin-top: 0 }
+        :last-child { margin-bottom: 0 }
+    }
+
+    a {
+        color: #fff;
+        &:hover { color: #e7ab62 }
+    }
+
+    hr {
+        border: none;
+        height: 0;
+    }
+
+    p {
+        margin: 0;
+
+        + p { text-indent: 1em }
+    }
+
+    ul {
+        margin: 0;
+    }
+
+    h1, h2, h3, h4, h5 {
+        margin: 0;
+        margin-top: 1em;
+        text-transform: uppercase;
+        display:inline-block
+    }
+}

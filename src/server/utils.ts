@@ -2,7 +2,6 @@ import { createTRPCNext } from '@trpc/next'
 import { AppRouter } from './routers/root'
 import { httpBatchLink } from '@trpc/client'
 
-
 function getBaseUrl() {
     if (typeof window !== 'undefined')
         // browser should use relative path

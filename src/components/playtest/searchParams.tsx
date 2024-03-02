@@ -1,7 +1,7 @@
 import { BountyList, PlaytestSearchParams, TaskList } from "@/model/playtest";
 import { FC } from "react";
 import styles from './searchParams.module.scss'
-import { TagSuggestions } from "@/model/tags";
+import { EnginesList, SystemsList, TagSuggestions } from "@/model/tags";
 import TagInput from "../utils/tagInput";
 import Calendar from "../utils/calendar";
 import Checkbox from "../utils/checkbox";
@@ -31,20 +31,28 @@ const SearchParams: FC<PropType> = ({ value, onChange }) => {
                     <TagInput
                         values={value.includeTags || []}
                         onChange={newValue => update(clone => {
-                            if (newValue.length) clone.includeTags = newValue;
+                            const actualNewValue = newValue.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag))
+                            if (actualNewValue.length) clone.includeTags = actualNewValue
                             else delete clone.includeTags;
                         })}
-                        suggestions={TagSuggestions} />
+                        categories={{
+                            "Game:": SystemsList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
+                            "Engine:": EnginesList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
+                        }} />
                 </div>
                 <div>
                     <label>Cannot include:</label>
                     <TagInput
                         values={value.excludeTags || []}
                         onChange={newValue => update(clone => {
-                            if (newValue.length) clone.excludeTags = newValue;
+                            const actualNewValue = newValue.filter(tag => !value.includeTags || !value.includeTags?.includes(tag))
+                            if (actualNewValue.length) clone.excludeTags = actualNewValue
                             else delete clone.excludeTags;
                         })}
-                        suggestions={TagSuggestions} />
+                        categories={{
+                            "Game:": SystemsList.filter(tag => !value.includeTags || !value.includeTags?.includes(tag)),
+                            "Engine:": EnginesList.filter(tag => !value.includeTags || !value.includeTags?.includes(tag)),
+                        }} />
                 </div>
             </section>
 

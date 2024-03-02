@@ -1,8 +1,8 @@
 import { Collections } from "../mongodb";
 import { User, UserSchema } from "@/model/user";
-import { auth } from "@clerk/nextjs";
-import { revalidateTag, unstable_cache } from "next/cache";
 import { protectedProcedure, router } from "../trpc";
+import { cache, invalidate } from "./cache";
+import { Prettify } from "@/model/utils";
 
 const tag = (userId: string) => `user:${userId}`
 
@@ -11,14 +11,12 @@ export const UserRouter = router({
         .query(async ({ ctx: { auth: { userId } } }) => {
             if (!userId) throw new Error('Unauthorized')
         
-            const callback = async () => {
+            return await cache(tag(userId), async () => {
                 const users = await Collections.users()
-                const user: User = await users.findOne({ userId }, { projection: { _id: 0 }}) as User
+                const user: Prettify<Omit<User, "userId">>|null = await users.findOne({ userId }, { projection: { _id: 0 }})
         
                 return user
-            }
-        
-            return await (unstable_cache(callback, ["user"], { revalidate: 60 * 30, tags: [tag(userId)]}))()
+            })
         }),
 
     updateSelf: protectedProcedure
@@ -26,7 +24,7 @@ export const UserRouter = router({
         .mutation(async ({ input: $set, ctx: { auth: { userId } } }) => {
             const users = await Collections.users()
             const result = await users.findOneAndUpdate({ userId }, { $set }, { upsert: true })
-            revalidateTag(tag(userId))
+            invalidate(tag(userId))
             return result
         }),
 })

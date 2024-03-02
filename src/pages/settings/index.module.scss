@@ -1,0 +1,91 @@
+@import '../../styles/mixins';
+
+.settings {
+    padding: 1em;
+    display: flex;
+    flex-direction: column;
+    width: min(100%, 800px);
+    align-items: stretch;
+    margin: auto auto;
+
+    .row {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+
+        > label {
+            height: 44px;
+            display: flex;
+            align-items: center;
+        }
+
+        input { width: 100% }
+    }
+
+    .withCharCount {
+        position: relative;
+
+        .previewToggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: 0;
+            padding: 8px;
+        }
+
+        > label {
+            display: block; 
+            width: 100%;
+            text-align: right;
+            font-size: smaller;
+        }
+    }
+
+    &:not(.disabled) .invalid {
+        outline: 1px solid #f88;
+    }
+
+    textarea {
+        @include scrollable;
+        padding: 1em;
+        padding-right: 0;
+        min-height: unset;
+        max-height: 600px;
+
+        &:not(:hover) { background: #fff1 }
+    }
+
+    .accountType {
+        display: flex;
+        justify-content: space-around;
+
+        > * { padding: 6px 12px; font-weight: normal }
+
+        @media (max-width: 800px) {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    .actions {
+        display: flex;
+        button { flex: 1 1 0 }
+    }
+
+    .systems {
+        display: flex;
+        flex-direction: column;
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+
+            li { display: flex }
+        }
+
+        > button {
+            width: min-content;
+            text-wrap: nowrap;
+        }
+    }
+}

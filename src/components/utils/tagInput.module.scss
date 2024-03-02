@@ -38,17 +38,34 @@
 
 .listBox {
     position: fixed;
-    width: 400px;
-    max-height: 200px;
-    @include scrollable;
-
-    background: #544;
-    display: flex;
-    flex-wrap: wrap;
-    padding: 8px;
-    gap: 6px;
-
     z-index: 1;
+    width: 400px;
+    max-height: 300px;
+    @include scrollable;
+    background: #544;
+
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+
+    .list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .category {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        .header {
+            width: 100%;
+            justify-content: flex-start;
+            background: none;
+            padding: 0;
+        }
+    }
 }
 
 .option {

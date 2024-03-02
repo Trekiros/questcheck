@@ -44,8 +44,6 @@
 
 // Macro for buttons & other clickable elements
 @mixin clickable {
-    display: flex;
-    gap: 1em;
     text-align: center;
     border-radius: 8px;
     border: none;

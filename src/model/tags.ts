@@ -1,60 +1,44 @@
-export const TagSuggestions = [
-    // WotC
-    'System: D&D 3.5e',
-    'System: D&D 4e',
-    'System: D&D 5e',
-    'System: D&D 2024',
-
-    // Paizo
-    'System: Pathfinder 2nd Edition',
-    'System: Pathfinder',
-    'System: Starfinder',
-    'System: Starfinder 2nd Edition',
+export const SystemsList = [
+    // Most popular first
+    'D&D 5e/2024',
+    'Pathfinder 2nd Edition',
     
-    // Indie
-    'System: Flare Fall',
-    'System: Shadowdark',
-    'System: Vagabond',
-    'System: DC20',
-    'System: MCDM RPG',
-    'System: Tales of the Valiant',
-    'System: S.A.G.A.S.',
-    'System: Voidhome',
+    // Systems under active construction
+    'Flare Fall',
+    'Shadowdark',
+    'Vagabond',
+    'DC20',
+    'MCDM RPG',
+    'Tales of the Valiant',
+    'S.A.G.A.S.',
+    'Stormlight',
 
-    // Popular 3rd parties
-    'System: Call of Cthulu',
-    'System: Blades in the Dark',
-    'System: Cyberpunk',
-    'System: Year Zero Engine',
-    'System: Shadowrun',
-    'System: Vampire: the Masquerade',
-    'System: World of Darkness',
-    'System: GURPS',
-    'Systems: Stars Without Numbers',
-    'Systems: Worlds Without Numbers',
-    'Systems: Cities Without Numbers',
-    'System: Powered by the Apocalypse (PbtA)',
-    'System: Fate',
-    'System: Stormlight',
-    'System: Warhammer',
-    'System: Mörk Borg',
-    'System: Old School Essentials',
-    'System: BX',
-    'System: Fallout 2d20',
-    'System: Conan 2d20',
-    'System: Star Trek 2d20',
-    'System: Gumshoe',
-    'System: Lancer',
-    'System: Zweihander',
-    'System: Ironsworn',
-    'System: Mutants & Masterminds',
-    'System: Troika',
-    'System: 13th Age',
-    'System: 7th Sea',
-    'System: Kids on Bikes',
-    'System: Tales from the Loop',
-    'System: Shadow of the Weird Wizard',
-    'System: Shadow of the Demon Lord',
-    'System: Numenara',
-    'System: Delta Green',
+    // Popular open licenses for 3rd parties
+    'Pathfinder 1E',
+    'Starfinder',
+    'Call of Cthulu',
+    'Blades in the Dark',
+    'Cyberpunk',
+    'Mutant: Year Zero',
+    'Shadowrun',
+    'Vampire: the Masquerade',
+    'World of Darkness',
+    'Mörk Borg',
+    'Old School Essentials',
+    'Mutants & Masterminds',
+    'D&D 4e',
+    'D&D 3.5e',
+] as const
+
+export const EnginesList = [
+    'd20',
+    'OSR',
+    'PbtA',
+    'Fate',
+    'Year Zero Engine',
+] as const
+
+export const TagSuggestions = [
+    ...SystemsList.map(system => `System: ${system}`) as `System: ${(typeof SystemsList)[number]}`[],
+    ...EnginesList.map(engine => `Engine: ${engine}`) as `Engine: ${(typeof EnginesList)[number]}`[],
 ]
