@@ -4,6 +4,11 @@ import { authMiddleware } from "@clerk/nextjs";
 export default authMiddleware({
     publicRoutes: [
         '/',
+
+        // Playtests
+        '/playtest/:id',
+        '/api/trpc/playtests.getCharacterById',
+        '/api/trpc/playtests.search',
     ],
 });
 

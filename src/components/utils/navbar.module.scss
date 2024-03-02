@@ -1,7 +1,9 @@
 @import '../../styles/variables';
+@import '../../styles/mixins';
 
 .topNav {
     position: fixed;
+    z-index: 1;
     top: 0;
     left: 0;
     width: 100%;
@@ -13,7 +15,6 @@
 
     $vpad: 8px;
     padding: $vpad 1em;
-
 
     .logo {
         font-size: $topNavHeight * 0.4;
@@ -31,6 +32,19 @@
 
     .actions {
         display: flex;
+        align-items: center;
+
+    }
+
+    .warning {
+        @include clickable;
+        color: #f88;
+        outline: 1px solid #f88;
+    }
+
+    .skeleton {
+        display: grid; 
+        grid-template-columns: 150px auto;
         align-items: center;
     }
 }

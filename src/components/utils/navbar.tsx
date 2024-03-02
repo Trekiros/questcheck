@@ -1,40 +1,55 @@
-import { FC, Suspense } from "react";
+import { FC } from "react";
 import styles from './navbar.module.scss'
-import { UserButton, auth } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import Image from "next/image";
-import { getUser } from "@/server/cache/users";
-import { ClerkTheme } from "@/app/sign-in/[[...index]]";
+import { ClerkTheme } from "@/pages/sign-in/[[...index]]";
 import TextSkeleton from "../skeleton/text";
+import { trpcClient } from "@/server/utils";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faWarning } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from "next/router";
+import CircleSkeleton from "../skeleton/circle";
 
-const NavBarActions: FC<{}> = async ({}) => {
-	const user = await getUser()
+const ActionsSkeleton = <div className={styles.skeleton}>
+	<TextSkeleton lines={1} />
+	<CircleSkeleton width={40} />
+</div>
+	
+const NavBar: FC<{}> = ({}) => {
+	const router = useRouter()
+	const user = useUser()
+	const userQuery = trpcClient.users.getSelf.useQuery()
 
 	return (
-		<div className={styles.actions}>
-			{ user ? <>
-				<Link href='/settings'>{user.userName}</Link>
-				<UserButton appearance={ClerkTheme} />
-			</> : <>
-				<Link href="/sign-in">Sign In</Link>
-				<Link href="/sign-up">Sign Up</Link>
-			</>}
-		</div>
-	)
-}
-
-const NavBar: FC<{}> = async ({}) => {
-
-    return (
         <nav className={styles.topNav}>
 			<Link href="/" className={styles.logo}>
 				<Image alt="Logo" src="/logo.webp" width={45} height={64} />
 				Quest Check
 			</Link>
 
-			<Suspense fallback={<TextSkeleton lines={1} style={{ width: "100px" }} />}>
-				<NavBarActions />
-			</Suspense>
+
+			<div className={styles.actions}>
+				{ !user.isLoaded ? ActionsSkeleton : (
+					!user.isSignedIn ? <>
+						<Link href="/sign-in">Sign In</Link>
+						<Link href="/sign-up">Sign Up</Link>
+					</> : (
+						userQuery.isLoading ? ActionsSkeleton : (
+							userQuery.data ? <>
+								<Link href='/settings'>{userQuery.data.userName}</Link>
+								<UserButton appearance={ClerkTheme} />
+							</> : <>
+								{ (router.route !== '/settings') && <Link href='/settings' className={styles.warning}>
+									<FontAwesomeIcon icon={faWarning} />
+									Update User Info
+								</Link> }
+								<UserButton appearance={ClerkTheme} />
+							</>
+						)
+					)
+				)}
+			</div>
         </nav>
     )
 }

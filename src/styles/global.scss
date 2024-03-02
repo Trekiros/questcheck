@@ -8,7 +8,7 @@
 
 // General style & layout
 html { @include scrollable; scrollbar-gutter: unset }
-html, body, main {min-height: 100%; height: 100%; background: #433; color: $gold; margin: 0; padding:0 }
+html, body, main, #__next {min-height: 100%; height: 100%; background: #433; color: $gold; margin: 0; padding:0 }
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }

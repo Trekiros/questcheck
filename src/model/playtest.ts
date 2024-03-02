@@ -11,12 +11,18 @@ export type Bounty = z.infer<typeof BountySchema>
 export const PlaytestSchema = z.object({
     userId: z.string(), // Readonly
 
+    createdTimestamp: z.number(),
+
     name: z.string(),
     description: z.string(),
     tags: z.array(z.string()),
 
     applicationDeadline: z.number(),
     closedManually: z.boolean(),
+
+    scheduleDate: z.number().optional(),
+    scheduleTimeStart: z.number().optional(),
+    scheduleTimeEnd: z.number().optional(),
 
     bounty: BountySchema,
     bountyDetails: z.string(),
@@ -26,7 +32,7 @@ export const PlaytestSchema = z.object({
 
 export type Playtest = z.infer<typeof PlaytestSchema>
 
-export function newPlayest(): Playtest {
+export function newPlayest(): Omit<Playtest, 'createdTimestamp'> {
     return {
         userId: '',
         name: '',

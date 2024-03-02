@@ -2,9 +2,8 @@
 
 import React, { FC, ReactNode, useEffect, useRef, useState } from "react";
 import styles from './tagInput.module.scss'
-import { ReactTags } from "react-tag-autocomplete";
 import { createPortal } from "react-dom";
-import { nodeJoin, useFrame } from "@/model/utils";
+import { useFrame } from "@/model/hooks";
 
 type PropType = {
     values: string[],
@@ -47,6 +46,7 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, placeholder }) 
             if (popoverRef.current!.contains(e.target as any)) return;
 
             setVisible(false)
+            setSearch('')
         }
 
         window.addEventListener("mousedown", handleClickOutside)
@@ -71,7 +71,8 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, placeholder }) 
             <input
                 ref={inputRef}
                 type="text"
-                className={styles.input}
+                className={`${styles.input} ${visible && styles.visible}`}
+                style={{width: `min(250px, ${search.length + 4}ch)` }}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 onFocus={() => setVisible(true)}

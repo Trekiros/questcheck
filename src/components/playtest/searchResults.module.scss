@@ -1,0 +1,27 @@
+.results {
+    display: flex;
+    flex-direction: column;
+    padding: 1em;
+    align-items: center;
+
+    .header {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        button svg { margin: 0 }
+    }
+
+    .list {
+
+    }
+
+    section:has(.placeholder) {
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ccc;
+    }
+}

@@ -24,3 +24,8 @@
     border-radius: calc(1lh / 2);
     margin: 2px 0;
 }
+
+.circle {
+  aspect-ratio: 1;
+  border-radius: 50%;
+}

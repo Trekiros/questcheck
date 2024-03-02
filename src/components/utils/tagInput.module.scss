@@ -2,12 +2,13 @@
 
 .tagInput {
     @include clickable;
-    padding: 4px;
+    padding: 6px;
     text-align: left;
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-start;
-    gap: 0;
+    gap: 6px;
+    min-height: 40px;
 }
 
 .tagList {
@@ -26,9 +27,13 @@
 }
 
 .input {
-    min-width: 60px;
+    flex-basis: 1 1 0;
     display: inline-block;
     background: none!important;
+    padding: 0;
+    position: initial;
+
+    &:not(.visible) { position: absolute; opacity: 0 }
 }
 
 .listBox {
