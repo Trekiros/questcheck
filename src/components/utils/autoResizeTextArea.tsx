@@ -12,7 +12,7 @@ const AutoResizeTextArea: FC<ComponentProps<"textarea">> = (props) => {
 
         // Set new height
         ref.current.style.height = scrollHeight + "px";
-      }, [ref.current, props.value]);
+      }, [ref, props.value]);
 
     return (
         <textarea

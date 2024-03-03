@@ -66,7 +66,7 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
         
         popoverRef.current.style.top = (rect.top + rect.height) + "px"
         popoverRef.current.style.left = rect.left + "px"
-    }, [visible, rootRef.current, popoverRef.current])
+    }, [visible, rootRef, popoverRef])
 
     useEffect(() => {
         if (!visible) return;
@@ -91,6 +91,7 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
             <span className={styles.tagList}>
                 { values.map((value, index) => (
                     <button
+                        key={index}
                         onClick={e => { e.stopPropagation(); update(clone => clone.splice(index, 1)) }}
                         className={styles.option}>
                             {value}
@@ -166,8 +167,9 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
                                             </button>
                                             { !!openCategories[category] && (
                                                 <div className={styles.list}>
-                                                    { searchResults.map(suggestion => (
+                                                    { searchResults.map((suggestion, index) => (
                                                         <button
+                                                            key={index}
                                                             onClick={e => {update(clone => clone.push(suggestion)); inputRef.current?.focus() }}
                                                             className={styles.option}>
                                                                 <SuggestionNode value={suggestion} search={search} />

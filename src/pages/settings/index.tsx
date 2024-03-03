@@ -25,7 +25,7 @@ const SettingsPage: FC<{}> = () => {
     const disabled = userQuery.isFetching || userMutation.isLoading
 
     useEffect(() => {
-        if (!!userQuery.data) setUser({ ...user, ...userQuery.data })
+        if (!!userQuery.data) setUser(userQuery.data)
     }, [userQuery.data])
 
     function update(callback: (clone: UserWithoutId) => void) {
