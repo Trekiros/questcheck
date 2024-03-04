@@ -1,31 +1,26 @@
 import { FC, useEffect, useState } from "react"
 import styles from './index.module.scss'
 import { trpcClient } from "@/server/utils"
-import { SystemFamiliarityList, SystemFamiliaritySchema, SystemNameSchema, User, UserSchema, isAlphanumeric, newUser } from "@/model/user"
-import { Prettify, validate } from "@/model/utils"
-import { z } from "zod"
+import { MutableUser, MutableUserSchema, SystemFamiliarityList, SystemNameSchema, User, UserSchema, isAlphanumeric, newUser } from "@/model/user"
+import { validate } from "@/model/utils"
 import Checkbox from "@/components/utils/checkbox"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faCheck, faMultiply, faPlus, faStar, faX } from "@fortawesome/free-solid-svg-icons"
+import { faCheck, faMultiply, faPlus, faStar } from "@fortawesome/free-solid-svg-icons"
 import { SystemsList } from "@/model/tags"
 import MarkdownTextArea from "@/components/utils/markdownTextArea"
 import FreeEntrySelect from "@/components/utils/freeEntrySelect"
 import { useUser } from "@clerk/nextjs"
-import TextSkeleton from "@/components/skeleton/text"
 import DotSkeleton from "@/components/skeleton/dots"
 import { faFacebook, faTwitter, faXTwitter } from "@fortawesome/free-brands-svg-icons"
 import { useRouter } from "next/router"
 import Link from "next/link"
 
-type UserWithoutId = Prettify<Omit<User, "userId">>
-const Validator: z.ZodType<UserWithoutId> = UserSchema.omit({ userId: true })
-
 const SettingsPage: FC<{}> = () => {
     const router = useRouter()
     const userMutation = trpcClient.users.updateSelf.useMutation()
     const userQuery = trpcClient.users.getSelf.useQuery()
-    const [user, setUser] = useState<UserWithoutId>(newUser)
-    const { isValid, errorPaths } = validate(user, Validator)
+    const [user, setUser] = useState<MutableUser>(newUser)
+    const { isValid, errorPaths } = validate(user, MutableUserSchema)
 
     const usernameTakenQuery = trpcClient.users.isUsernameTaken.useMutation()
     const [checkingUserName, setCheckingUserName] = useState(false)
@@ -56,9 +51,9 @@ const SettingsPage: FC<{}> = () => {
         }, 2000)
 
         return () => clearTimeout(timeout)
-    }, [user.userName])
+    }, [user.userName, isValid])
 
-    function update(callback: (clone: UserWithoutId) => void) {
+    function update(callback: (clone: MutableUser) => void) {
         const clone = structuredClone(user)
         callback(clone)
         setUser(clone)
@@ -87,7 +82,7 @@ const SettingsPage: FC<{}> = () => {
                         }} />
 
                     {
-                        checkingUserName ? <DotSkeleton />
+                        (checkingUserName || errorPaths['userName']) ? <DotSkeleton />
                         : userNameTaken ? (
                             <div className={styles.taken}>
                                 <FontAwesomeIcon icon={faMultiply} />
@@ -115,7 +110,7 @@ const SettingsPage: FC<{}> = () => {
                 <label>Bio (optional):</label>
 
                 <MarkdownTextArea
-                    placeholder="Introduce yourself..."
+                    placeholder="Introduce yourself... (you can use Markdown!)"
                     disabled={disabled}
                     className={errorPaths["userBio"] && styles.invalid}
                     value={user.userBio}
@@ -132,7 +127,10 @@ const SettingsPage: FC<{}> = () => {
                         disabled={disabled}
                         className={errorPaths["isPlayer"] && styles.invalid}
                         value={user.isPlayer}
-                        onToggle={() => update(clone => clone.isPlayer = !user.isPlayer)}>
+                        onToggle={() => update(clone => {
+                            clone.isPlayer = !user.isPlayer
+                            if (errorPaths['playerProfile']) clone.playerProfile = newUser.playerProfile
+                        })}>
                             Player (enter playtests)
                     </Checkbox>
 
@@ -140,7 +138,10 @@ const SettingsPage: FC<{}> = () => {
                         disabled={disabled}
                         className={errorPaths["isPlayer"] && styles.invalid}
                         value={user.isPublisher}
-                        onToggle={() => update(clone => clone.isPublisher = !user.isPublisher)}>
+                        onToggle={() => update(clone => {
+                            clone.isPublisher = !user.isPublisher
+                            if (errorPaths['publisherProfile']) clone.publisherProfile = newUser.publisherProfile
+                        })}>
                             Publisher (create playtests)
                     </Checkbox>
 
@@ -317,7 +318,7 @@ const SettingsPage: FC<{}> = () => {
                 </div>
             </> }
 
-
+            <hr />
 
             {/***************** ACTIONS *****************/}
             <section className={styles.actions}>

@@ -1,5 +1,5 @@
 import { Collections } from "../mongodb";
-import { User, UserSchema, newUser } from "@/model/user";
+import { MutableUser, MutableUserSchema, User, UserSchema, newUser } from "@/model/user";
 import { protectedProcedure, router } from "../trpc";
 import { Prettify } from "@/model/utils";
 import { UpdateFilter } from "mongodb";
@@ -12,24 +12,25 @@ export const UserRouter = router({
             if (!userId) throw new Error('Unauthorized')
         
             const users = await Collections.users()
-            const user: Prettify<Omit<User, "userId">>|null = await users.findOne({ userId }, { projection: { _id: 0 }})
+            const user: Prettify<MutableUser>|null = await users.findOne({ userId }, { 
+                projection: { _id: 0, userId: 0, userNameLowercase: 0
+            }})
 
+            // Just in case these fields weren't deleted properly.
             if (user) {
                 if (!user.isPlayer) user.playerProfile = newUser.playerProfile
                 if (!user.isPublisher) user.publisherProfile = newUser.publisherProfile
             }
 
-            console.log(user)
-
             return user
         }),
 
     updateSelf: protectedProcedure
-        .input(UserSchema.omit({ userId: true }))
+        .input(MutableUserSchema)
         .mutation(async ({ input, ctx: { auth } }) => {
             const users = await Collections.users()
 
-            const existingUserName = await users.findOne({ userName: input.userName, userId: { $ne: auth.userId }})
+            const existingUserName = await users.findOne({ userNameLowercase: input.userName.toLowerCase(), userId: { $ne: auth.userId }})
             if (existingUserName) {
                 throw new Error('Username taken')
             }
@@ -41,9 +42,10 @@ export const UserRouter = router({
             type UserSet = Writeable<NonNullable<UserUpdate["$set"]>>
             const $set: UserSet = {
                 ...userClean,
+                userNameLowercase: input.userName.toLowerCase(),
             }
 
-            // Publisher readonly fields
+            // Publisher readonly fields. Flattening the set avoids overwriting the manual verification process
             if (userClean.isPublisher) {
                 if (publisherProfile.twitterProof) {
                     const fromAuth = auth.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'x')?.username
@@ -52,6 +54,8 @@ export const UserRouter = router({
                     }
 
                     $set["publisherProfile.twitterProof"] = fromAuth
+                } else {
+                    $set["publisherProfile.twitterProof"] = ''
                 }
 
                 if (publisherProfile.facebookProof) {
@@ -61,10 +65,13 @@ export const UserRouter = router({
                     }
 
                     $set["publisherProfile.facebookProof"] = fromAuth
+                } else {
+                    $set["publisherProfile.facebookProof"] = ''
                 }
             }
 
             const result = await users.findOneAndUpdate({ userId: auth.userId }, { $set }, { upsert: true })
+
             return result
         }),
 
@@ -89,7 +96,7 @@ export const UserRouter = router({
         .mutation(async ({ input, ctx }) => {
             const users = await Collections.users()
 
-            const existingUserName = await users.findOne({ userName: input, userId: { $ne: ctx.auth.userId }})
+            const existingUserName = await users.findOne({ userNameLowercase: input.toLowerCase(), userId: { $ne: ctx.auth.userId }})
             return !!existingUserName
         })
 })

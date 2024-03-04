@@ -82,7 +82,7 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
         window.addEventListener("mousedown", handleClickOutside)
 
         return () => window.removeEventListener("mousedown", handleClickOutside)
-    }, [visible, popoverRef.current, rootRef.current])
+    }, [visible, popoverRef, rootRef])
 
     return <>
         <div ref={rootRef} className={styles.tagInput} onClick={() => { inputRef.current?.focus() }}>

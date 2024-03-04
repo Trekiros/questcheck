@@ -30,7 +30,7 @@ const DataPage: FC<{}> = () => {
                 <Modal onCancel={() => setShowModal(false)}>
                     <h3 style={{ marginTop: 0 }}>Warning</h3>
                     <p>You are about to delete all of your data on this website. This cannot be undone.</p>
-                    <p>If you are sure you wish to proceed, type "DELETE" below:</p>
+                    <p>{'If you are sure you wish to proceed, type "DELETE" below:'}</p>
                     <input 
                         style={{ width: "100%" }} 
                         type='text' 

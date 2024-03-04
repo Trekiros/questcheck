@@ -49,7 +49,7 @@ const FreeEntrySelect: FC<PropType> = ({ value, onChange, suggestions, placehold
         window.addEventListener("mousedown", handleClickOutside)
 
         return () => window.removeEventListener("mousedown", handleClickOutside)
-    }, [visible, popoverRef.current])
+    }, [visible, popoverRef])
 
     return <>
         <input
@@ -84,7 +84,7 @@ const FreeEntrySelect: FC<PropType> = ({ value, onChange, suggestions, placehold
 
                         if (e.key === 'Escape') {
                             inputRef.current?.focus()
-                            
+
                         }
                     }}>
                         {(() => {

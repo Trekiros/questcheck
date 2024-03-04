@@ -14,6 +14,8 @@
         display: grid;
         grid-template-columns: 120px 1fr;
 
+        @media (max-width: 600px) { grid-template-columns: 1fr; gap: 0 }
+
         > label {
             height: 44px;
             display: flex;
@@ -71,6 +73,18 @@
                     display: flex;
                     align-items: center;
 
+                    @media (max-width: 600px) {
+                        position: relative;
+                        flex-direction: column-reverse;
+                        align-items: flex-start;
+
+                        > :last-child {
+                            position: absolute;
+                            right: 0;
+                            bottom: 2px;
+                        }
+                    }
+
                     .systemSelect {
                         width: 200px;
                     }
@@ -84,8 +98,6 @@
                             display: flex;
                             align-items: center;
                             gap: 0;
-
-                            label { text-wrap: nowrap }
                             
                             button {
                                 padding: 0;
@@ -99,7 +111,14 @@
                                 &:hover svg { color: #ccc }
                             }
                         }
-                        
+
+                        > label { 
+                            text-wrap: nowrap;
+
+                            @media (max-width: 800px) {
+                                display: none;
+                            }
+                        }
                     }
                 }
             }
