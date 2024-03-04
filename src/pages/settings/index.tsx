@@ -1,7 +1,7 @@
 import { FC, useEffect, useState } from "react"
 import styles from './index.module.scss'
 import { trpcClient } from "@/server/utils"
-import { MutableUser, MutableUserSchema, SystemFamiliarityList, SystemNameSchema, User, UserSchema, isAlphanumeric, newUser } from "@/model/user"
+import { MutableUser, MutableUserSchema, SystemFamiliarityList, SystemNameSchema, isAlphanumeric, newUser } from "@/model/user"
 import { validate } from "@/model/utils"
 import Checkbox from "@/components/utils/checkbox"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
@@ -14,13 +14,14 @@ import DotSkeleton from "@/components/skeleton/dots"
 import { faFacebook, faTwitter, faXTwitter } from "@fortawesome/free-brands-svg-icons"
 import { useRouter } from "next/router"
 import Link from "next/link"
+import { toast } from "sonner"
 
 const SettingsPage: FC<{}> = () => {
     const router = useRouter()
     const userMutation = trpcClient.users.updateSelf.useMutation()
     const userQuery = trpcClient.users.getSelf.useQuery()
     const [user, setUser] = useState<MutableUser>(newUser)
-    const { isValid, errorPaths } = validate(user, MutableUserSchema)
+    const { isValid, errorPaths } = userQuery.isFetching ? {isValid: false, errorPaths: {} } : validate(user, MutableUserSchema)
 
     const usernameTakenQuery = trpcClient.users.isUsernameTaken.useMutation()
     const [checkingUserName, setCheckingUserName] = useState(false)
@@ -41,6 +42,9 @@ const SettingsPage: FC<{}> = () => {
     useEffect(() => {
         if (!isValid) return;
 
+        // No need to check if the current username hasn't been changed
+        if (user.userName === userQuery.data?.userName) return;
+
         setCheckingUserName(true)
 
         const timeout = setTimeout(async () => {
@@ -50,8 +54,11 @@ const SettingsPage: FC<{}> = () => {
             setCheckingUserName(false)
         }, 2000)
 
-        return () => clearTimeout(timeout)
-    }, [user.userName, isValid])
+        return () => {
+            clearTimeout(timeout)
+            setCheckingUserName(false)
+        }
+    }, [user.userName, userQuery.data?.userName, isValid])
 
     function update(callback: (clone: MutableUser) => void) {
         const clone = structuredClone(user)
@@ -327,14 +334,18 @@ const SettingsPage: FC<{}> = () => {
                     onClick={async () => { 
                         await userMutation.mutateAsync(user);
                         await userQuery.refetch()
+                        toast("User info updated")
                     }}>
                         <FontAwesomeIcon icon={faCheck} />
                         Save
                 </button>
                 
                 <button
-                    disabled={disabled}
-                    onClick={() => setUser(userQuery.data || newUser)}>
+                    disabled={disabled || checkingUserName}
+                    onClick={() => {
+                        setUser(userQuery.data || newUser)
+                        toast("User info reset")
+                    }}>
                         <FontAwesomeIcon icon={faMultiply} />
                         Cancel
                 </button>

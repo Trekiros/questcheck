@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Prettify } from "./utils";
 
 export const TaskList = ['readthrough', 'one shot', 'multiple sessions'] as const
 export const TaskSchema = z.enum(TaskList)
@@ -9,13 +10,14 @@ export const BountySchema = z.enum(BountyList)
 export type Bounty = z.infer<typeof BountySchema>
 
 export const PlaytestSchema = z.object({
-    userId: z.string(), // Readonly
+    // Readonly
+    userId: z.string(),
+    createdTimestamp: z.number(), 
 
-    createdTimestamp: z.number(),
-
-    name: z.string(),
-    description: z.string(),
-    tags: z.array(z.string()),
+    
+    name: z.string().min(4).max(128),
+    description: z.string().max(2000),
+    tags: z.array(z.string().min(1).max(64)),
 
     applicationDeadline: z.number(),
     closedManually: z.boolean(),
@@ -25,26 +27,29 @@ export const PlaytestSchema = z.object({
     scheduleTimeEnd: z.number().optional(),
 
     bounty: BountySchema,
-    bountyDetails: z.string(),
+    bountyDetails: z.string().max(300),
 
     task: TaskSchema,
 })
 
 export type Playtest = z.infer<typeof PlaytestSchema>
 
-export function newPlayest(): Omit<Playtest, 'createdTimestamp'> {
-    return {
-        userId: '',
-        name: '',
-        description: '',
-        tags: [],
-        applicationDeadline: Infinity,
-        closedManually: false,
-        bounty: 'none',
-        bountyDetails: '',
-        task: 'readthrough',
-    }
-}
+export const MutablePlaytestSchema = PlaytestSchema.omit({ userId: true, createdTimestamp: true })
+export type MutablePlaytest = Prettify<z.infer<typeof MutablePlaytestSchema>>
+
+export const newPlaytest = {
+    name: '',
+    description: '',
+    tags: [],
+    applicationDeadline: Infinity,
+    closedManually: false,
+    bounty: 'none',
+    bountyDetails: '',
+    task: 'readthrough',
+} satisfies MutablePlaytest
+
+
+
 
 
 

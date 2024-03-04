@@ -7,8 +7,9 @@ export default authMiddleware({
 
         // Playtests
         '/playtest/:id',
-        '/api/trpc/playtests.getCharacterById',
-        '/api/trpc/playtests.search',
+        
+        // API
+        '/api/trpc/:any',
     ],
 });
 

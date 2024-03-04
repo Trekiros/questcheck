@@ -1,15 +1,16 @@
 import { Collections } from "../mongodb";
 import { MutableUser, MutableUserSchema, User, UserSchema, newUser } from "@/model/user";
-import { protectedProcedure, router } from "../trpc";
+import { protectedProcedure, publicProcedure, router } from "../trpc";
 import { Prettify } from "@/model/utils";
 import { UpdateFilter } from "mongodb";
 import { Writeable } from "zod";
 import { clerkClient } from "@clerk/nextjs";
+import { User as ClerkUser } from "@clerk/backend";
 
 export const UserRouter = router({
-    getSelf: protectedProcedure
+    getSelf: publicProcedure
         .query(async ({ ctx: { auth: { userId } } }) => {
-            if (!userId) throw new Error('Unauthorized')
+            if (!userId) return null
         
             const users = await Collections.users()
             const user: Prettify<MutableUser>|null = await users.findOne({ userId }, { 
@@ -47,9 +48,13 @@ export const UserRouter = router({
 
             // Publisher readonly fields. Flattening the set avoids overwriting the manual verification process
             if (userClean.isPublisher) {
+                let user: ClerkUser|null = null;
+
                 if (publisherProfile.twitterProof) {
-                    const fromAuth = auth.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'x')?.username
-                    if (publisherProfile.twitterProof!== fromAuth) {
+                    user = await clerkClient.users.getUser(auth.userId)
+                    
+                    const fromAuth = user.externalAccounts.find(socialConnection => socialConnection.provider === 'oauth_x')?.username
+                    if (publisherProfile.twitterProof !== fromAuth) {
                         throw new Error('You must link your twitter account to do this')
                     }
 
@@ -59,7 +64,9 @@ export const UserRouter = router({
                 }
 
                 if (publisherProfile.facebookProof) {
-                    const fromAuth = auth.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'facebook')?.username
+                    if (!user) user = await clerkClient.users.getUser(auth.userId)
+
+                    const fromAuth = auth.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'oauth_facebook')?.username
                     if (publisherProfile.twitterProof!== fromAuth) {
                         throw new Error('You must link your facebook account to do this')
                     }

@@ -1,8 +1,8 @@
-import { PlaytestSearchParamSchema, Playtest, PlaytestSearchParams } from "@/model/playtest";
+import { PlaytestSearchParamSchema, Playtest, PlaytestSearchParams, MutablePlaytestSchema } from "@/model/playtest";
 import { Collections } from "../mongodb";
 import { z } from "zod";
 import { Filter, FindCursor } from "mongodb";
-import { publicProcedure, router } from "../trpc";
+import { protectedProcedure, publicProcedure, router } from "../trpc";
 
 export const PlaytestRouter = router({
     search: publicProcedure
@@ -55,5 +55,34 @@ export const PlaytestRouter = router({
 
             const result: Playtest[] = await cursor.toArray()
             return result
+        }),
+
+    create: protectedProcedure
+        .input(MutablePlaytestSchema)
+        .mutation(async ({ input, ctx: { auth: { userId }} }) => {
+            const users = await Collections.users()
+            const playtests = await Collections.playtests()
+
+            // Check authorizations
+            const userInfo = await users.findOne({ userId })
+            if (!userInfo) throw new Error('You must fill in your profile information before you can create playtests.')
+            if (!userInfo.isPublisher) throw new Error('You must be a publisher to create playtests.')
+            if (
+                !userInfo.publisherProfile.facebookProof
+             && !userInfo.publisherProfile.twitterProof
+             && !userInfo.publisherProfile.manualProof
+            ) throw new Error('You must verify your identity as a publisher to create playtests.')
+
+            // Create playtest
+            const newPlaytest: Playtest = {
+                ...input,
+                userId,
+                createdTimestamp: Date.now(),
+            }
+            const result = await playtests.insertOne(newPlaytest)
+
+            if (!result.acknowledged) throw new Error('Internal server error')
+
+            return result.insertedId.toString()
         }),
 })

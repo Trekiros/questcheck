@@ -30,7 +30,7 @@ const App: AppType = ({ Component, pageProps: { session, ...pageProps } }: AppPr
 				<Component {...pageProps} />
 			</main>
 
-			<Toaster />
+			<Toaster toastOptions={{ unstyled: true, classNames: { toast: "toast" } }}/>
 			<RGPD />
 		</ClerkProvider>
   	)

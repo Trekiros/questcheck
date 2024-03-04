@@ -1,0 +1,9 @@
+.newPlaytest {
+    padding: 1em;
+    width: min(100%, 800px);
+    margin: auto auto;
+    display:flex;
+    flex-direction: column;
+
+    .actions button { width: 100% }
+}

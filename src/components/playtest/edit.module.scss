@@ -1,0 +1,22 @@
+.playtestEditor {
+    display: flex;
+    flex-direction: column;
+
+    .row {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+
+        @media (max-width: 600px) {
+            grid-template-columns: 1fr;
+            gap: 2px;
+        }
+
+        > label {
+            height: 44px;
+            display: flex;
+            align-items: center;
+        }
+    }
+
+    &:not(.disabled) .invalid { outline: 1px solid #f88 }
+}
