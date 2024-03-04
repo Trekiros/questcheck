@@ -11,8 +11,7 @@ export const SystemFamiliarityList = [
     'Has played',
     'Has ran at least 1 game',
     'Has ran at least 1 full campaign',
-    'Has published homebrew content for',
-    'Has published commercial content for',
+    'Has published content for',
 ] as const
 export const SystemFamiliaritySchema = z.enum(SystemFamiliarityList)
 export type SystemFamiliarity = z.infer<typeof SystemFamiliaritySchema>
@@ -22,28 +21,41 @@ export const SystemNameSchema = z.string().min(2).max(64)
 export const UserSchema = z.object({
     userId: z.string(), // Clerk user id
     
-    userName: z.string().min(4).refine(isAlphanumeric, { message: "Username should be alphanumeric" }),
+    userName: z.string().min(4).max(50).refine(isAlphanumeric, { message: "Username should be alphanumeric" }),
     
     userBio: z.string().max(600),
     isPlayer: z.boolean(),
     isPublisher: z.boolean(),
 
     playerProfile: z.object({
-        systems: z.array(z.object({ system: SystemNameSchema, familiarity: SystemFamiliaritySchema })),
-    })
+        systems: z.array(z.object({
+            system: SystemNameSchema, 
+            familiarity: z.number().min(1).max(5),
+            details: z.string().max(300),
+         })).max(20),
+    }),
+
+    publisherProfile: z.object({
+        // WARNING: READONLY. THE USER SHOULD NOT BE ALLOWED TO UPDATE THIS DIRECTLY
+        twitterProof: z.string().optional(),
+        facebookProof: z.string().optional(),
+        manualProof: z.boolean().optional(),
+    }),
 })
 
 export type User = z.infer<typeof UserSchema>
 
-export function newUser(): Omit<User, "userId"> {
-    return {
-        userName: '',
-        userBio: '',
-        isPlayer: false,
-        isPublisher: false,
+export const newUser = {
+    userName: '',
+    userBio: '',
+    isPlayer: false,
+    isPublisher: false,
 
-        playerProfile: {
-            systems: [],
-        },
-    }
-}
+    playerProfile: {
+        systems: [],
+    },
+
+    publisherProfile: {
+        
+    },
+} satisfies Omit<User, "userId">

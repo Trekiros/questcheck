@@ -1,0 +1,15 @@
+@import '../styles/variables';
+
+.legal {
+    height: 100%;
+    width: 80%;
+    margin: auto auto;
+
+    iframe {
+        box-sizing: border-box;
+        border: none;
+        width: 100%;
+        height: calc(100% - $topNavHeight);
+        background: #eee;
+    }
+}

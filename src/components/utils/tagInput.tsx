@@ -1,5 +1,3 @@
-"use client";
-
 import React, { FC, ReactNode, useEffect, useRef, useState } from "react";
 import styles from './tagInput.module.scss'
 import { createPortal } from "react-dom";
@@ -15,12 +13,12 @@ type PropType = {
     categories?: { [category: string]: readonly string[] } // Will be shown sorted by category
 }
 
-const SuggestionNode: FC<{ value: string, search: string }> = ({ value, search }) => {
+export const SuggestionNode: FC<{ value: string, search: string }> = ({ value, search }) => {
     if (!search) return <>{value}</>
 
     const matchIndex = value.toLowerCase().indexOf(search.toLowerCase())
     if (matchIndex === -1) {
-        return null
+        return <>{value}</>
     }
 
     return <>

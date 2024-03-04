@@ -1,0 +1,28 @@
+@import '../../styles/mixins';
+
+.select {
+    position: fixed;
+    z-index: 1;
+    width: 400px;
+    max-height: 200px;
+    @include scrollable;
+    background: #544;
+    overflow: auto;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.option {
+    display: initial;
+    text-wrap: nowrap;
+    padding: 10px;
+    border-radius: 4px;
+    text-align: left;
+    color: white;
+
+    &:hover, &:checked, &:focus, &:active {
+        background: #fff1;
+    }
+}

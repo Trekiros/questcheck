@@ -1,3 +1,4 @@
+import { User } from "@/model/user"
 import { Db } from "mongodb"
 
 /**
@@ -6,11 +7,11 @@ import { Db } from "mongodb"
  * Don't forget to remove migrations which have already been executed in prod
  */
 export default async function migration(db: Db) {
-    /*await performMigration('character.campaignId', async () => {
-        await db.collection<Sheet>('characters').updateMany({
-            'campaignId': { $exists: false },
+    /*await performMigration('publisherprofile', async () => {
+        await db.collection<User>('users').updateMany({
+            
         }, {
-            $set: { 'campaignId': "" },
+            $set: { publisherProfile: {  } },
         })
     })*/
 

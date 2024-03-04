@@ -1,0 +1,44 @@
+@import '../../styles/mixins';
+
+.mdtextarea {
+    position: relative;
+
+    .previewToggle {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: none!important;
+        padding: 1em;
+
+        transition: color 300ms;
+        &:hover { color: #ccc }
+    }
+
+    > label {
+        display: block; 
+        width: 100%;
+        text-align: right;
+        font-size: smaller;
+    }
+
+    .invalid {
+        outline: 1px solid #f88;
+    }
+
+    textarea {
+        @include scrollable;
+        padding: 1em;
+        padding-right: 0;
+        min-height: unset;
+        max-height: 600px;
+
+        &:not(:hover) { background: #fff1 }
+    }
+
+    .preview {
+        padding-left: 1em;
+        border-left: 1px solid #ccc;
+        min-height: 1em;
+        margin: 1em 0;
+    }
+}

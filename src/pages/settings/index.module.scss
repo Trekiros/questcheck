@@ -8,6 +8,8 @@
     align-items: stretch;
     margin: auto auto;
 
+    hr { width: 100% }
+
     .row {
         display: grid;
         grid-template-columns: 120px 1fr;
@@ -21,37 +23,17 @@
         input { width: 100% }
     }
 
-    .withCharCount {
-        position: relative;
-
-        .previewToggle {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: 0;
-            padding: 8px;
-        }
-
-        > label {
-            display: block; 
-            width: 100%;
-            text-align: right;
-            font-size: smaller;
-        }
-    }
-
     &:not(.disabled) .invalid {
         outline: 1px solid #f88;
     }
 
-    textarea {
-        @include scrollable;
-        padding: 1em;
-        padding-right: 0;
-        min-height: unset;
-        max-height: 600px;
+    .username {
+        display: grid;
+        grid-template-columns: 1fr 50px;
+        align-items: center;
 
-        &:not(:hover) { background: #fff1 }
+        .free { display: flex; color: #8f8 }
+        .taken { display: flex; color: #f88 }
     }
 
     .accountType {
@@ -67,6 +49,7 @@
     }
 
     .actions {
+        margin-bottom: 5em;
         display: flex;
         button { flex: 1 1 0 }
     }
@@ -75,17 +58,81 @@
         display: flex;
         flex-direction: column;
 
-        ul {
+        > ul {
             list-style: none;
             padding: 0;
             margin: 0;
 
-            li { display: flex }
+            > li {
+                display: flex;
+                flex-direction: column;
+
+                .firstRow {
+                    display: flex;
+                    align-items: center;
+
+                    .systemSelect {
+                        width: 200px;
+                    }
+
+                    .familiarity {
+                        flex-grow: 1;
+                        display: flex;
+                        align-items: center;
+
+                        .stars {
+                            display: flex;
+                            align-items: center;
+                            gap: 0;
+
+                            label { text-wrap: nowrap }
+                            
+                            button {
+                                padding: 0;
+                                background: none;
+                                padding: 2px;
+
+                                svg { width: 20px; height: 20px }
+
+                                &:not(.familiar) svg { color: #888 }
+
+                                &:hover svg { color: #ccc }
+                            }
+                        }
+                        
+                    }
+                }
+            }
         }
 
         > button {
             width: min-content;
             text-wrap: nowrap;
+        }
+    }
+
+    .proof {
+        display: flex;
+        flex-direction: column;
+
+        > :first-child {
+            padding: 1em;
+            padding-left: 0;
+        }
+
+        .proofType {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            
+            > :first-child {
+                justify-content: flex-start;
+            }
+
+            .warning {
+                text-align: right;
+                border-left: 1px solid #c83;
+                color: #c83;
+            }
         }
     }
 }

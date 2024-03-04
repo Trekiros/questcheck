@@ -7,7 +7,7 @@ import { faCheck } from "@fortawesome/free-solid-svg-icons"
 
 type PropType = {
     value: boolean,
-    onToggle: (e: MouseEvent) => void,
+    onToggle: (newValue: boolean) => void,
     className?: string,
     children?: React.ReactNode,
     disabled?: boolean,
@@ -18,7 +18,7 @@ const Checkbox:FC<PropType> = ({ value, onToggle, className, children, disabled 
         <button
             disabled={disabled}
             className={`${className || ''} ${styles.checkbox} ${value ? styles.checked : ''}`}
-            onClick={e => onToggle(e)}>
+            onClick={e => onToggle(!value)}>
                 <FontAwesomeIcon icon={faCheck} />
                 {children}
         </button>
