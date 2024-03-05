@@ -18,5 +18,60 @@
         }
     }
 
-    &:not(.disabled) .invalid { outline: 1px solid #f88 }
+    &:not(.disabled) .invalid { outline: 1px solid #f88; border-radius: 8px }
+
+}
+
+.vstack {
+    display: flex;
+    flex-direction: column;
+    
+    p:first-child { padding-top: 1em }
+}
+
+.steps {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: stretch;
+
+    svg {
+        align-self: center;
+        height: 2em;
+        color: #888;
+    }
+
+    .step {
+        width: 100px;
+        border-radius: 0;
+        clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+
+        &.active {
+            background: #e7ab62;
+            color: #333;
+        }
+
+        &:disabled {
+            background: #fff1;
+        }
+    }
+}
+
+.actions {
+    display: flex;
+    button { flex-grow: 1 }
+}
+
+.contractEditor {
+    .type {
+        display: flex;
+
+        button {
+            flex-grow: 1;
+
+            &:not(.active):not(:hover) {
+                background: transparent;
+                color: #888;
+            }
+        }
+    }
 }

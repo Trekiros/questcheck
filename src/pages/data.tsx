@@ -3,6 +3,7 @@ import { trpcClient } from "@/server/utils";
 import { useClerk } from "@clerk/nextjs";
 import { faWarning } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { NextSeo } from "next-seo";
 import { useRouter } from "next/router";
 import { FC, useState } from "react";
 
@@ -15,6 +16,8 @@ const DataPage: FC<{}> = () => {
     
     return (
         <div style={{ width: "100%", height: "100%", display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+            <NextSeo title="My Data" />
+            
             <h1>My Data</h1>
 
             <p>By clicking on the button below, you will delete all of your data.</p>

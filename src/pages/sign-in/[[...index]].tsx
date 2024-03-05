@@ -1,4 +1,5 @@
 import { SignIn } from "@clerk/nextjs"
+import { NextSeo } from "next-seo"
 import { FC } from "react"
 
 export const ClerkTheme: NonNullable<React.ComponentProps<typeof SignIn>['appearance']> = {
@@ -32,6 +33,8 @@ export const ClerkTheme: NonNullable<React.ComponentProps<typeof SignIn>['appear
 const SignInPage: FC<{}> = () => {
     return (
         <div>
+            <NextSeo title="Sign In" />
+
             <SignIn appearance={ClerkTheme}/>
         </div>
     )

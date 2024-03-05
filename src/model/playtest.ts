@@ -1,25 +1,25 @@
 import { z } from "zod";
 import { Prettify } from "./utils";
 
-export const TaskList = ['readthrough', 'one shot', 'multiple sessions'] as const
+export const TaskList = ['Read-through + Feedback', 'One Shot ran by the Publisher', 'One Shot ran by the Playtester', 'Campaign ran by the Publisher', 'Campaign ran by the Playtester'] as const
 export const TaskSchema = z.enum(TaskList)
 export type Task = z.infer<typeof TaskSchema>
 
-export const BountyList = ['none', 'discount', 'gift card', 'cash'] as const
+export const BountyList = ['Name credits only', 'Discount Code', 'Gift Card', 'Free PDF', 'Free Hardcover Copy', 'Payment'] as const
 export const BountySchema = z.enum(BountyList)
 export type Bounty = z.infer<typeof BountySchema>
 
 export const PlaytestSchema = z.object({
     // Readonly
     userId: z.string(),
-    createdTimestamp: z.number(), 
+    createdTimestamp: z.number(),
 
-    
+
     name: z.string().min(4).max(128),
     description: z.string().max(2000),
-    tags: z.array(z.string().min(1).max(64)),
+    tags: z.array(z.string().min(1).max(64)).max(20),
 
-    applicationDeadline: z.number(),
+    applicationDeadline: z.number().min(1),
     closedManually: z.boolean(),
 
     scheduleDate: z.number().optional(),
@@ -28,6 +28,10 @@ export const PlaytestSchema = z.object({
 
     bounty: BountySchema,
     bountyDetails: z.string().max(300),
+    bountyContract: z.discriminatedUnion('type', [
+        z.object({ type: z.literal('template') }),
+        z.object({ type: z.literal('custom'), text: z.string().max(5000) })
+    ]),
 
     task: TaskSchema,
 })
@@ -41,11 +45,12 @@ export const newPlaytest = {
     name: '',
     description: '',
     tags: [],
-    applicationDeadline: Infinity,
+    applicationDeadline: 0,
     closedManually: false,
-    bounty: 'none',
+    bounty: 'Name credits only',
     bountyDetails: '',
-    task: 'readthrough',
+    bountyContract: { type: 'template' },
+    task: 'Read-through + Feedback',
 } satisfies MutablePlaytest
 
 

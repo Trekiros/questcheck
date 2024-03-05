@@ -9,9 +9,10 @@ type PropType = {
     min?: number,
     max?: number,
     placeholder?: string,
+    className?: string,
 }
 
-const Calendar: FC<PropType> = ({ value, onChange, min, max, placeholder }) => {
+const Calendar: FC<PropType> = ({ value, onChange, min, max, placeholder, className }) => {
     return (
         <ReactDatePicker
             calendarClassName={styles.calendar}
@@ -22,7 +23,7 @@ const Calendar: FC<PropType> = ({ value, onChange, min, max, placeholder }) => {
             monthClassName={date => styles.month}
             clearButtonClassName={styles.clearBtn}
             weekDayClassName={date => styles.weekDay}
-            wrapperClassName={styles.wrapper}
+            wrapperClassName={`${styles.wrapper} ${className}`}
             calendarIconClassname={styles.icon}
             
 

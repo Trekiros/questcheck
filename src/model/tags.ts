@@ -38,6 +38,20 @@ export const EnginesList = [
     'Year Zero Engine',
 ] as const
 
+export const GenreList = [
+    'Medieval',
+    'Fantasy',
+    'Survival',
+    'Horror',
+    'Grimdark',
+    'Sci-Fi',
+    'Cyberpunk',
+    'Comedy',
+    'Dungeoncrawl',
+    'Tactical',
+    'Combat-light'
+]
+
 export const TagSuggestions = [
     ...SystemsList.map(system => `System: ${system}`) as `System: ${(typeof SystemsList)[number]}`[],
     ...EnginesList.map(engine => `Engine: ${engine}`) as `Engine: ${(typeof EnginesList)[number]}`[],

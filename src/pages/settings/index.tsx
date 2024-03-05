@@ -15,6 +15,7 @@ import { faFacebook, faTwitter, faXTwitter } from "@fortawesome/free-brands-svg-
 import { useRouter } from "next/router"
 import Link from "next/link"
 import { toast } from "sonner"
+import { NextSeo } from "next-seo"
 
 const SettingsPage: FC<{}> = () => {
     const router = useRouter()
@@ -68,6 +69,8 @@ const SettingsPage: FC<{}> = () => {
 
     return (
         <div className={`${styles.settings} ${disabled && styles.disabled}`}>
+            <NextSeo title="User Settings" />
+
             <h1>User Settings</h1>
             
             {/***************** BASIC INFO *****************/}
@@ -231,7 +234,7 @@ const SettingsPage: FC<{}> = () => {
 
 
 
-            {/***************** Player INFO *****************/}
+            {/***************** Publisher INFO *****************/}
             { user.isPublisher && <>
                 <hr />
 
@@ -241,7 +244,11 @@ const SettingsPage: FC<{}> = () => {
                     <label>Proof of identity:</label>
 
                     <div className={styles.proof}>
-                        <div>This is used to display your legitimacy as a publisher. Playtests you post will include a link to your socials, to prove to players that you are who you claim to be.</div>
+                        <div>
+                            This is used to display your legitimacy as a publisher. 
+                            Playtests you post will include a link to your socials, to prove to players that you are who you claim to be. 
+                            You need at least one proof to be active to be allowed to create playtests on this website.
+                        </div>
 
                         <div className={styles.proofType}>
                             <Checkbox
@@ -317,7 +324,10 @@ const SettingsPage: FC<{}> = () => {
 
                             { !user.publisherProfile.manualProof && (
                                 <span className={styles.warning}>
-                                    To use this feature, ask <Link href="mailto:trekiros.contact@gmail.com">trekiros.contact@gmail.com</Link> for the manual verification of account <b>{ clerkUser.user?.id.substring(5) }</b>. This may take several days.
+                                    If you don't use Twitter nor Facebook, you can ask for a manual verification (this may take multiple days). 
+                                    To do it, contact Trekiros on <Link href="https://bsky.app/profile/trekiros.bsky.social">Bluesky</Link>, <Link href='https://dice.camp/@trekiros'>Mastodon</Link>, or by <Link href='mailto:trekiros.contact@gmail.com'>email</Link>.
+                                    You must use the account or email address you give to your customers so they can contact you, or your request will be rejected.
+                                    This account or email address will be the one which will be displayed on the playtests you create.
                                 </span>
                             )}
                         </div>

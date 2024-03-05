@@ -1,0 +1,14 @@
+.confirmDialog {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3em;
+
+    .buttons {
+        margin-top: 1em;
+        display: flex;
+        gap: 1em;
+
+        button { flex: 1 1 0 }
+    }
+}

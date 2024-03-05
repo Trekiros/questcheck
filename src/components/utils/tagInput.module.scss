@@ -42,7 +42,7 @@
     width: 400px;
     max-height: 300px;
     @include scrollable;
-    background: #544;
+    background: linear-gradient(180deg, transparent 0%, #544 3px);
 
     display: flex;
     flex-direction: column;
@@ -81,3 +81,15 @@
     color: #fff;
     padding: 0 2px;
 }
+
+.maxTags {
+    position: sticky;
+    bottom: 0;
+    right: 0;
+    text-align: right;
+    pointer-events: none;
+    color: #ccc;
+    font-size: smaller;
+}
+
+.placeholder { color: #777; font-weight: normal }

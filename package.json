@@ -21,8 +21,6 @@
     "@trpc/next": "^10.45.0",
     "@trpc/react-query": "^10.45.0",
     "@trpc/server": "^10.45.0",
-    "@types/react-beautiful-dnd": "^13.1.8",
-    "@types/react-helmet": "^6.1.11",
     "@vercel/analytics": "^1.1.1",
     "@vercel/og": "^0.6.2",
     "@vercel/speed-insights": "^1.0.2",
@@ -31,13 +29,12 @@
     "mongodb": "^6.3.0",
     "next": "^13.5.6",
     "next-axiom": "^0.17.0",
-    "next-seo": "^6.4.0",
+    "next-seo": "^6.5.0",
     "raw-loader": "^4.0.2",
     "react": "18.2.0",
     "react-beautiful-dnd": "^13.1.1",
     "react-datepicker": "^6.2.0",
     "react-dom": "18.2.0",
-    "react-helmet": "^6.1.0",
     "react-markdown": "^8.0.7",
     "react-select": "^5.8.0",
     "rehype-raw": "^7.0.0",
@@ -52,6 +49,7 @@
     "@types/react": "18.2.25",
     "@types/react-datepicker": "^6.0.2",
     "@types/react-dom": "18.2.4",
+    "@types/react-beautiful-dnd": "^13.1.8",
     "sass": "^1.71.1"
   }
 }

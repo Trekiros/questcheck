@@ -1,8 +1,34 @@
-import { PlaytestSearchParamSchema, Playtest, PlaytestSearchParams, MutablePlaytestSchema } from "@/model/playtest";
+import { PlaytestSearchParamSchema, Playtest, MutablePlaytestSchema } from "@/model/playtest";
 import { Collections } from "../mongodb";
 import { z } from "zod";
 import { Filter, FindCursor } from "mongodb";
 import { protectedProcedure, publicProcedure, router } from "../trpc";
+
+// Returns true if the user is allowed to create a new playtest
+async function canCreate(userId: string|null) {
+    if (!userId) return false;
+
+    const playtests = await Collections.playtests()
+    const users = await Collections.users()
+    
+    const [ userInfo, recentPlaytests ] = await Promise.all([
+        users.findOne({ userId }),
+        playtests.find({ createdTimestamp: { $lte: Date.now() - 3 * 24 * 60 * 60 * 1000 } }).count(),
+    ])
+
+    if (!userInfo) return false // User not exists
+    if (!userInfo.isPublisher) return false // User isn't publisher
+    if (
+        !userInfo.publisherProfile.facebookProof
+     && !userInfo.publisherProfile.twitterProof
+     && !userInfo.publisherProfile.manualProof
+    ) return false // User has not given proof of identity
+
+    if (recentPlaytests >= 3) return false
+
+    return true
+}
+
 
 export const PlaytestRouter = router({
     search: publicProcedure
@@ -57,23 +83,19 @@ export const PlaytestRouter = router({
             return result
         }),
 
+    canCreate: publicProcedure
+        .query(async ({ ctx: { auth: { userId }}}) => {
+            return await canCreate(userId)
+        }),
+
     create: protectedProcedure
         .input(MutablePlaytestSchema)
         .mutation(async ({ input, ctx: { auth: { userId }} }) => {
-            const users = await Collections.users()
-            const playtests = await Collections.playtests()
-
-            // Check authorizations
-            const userInfo = await users.findOne({ userId })
-            if (!userInfo) throw new Error('You must fill in your profile information before you can create playtests.')
-            if (!userInfo.isPublisher) throw new Error('You must be a publisher to create playtests.')
-            if (
-                !userInfo.publisherProfile.facebookProof
-             && !userInfo.publisherProfile.twitterProof
-             && !userInfo.publisherProfile.manualProof
-            ) throw new Error('You must verify your identity as a publisher to create playtests.')
-
+            const isAllowed = await canCreate(userId)
+            if (!isAllowed) throw new Error('Unauthorized')
+            
             // Create playtest
+            const playtests = await Collections.playtests()
             const newPlaytest: Playtest = {
                 ...input,
                 userId,

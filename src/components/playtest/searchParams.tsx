@@ -1,11 +1,28 @@
 import { BountyList, PlaytestSearchParams, TaskList } from "@/model/playtest";
 import { FC } from "react";
 import styles from './searchParams.module.scss'
-import { EnginesList, SystemsList, TagSuggestions } from "@/model/tags";
+import { EnginesList, GenreList, SystemsList, TagSuggestions } from "@/model/tags";
 import TagInput from "../utils/tagInput";
 import Calendar from "../utils/calendar";
 import Checkbox from "../utils/checkbox";
 
+export function tagClassName(tag: string, category?: string) {
+    const tagCat = tag.split(' ')[0]
+
+    switch (tagCat) {
+        case 'Game:': return 'systemTag'
+        case 'Engine:': return 'engineTag'
+        case 'Genre:':  return 'genreTag'
+    }
+
+    switch (category) {
+        case 'Game:': return 'systemTag'
+        case 'Engine:': return 'engineTag'
+        case 'Genre:':  return 'genreTag'
+    }
+
+    return ''
+}
 
 type PropType = {
     value: PlaytestSearchParams,
@@ -29,6 +46,7 @@ const SearchParams: FC<PropType> = ({ value, onChange }) => {
                 <div>
                     <label>Must include:</label>
                     <TagInput
+                        tagClassName={tagClassName}                    
                         values={value.includeTags || []}
                         onChange={newValue => update(clone => {
                             const actualNewValue = newValue.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag))
@@ -38,11 +56,13 @@ const SearchParams: FC<PropType> = ({ value, onChange }) => {
                         categories={{
                             "Game:": SystemsList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
                             "Engine:": EnginesList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
+                            "Genre:": GenreList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
                         }} />
                 </div>
                 <div>
                     <label>Cannot include:</label>
                     <TagInput
+                        tagClassName={tagClassName}
                         values={value.excludeTags || []}
                         onChange={newValue => update(clone => {
                             const actualNewValue = newValue.filter(tag => !value.includeTags || !value.includeTags?.includes(tag))
@@ -52,6 +72,7 @@ const SearchParams: FC<PropType> = ({ value, onChange }) => {
                         categories={{
                             "Game:": SystemsList.filter(tag => !value.includeTags || !value.includeTags?.includes(tag)),
                             "Engine:": EnginesList.filter(tag => !value.includeTags || !value.includeTags?.includes(tag)),
+                            "Genre:": GenreList.filter(tag =>!value.includeTags || !value.includeTags?.includes(tag)),
                         }} />
                 </div>
             </section>

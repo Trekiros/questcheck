@@ -142,13 +142,15 @@
         .proofType {
             display: grid;
             grid-template-columns: 150px 1fr;
+            align-items: flex-start;
             
             > :first-child {
                 justify-content: flex-start;
+                padding: 4px 0;
             }
 
             .warning {
-                text-align: right;
+                padding-left: 1em;
                 border-left: 1px solid #c83;
                 color: #c83;
             }

@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, useEffect, useRef, useState } from "react";
+import React, { CSSProperties, FC, ReactNode, useEffect, useRef, useState } from "react";
 import styles from './tagInput.module.scss'
 import { createPortal } from "react-dom";
 import { useFrame } from "@/model/hooks";
@@ -11,6 +11,10 @@ type PropType = {
     placeholder?: string,
     suggestions?: string[],                       // Will be shown un-sorted
     categories?: { [category: string]: readonly string[] } // Will be shown sorted by category
+    disabled?: boolean,
+    maxTags?: number,
+    tagStyle?: (tag: string, category?: string) => CSSProperties,
+    tagClassName?: (tag: string, category?: string) => string
 }
 
 export const SuggestionNode: FC<{ value: string, search: string }> = ({ value, search }) => {
@@ -32,7 +36,7 @@ export const SuggestionNode: FC<{ value: string, search: string }> = ({ value, s
     </>
 }
 
-const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, placeholder }) => {
+const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, placeholder, disabled, maxTags, tagStyle, tagClassName }) => {
     const rootRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     const popoverRef = useRef<HTMLDivElement>(null)
@@ -53,6 +57,15 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
         const clone = [...values]
         callback(clone)
         onChange(clone)
+    }
+
+    function addTags(...tags: string[]) {
+        update(clone => {
+            tags.forEach(tag => {
+                if (maxTags && (clone.length >= maxTags)) return;
+                if (!clone.includes(tag)) clone.push(tag)
+            })
+        })
     }
 
     useFrame(() => {
@@ -89,9 +102,10 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
             <span className={styles.tagList}>
                 { values.map((value, index) => (
                     <button
+                        style={tagStyle?.(value)}
                         key={index}
                         onClick={e => { e.stopPropagation(); update(clone => clone.splice(index, 1)) }}
-                        className={styles.option}>
+                        className={`${styles.option} ${tagClassName?.(value)}`}>
                             {value}
                     </button>
                 ))}
@@ -101,14 +115,34 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
                 ref={inputRef}
                 type="text"
                 className={`${styles.input} ${visible && styles.visible}`}
-                style={{width: `min(250px, ${search.length + 4}ch)` }}
+                style={{width: `min(250px, ${Math.max(search.length, placeholder?.length || 0) + 4}ch)` }}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 onFocus={() => { setVisible(true) }}
+                onPaste={e => {
+                    e.preventDefault()
+                    const pasted = e.clipboardData.getData('Text')
+                    if (!pasted.trim().length) return;
+
+                    
+                    // Split on a comma, carriage return or semicolon, and trims whitespace around the separator.
+                    const tags = pasted.split(/[,\n;]+/)
+                        .map(tag => tag.trim())
+                    const last = tags.pop()!
+
+                    const first = tags[0]
+                    if (first) {
+                        tags[0] = search + tags[0]
+                    }
+
+                    setSearch(last)
+                    addTags(...tags)
+                }}
+                disabled={disabled}
                 onKeyDown={e => {
                     if (e.key === 'Enter' || e.key === ',') {
                         if (search) { 
-                            update(clone => clone.push(search))
+                            addTags(search)
                             setSearch('')
                         }
                         e.preventDefault()
@@ -120,11 +154,18 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
                     }
                 }}
                 placeholder={placeholder} />
+
+            { !visible && placeholder && (
+                <span className={styles.placeholder}>
+                    {placeholder}
+                </span>
+            )}
         </div>
 
-        { visible && (
+        { !disabled && visible && (
             createPortal(
                 <div
+                    style={{ minWidth: rootRef.current?.clientWidth + 'px' }}
                     ref={popoverRef}
                     className={styles.listBox}>
                         { /** UNSORTED SUGGESTIONS **/ (() => {
@@ -137,8 +178,9 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
                                     { !searchResults.length ? "No matching tags in the default list (you can press enter to enter custom tags)" : searchResults.map(suggestion => (
                                         <button
                                             key={suggestion}
-                                            onClick={e => {update(clone => clone.push(suggestion)); inputRef.current?.focus() }}
-                                            className={styles.option}>
+                                            onClick={e => {addTags(suggestion); inputRef.current?.focus() }}
+                                            style={tagStyle?.(suggestion)}
+                                            className={`${styles.option} ${tagClassName?.(suggestion)}`}>
                                                 <SuggestionNode value={suggestion} search={search} />
                                         </button>
                                     ))}
@@ -168,8 +210,9 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
                                                     { searchResults.map((suggestion, index) => (
                                                         <button
                                                             key={index}
-                                                            onClick={e => {update(clone => clone.push(suggestion)); inputRef.current?.focus() }}
-                                                            className={styles.option}>
+                                                            onClick={e => {addTags(category + ' ' + suggestion); inputRef.current?.focus() }}
+                                                            style={tagStyle?.(suggestion, category)}
+                                                            className={`${styles.option} ${tagClassName?.(suggestion, category)}`}>
                                                                 <SuggestionNode value={suggestion} search={search} />
                                                         </button>
                                                     ))}
@@ -180,6 +223,12 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
                                 })
                             )
                         })()}
+
+                        { maxTags && (
+                            <label className={styles.maxTags}>
+                                {values.length}/{maxTags}
+                            </label>
+                        )}
                 </div>,
                 document.body
             )
