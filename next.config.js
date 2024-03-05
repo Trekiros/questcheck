@@ -1,12 +1,9 @@
 import { withAxiom } from 'next-axiom';
+import path from 'path';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
-  
-  sassOptions: {
-    includePaths: [path.join(__dirname, 'styles')],
-  },
   
   webpack: (config) => {
     config.module.rules.push({

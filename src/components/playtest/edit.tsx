@@ -9,7 +9,10 @@ import { tagClassName } from "./searchParams"
 import Calendar from "../utils/calendar"
 import Select from "../utils/select"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faChevronRight } from "@fortawesome/free-solid-svg-icons"
+import { faChevronRight, faEye, faPen } from "@fortawesome/free-solid-svg-icons"
+import { ContractPDF, generateContract } from "@/model/contract"
+import { trpcClient } from "@/server/utils"
+import ReactMarkdown from "react-markdown"
 
 type PropType = {
     value: MutablePlaytest, 
@@ -134,24 +137,61 @@ const BasicInfoEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, di
                         maxLength={PlaytestSchema.shape.description.maxLength!} />
                 </div>
             </section>
+
+            <section className={styles.row}>
+                <label>Private Description:</label>
+
+                <div className={styles.vstack}>
+                    <p>
+                        The following description will only be shown to playtesters after you have accepted their application to your playtest.
+                        Use it to give them links to the playtest materials and any other resources necessary to run the playtest.
+                    </p>
+
+                    <MarkdownTextArea
+                        placeholder="You can find the playtest material at..."
+                        value={value.privateDescription}
+                        onChange={e => onChange({...value, privateDescription: e.target.value })}
+                        maxLength={PlaytestSchema.shape.privateDescription.maxLength!} />
+                </div>
+            </section>
         </div>
     )
 }
 
-type ContractTemplateParams = {}
-
-function generateContract(templateParams: ContractTemplateParams) {
-    return ''
-}
-
+type ContractTemplateParams = {[key: string]: string}
 const defaultContractParams: ContractTemplateParams = {}
 
-const BountyEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, disabled, errorPaths }) => {
-    const [templateParams, setTemplateParams] = useState<ContractTemplateParams>(value.bountyContract.type === 'template' ? value.bountyContract : defaultContractParams)
+const TemplateInput: FC<{ name: string, playtest: MutablePlaytest, onChange: (newValue: string) => void}> = ({ name, playtest, onChange }) => {
+    const [internalValue, setInternalValue] = useState('')
+    const optional = name.endsWith('(optional)')
 
     useEffect(() => {
+        if (playtest.bountyContract.type === 'template') {
+            setInternalValue(playtest.bountyContract.templateValues[name] || '')
+        }
+    }, [playtest])
+
+    return (
+        <input
+            type="text" 
+            className={(!optional && !internalValue) ? styles.invalid : undefined}
+            placeholder={name} 
+            style={{ width: (2 + (internalValue.length || name.length)) + 'ch' }}
+            value={internalValue}
+            onChange={e => setInternalValue(e.target.value)}
+            onBlur={() => onChange(internalValue)} />
+    )
+}
+
+const BountyEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, disabled, errorPaths }) => {
+    const userQuery = trpcClient.users.getSelf.useQuery()
+    const [preview, setPreview] = useState(false)
+    
+    // This state allows the UI to save the user's template params if they temporarily switch to the manual contract mode
+    const [templateParams, setTemplateParams] = useState<ContractTemplateParams>(value.bountyContract.type === 'template' ? value.bountyContract.templateValues : defaultContractParams)
+    useEffect(() => {
         if (value.bountyContract.type === 'template') {
-            setTemplateParams(templateParams)
+            setTemplateParams(value.bountyContract.templateValues)
         }
     }, [value.bountyContract])
 
@@ -176,18 +216,7 @@ const BountyEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, disab
                         }))}
                         value={value.bounty}
                         onChange={newValue => newValue && onChange({ ...value, bounty: newValue })} />
-                </div>
-            </section>
-
-            <section className={styles.row}>
-                <label>Bounty Details:</label>
-
-                <div className={styles.vstack}>
-                    <p>
-                        The section below will be shown to every user before they apply to your playtest. 
-                        Use it to describe exactly what type of bounty will be given, and how.
-                    </p>
-
+                        
                     <MarkdownTextArea
                         className={errorPaths['bountyDetails'] && styles.invalid}
                         placeholder="Details..."
@@ -207,16 +236,25 @@ const BountyEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, disab
                     </p>
 
                     <p>
-                        Note: This contract is what regulates your relationship with your playtesters.
-                        This website only exists to facilitate your meeting playtesters - by publishing a playtest, you agree that Quest Check and Trekiros will not arbitrate nor be held responsible for any dispute between you and your playtesters related to the playtest.
+                        Important Note:
+                        <br />
+                        The contract you end up signing with your playtester is what will arbitrate your relationship with the playtester.
+                        Quest Check only exists to facilitate your meeting with playtesters, not to moderate it.
+                        By publishing a playtest on this website, you agree that Quest Check is not your lawyer, does not provide legal advice, 
+                        and will not be held accountable for any legal dispute between you and your playtesters related to your playtest.
                     </p>
 
-                    <div className={styles.contractEditor}>
+                    { !!userQuery.data && <div className={styles.contractEditor}>
                         <div className={styles.type}>
                             <button
                                 disabled={disabled}
                                 className={value.bountyContract.type === 'template' ? styles.active : undefined}
-                                onClick={() => onChange({ ...value, bountyContract: { type: 'template', ...templateParams }})}>
+                                onClick={() => {
+                                    if (value.bountyContract.type === 'template') return;
+
+                                    setPreview(false)
+                                    onChange({ ...value, bountyContract: { type: 'template', templateValues: templateParams }})
+                                }}>
                                     Use Template
                             </button>
 
@@ -226,14 +264,74 @@ const BountyEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, disab
                                 onClick={() => {
                                     if (value.bountyContract.type === 'custom') return;
 
-                                    setTemplateParams(value.bountyContract)
-                                    onChange({ ...value, bountyContract: { type: 'custom', text: generateContract(value.bountyContract)}})
+                                    setPreview(false)
+                                    setTemplateParams(value.bountyContract.templateValues)
+                                    onChange({ ...value, bountyContract: { type: 'custom', text: generateContract(value, userQuery.data!)}})
                                 }}>
-                                    
                                     Customize Contract
                             </button>
+
+                            <button
+                                disabled={disabled}
+                                className={styles.active}
+                                onClick={() => setPreview(!preview)}>
+                                    {preview ? <>
+                                        <FontAwesomeIcon icon={faPen} />
+                                        Edit
+                                    </> : <>
+                                        <FontAwesomeIcon icon={faEye} />
+                                        Preview
+                                    </>}
+                            </button>
                         </div>
-                    </div>
+
+                        { preview ? (
+                            <ContractPDF 
+                            user={userQuery.data!} 
+                            playtest={value} 
+                            text={generateContract(value, userQuery.data!)} />
+                        ) : (
+                            value.bountyContract.type === 'template' ? (
+                                <div className={`${styles.templateEditor} ${preview || styles.edit}`}>
+                                    <ReactMarkdown
+                                        allowedElements={[
+                                            "h1", "h2", "h3", "p", "strong", "em", "a", "ul", "li", "hr", "blockquote", "code",
+                                        ]}
+                                        components={{
+                                            code: ({ children }) => <TemplateInput 
+                                                name={String(children)} 
+                                                playtest={value}
+                                                onChange={(newValue) => (value.bountyContract.type === 'template') && onChange({
+                                                    ...value, 
+                                                    bountyContract: { 
+                                                        type: 'template', 
+                                                        templateValues: { 
+                                                            ...value.bountyContract.templateValues, 
+                                                            [String(children)]: newValue,
+                                                        },
+                                                    },                                    
+                                                })} />
+                                        }}>
+                                            {generateContract(value, userQuery.data!).replaceAll(/{{(.*?)}}/g, '`$1`')}
+                                    </ReactMarkdown>
+                                </div>
+                            ) : (
+                                <div className={styles.templateEditor}>
+                                    <MarkdownTextArea
+                                        value={value.bountyContract.text}
+                                        onChange={e => onChange({
+                                            ...value,
+                                            bountyContract: {
+                                                type: "custom",
+                                                text: e.target.value,
+                                            },
+                                        })}
+                                        maxLength={5000}
+                                        />
+                                </div>
+                            )
+                        )}
+                    </div> }
                 </div>
             </section>
         </div>

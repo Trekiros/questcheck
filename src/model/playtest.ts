@@ -17,6 +17,7 @@ export const PlaytestSchema = z.object({
 
     name: z.string().min(4).max(128),
     description: z.string().max(2000),
+    privateDescription: z.string().max(600),
     tags: z.array(z.string().min(1).max(64)).max(20),
 
     applicationDeadline: z.number().min(1),
@@ -29,7 +30,7 @@ export const PlaytestSchema = z.object({
     bounty: BountySchema,
     bountyDetails: z.string().max(300),
     bountyContract: z.discriminatedUnion('type', [
-        z.object({ type: z.literal('template') }),
+        z.object({ type: z.literal('template'), templateValues: z.record(z.string().max(64), z.string().max(200)) }),
         z.object({ type: z.literal('custom'), text: z.string().max(5000) })
     ]),
 
@@ -44,12 +45,13 @@ export type MutablePlaytest = Prettify<z.infer<typeof MutablePlaytestSchema>>
 export const newPlaytest = {
     name: '',
     description: '',
+    privateDescription: '',
     tags: [],
     applicationDeadline: 0,
     closedManually: false,
     bounty: 'Name credits only',
     bountyDetails: '',
-    bountyContract: { type: 'template' },
+    bountyContract: { type: 'template', templateValues: {} },
     task: 'Read-through + Feedback',
 } satisfies MutablePlaytest
 
