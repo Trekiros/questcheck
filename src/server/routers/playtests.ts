@@ -29,17 +29,19 @@ async function canCreate(userId: string|null) {
     return true
 }
 
+const PerPageSchema = z.literal(10).or(z.literal(25)).or(z.literal(50))
 
 export const PlaytestRouter = router({
     search: publicProcedure
         .input(z.object({
             search: PlaytestSearchParamSchema, 
             page: z.number(), 
-            perPage: z.literal(10).or(z.literal(25)).or(z.literal(50))
+            perPage: PerPageSchema
         }))
         .query(async ({input: { search, page, perPage }}) => {
             // Create filter
-            const $and: Filter<Playtest>["$and"] = []
+            type PlaytestFilter = Filter<Omit<Playtest, '_id'>>
+            const $and: PlaytestFilter["$and"] = []
 
             if (search.includeTags?.length) { $and.push({ tags: { $in: search.includeTags }}) }
             if (search.excludeTags?.length) { $and.push({ tags: { $ne: search.excludeTags }}) }
@@ -67,19 +69,27 @@ export const PlaytestRouter = router({
 
             }
 
-            const filter: Filter<Playtest> = {}
+            const filter: PlaytestFilter = {}
             if ($and.length > 0) { filter.$and = $and }
             
             // Fetch results
             const playtests = await Collections.playtests()
-            let cursor: FindCursor<Playtest> = playtests.find(filter, { projection: { _id: 0 } })
+
+            const projection = {
+                privateDescription: 0,
+            } satisfies {[key in keyof Playtest]?: 0}
+
+            type PublicPlaytest = Omit<Playtest, keyof typeof projection>
+
+            let cursor: FindCursor<PublicPlaytest> = playtests.find(filter, { projection })
                 .sort({ createdTimestamp: -1 })
+                .map(playtest => ({ ...playtest, _id: playtest._id.toString() }))
 
             if (page !== 0) {
                 cursor = cursor.skip((page - 1) * perPage)
             }
 
-            const result: Playtest[] = await cursor.toArray()
+            const result: PublicPlaytest[] = await cursor.toArray()
             return result
         }),
 
@@ -96,7 +106,7 @@ export const PlaytestRouter = router({
             
             // Create playtest
             const playtests = await Collections.playtests()
-            const newPlaytest: Playtest = {
+            const newPlaytest: Omit<Playtest, '_id'> = {
                 ...input,
                 userId,
                 createdTimestamp: Date.now(),
@@ -107,4 +117,21 @@ export const PlaytestRouter = router({
 
             return result.insertedId.toString()
         }),
+
+    createdByMe: protectedProcedure
+        .input(z.object({ page: z.number(), perPage: PerPageSchema }))
+        .query(async ({ input: { page, perPage }, ctx }) => {
+            const playtests = await Collections.playtests()
+
+            let cursor: FindCursor<Playtest> = playtests.find({ userId: ctx.auth.userId })
+                .sort({ createdTimestamp: -1 })
+                .map(playtest => ({ ...playtest, _id: playtest._id.toString() }))
+
+            if (page !== 0) {
+                cursor = cursor.skip((page - 1) * perPage)
+            }
+
+            const result: Playtest[] = await cursor.toArray()
+            return result
+        })
 })

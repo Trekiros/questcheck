@@ -11,6 +11,7 @@ export type Bounty = z.infer<typeof BountySchema>
 
 export const PlaytestSchema = z.object({
     // Readonly
+    _id: z.string(),
     userId: z.string(),
     createdTimestamp: z.number(),
 
@@ -40,7 +41,7 @@ export const PlaytestSchema = z.object({
 
 export type Playtest = z.infer<typeof PlaytestSchema>
 
-export const MutablePlaytestSchema = PlaytestSchema.omit({ userId: true, createdTimestamp: true })
+export const MutablePlaytestSchema = PlaytestSchema.omit({ _id: true, userId: true, createdTimestamp: true })
 export type MutablePlaytest = Prettify<z.infer<typeof MutablePlaytestSchema>>
 
 export const newPlaytest = {

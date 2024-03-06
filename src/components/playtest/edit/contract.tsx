@@ -1,6 +1,5 @@
-import { z } from "zod";
-import { MutableUser, User } from "./user";
-import { MutablePlaytest, Playtest } from "./playtest";
+import { MutableUser } from "@/model/user";
+import { MutablePlaytest } from "@/model/playtest";
 import React, { FC } from "react";
 import PDF from "@react-pdf/renderer";
 import contractTemplate from './contractTemplate.md'

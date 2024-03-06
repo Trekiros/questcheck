@@ -1,4 +1,4 @@
-import PlaytestEditor from '@/components/playtest/edit'
+import PlaytestEditor from '@/components/playtest/edit/edit'
 import styles from './new.module.scss'
 import { MutablePlaytest, MutablePlaytestSchema, newPlaytest } from '@/model/playtest'
 import { useEffect, useState } from 'react'
@@ -6,16 +6,18 @@ import { validate } from '@/model/utils'
 import { trpcClient } from '@/server/utils'
 import { useRouter } from 'next/router'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { fa1, fa2, faCheck, faWarning } from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faWarning } from '@fortawesome/free-solid-svg-icons'
 import DotSkeleton from '@/components/skeleton/dots'
 import { NextSeo } from 'next-seo'
 import Modal from '@/components/utils/modal'
 import Link from 'next/link'
 import { useDialog } from '@/components/utils/dialog'
-import { generateContract } from '@/model/contract'
+import { generateContract } from '@/components/playtest/edit/contract'
+import Select from '@/components/utils/select'
 
 function NewPlaytestPage() {
     const { setDialog } = useDialog()
+    const recentPlaytests = trpcClient.playtests.createdByMe.useQuery({ page: 0, perPage: 10 })
     const userInfo = trpcClient.users.getSelf.useQuery()
     const createPlaytestMutation = trpcClient.playtests.create.useMutation()
     const [playtest, setPlaytest] = useState<MutablePlaytest>(newPlaytest)
@@ -56,7 +58,18 @@ function NewPlaytestPage() {
         <div className={styles.newPlaytest}>
             <NextSeo title="Create Playtest" />
 
-            <h1>Create Playtest</h1>
+            <h1>
+                Create Playtest
+
+                <Select
+                    placeholder='Copy recent playtest?'
+                    options={recentPlaytests.data?.map(({ _id, ...recentPlaytest }) => ({ value: recentPlaytest, label: recentPlaytest.name })) || []}
+                    value={null}
+                    onChange={recentPlaytest => recentPlaytest && setDialog("This will erase all of your current unsaved changes. Are you sure?", confirm => {
+                        setPlaytest(recentPlaytest)
+                    })}
+                    disabled={disabled || !recentPlaytests.data || !recentPlaytests.data.length} />
+            </h1>
 
             <PlaytestEditor
                 value={playtest}
