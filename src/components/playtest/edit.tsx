@@ -1,7 +1,6 @@
 import { FC, ReactNode, useEffect, useState } from "react"
 import styles from './edit.module.scss'
 import { BountyList, MutablePlaytest, MutablePlaytestSchema, PlaytestSchema, TaskList } from "@/model/playtest"
-import { MutableUserSchema } from "@/model/user"
 import MarkdownTextArea from "../utils/markdownTextArea"
 import TagInput from "../utils/tagInput"
 import { EnginesList, GenreList, SystemsList } from "@/model/tags"
@@ -13,6 +12,7 @@ import { faChevronRight, faEye, faPen } from "@fortawesome/free-solid-svg-icons"
 import { ContractPDF, generateContract } from "@/model/contract"
 import { trpcClient } from "@/server/utils"
 import ReactMarkdown from "react-markdown"
+import Checkbox from "../utils/checkbox"
 
 type PropType = {
     value: MutablePlaytest, 
@@ -162,15 +162,16 @@ type ContractTemplateParams = {[key: string]: string}
 const defaultContractParams: ContractTemplateParams = {}
 
 const TemplateInput: FC<{ name: string, playtest: MutablePlaytest, onChange: (newValue: string) => void}> = ({ name, playtest, onChange }) => {
+    
     const [internalValue, setInternalValue] = useState('')
     const optional = name.endsWith('(optional)')
-
+    
     useEffect(() => {
         if (playtest.bountyContract.type === 'template') {
             setInternalValue(playtest.bountyContract.templateValues[name] || '')
         }
     }, [playtest])
-
+    
     return (
         <input
             type="text" 
@@ -189,9 +190,11 @@ const BountyEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, disab
     
     // This state allows the UI to save the user's template params if they temporarily switch to the manual contract mode
     const [templateParams, setTemplateParams] = useState<ContractTemplateParams>(value.bountyContract.type === 'template' ? value.bountyContract.templateValues : defaultContractParams)
+    const [useNDA, setUseNDA] = useState(value.bountyContract.type === 'template' ? value.bountyContract.useNDA : false)
     useEffect(() => {
         if (value.bountyContract.type === 'template') {
             setTemplateParams(value.bountyContract.templateValues)
+            setUseNDA(value.bountyContract.useNDA)
         }
     }, [value.bountyContract])
 
@@ -216,6 +219,12 @@ const BountyEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, disab
                         }))}
                         value={value.bounty}
                         onChange={newValue => newValue && onChange({ ...value, bounty: newValue })} />
+
+                    <input
+                        type='number'
+                        className={errorPaths['maxPositions'] ? styles.invalid : undefined}
+                        value={value.maxPositions}
+                        onChange={e => onChange({ ...value, maxPositions: e.target.value ? Number(e.target.value) : undefined})} />
                         
                     <MarkdownTextArea
                         className={errorPaths['bountyDetails'] && styles.invalid}
@@ -253,7 +262,7 @@ const BountyEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, disab
                                     if (value.bountyContract.type === 'template') return;
 
                                     setPreview(false)
-                                    onChange({ ...value, bountyContract: { type: 'template', templateValues: templateParams }})
+                                    onChange({ ...value, bountyContract: { type: 'template', templateValues: templateParams, useNDA }})
                                 }}>
                                     Use Template
                             </button>
@@ -291,8 +300,17 @@ const BountyEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, disab
                             playtest={value} 
                             text={generateContract(value, userQuery.data!)} />
                         ) : (
-                            value.bountyContract.type === 'template' ? (
-                                <div className={`${styles.templateEditor} ${preview || styles.edit}`}>
+                            value.bountyContract.type === 'template' ? <>
+                                <div className={styles.templateOptions}>
+                                    <h4>Template Options:</h4>
+                                    <Checkbox
+                                        className={styles.checkbox}
+                                        value={value.bountyContract.useNDA}
+                                        onToggle={(newValue) => (value.bountyContract.type === 'template') && onChange({ ...value, bountyContract: { ...value.bountyContract, useNDA: newValue }})}>
+                                            Include a Non-Disclosure Agreement (NDA) ?
+                                    </Checkbox>
+                                </div>
+                                <div className={styles.templateEditor}>
                                     <ReactMarkdown
                                         allowedElements={[
                                             "h1", "h2", "h3", "p", "strong", "em", "a", "ul", "li", "hr", "blockquote", "code",
@@ -304,7 +322,8 @@ const BountyEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, disab
                                                 onChange={(newValue) => (value.bountyContract.type === 'template') && onChange({
                                                     ...value, 
                                                     bountyContract: { 
-                                                        type: 'template', 
+                                                        type: 'template',
+                                                        useNDA: value.bountyContract.useNDA,
                                                         templateValues: { 
                                                             ...value.bountyContract.templateValues, 
                                                             [String(children)]: newValue,
@@ -315,8 +334,8 @@ const BountyEditor: FC<Omit<PropType, 'confirmBtn'>> = ({ value, onChange, disab
                                             {generateContract(value, userQuery.data!).replaceAll(/{{(.*?)}}/g, '`$1`')}
                                     </ReactMarkdown>
                                 </div>
-                            ) : (
-                                <div className={styles.templateEditor}>
+                            </> : (
+                                <div>
                                     <MarkdownTextArea
                                         value={value.bountyContract.text}
                                         onChange={e => onChange({

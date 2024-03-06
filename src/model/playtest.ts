@@ -19,6 +19,7 @@ export const PlaytestSchema = z.object({
     description: z.string().max(2000),
     privateDescription: z.string().max(600),
     tags: z.array(z.string().min(1).max(64)).max(20),
+    maxPositions: z.number().optional(),
 
     applicationDeadline: z.number().min(1),
     closedManually: z.boolean(),
@@ -30,7 +31,7 @@ export const PlaytestSchema = z.object({
     bounty: BountySchema,
     bountyDetails: z.string().max(300),
     bountyContract: z.discriminatedUnion('type', [
-        z.object({ type: z.literal('template'), templateValues: z.record(z.string().max(64), z.string().max(200)) }),
+        z.object({ type: z.literal('template'), templateValues: z.record(z.string().max(64), z.string().max(200)), useNDA: z.boolean() }),
         z.object({ type: z.literal('custom'), text: z.string().max(5000) })
     ]),
 
@@ -51,7 +52,7 @@ export const newPlaytest = {
     closedManually: false,
     bounty: 'Name credits only',
     bountyDetails: '',
-    bountyContract: { type: 'template', templateValues: {} },
+    bountyContract: { type: 'template', templateValues: {}, useNDA: false },
     task: 'Read-through + Feedback',
 } satisfies MutablePlaytest
 

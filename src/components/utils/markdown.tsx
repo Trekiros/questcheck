@@ -25,23 +25,7 @@ const Markdown: FC<PropType> = ({ text }) => {
                     'image',
                 ]}
                 components={{
-                    a: ({ href, children, ...props }) => {
-                        if (!href) return null;
-
-                        if (!!children) {
-                            const text = String(children)
-
-                            if (text !== href) return children
-    
-                            const urlRegex = /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/
-    
-                            if (!text.match(urlRegex)) return children;
-                        }
-                        
-                        return (
-                            <Link {...props} href={href!} target="_blank">{href}</Link>
-                        )
-                    },
+                    // h2 is demoted to h2 for SEO reasons: a web page should only have a single h1 tag.
                     h1: ({ children, ...props}) => <h2 {...props}>{children}</h2>
                 }}>
                     {text}

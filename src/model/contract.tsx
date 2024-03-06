@@ -5,12 +5,6 @@ import React, { FC } from "react";
 import PDF from "@react-pdf/renderer";
 import contractTemplate from './contractTemplate.md'
 
-export const ContractTemplateSchema = z.object({
-    
-})
-
-export type ContractTemplate = z.infer<typeof ContractTemplateSchema>
-
 /*
     The template is a markdown document, but with the following extra properties:
     Any text surrounded by {{{triple curls}}} will be filled in by the software
@@ -18,6 +12,8 @@ export type ContractTemplate = z.infer<typeof ContractTemplateSchema>
     Any text surrounded by {solo curls} must be filled in by the playtester
 */
 export function generateContract(playtest: MutablePlaytest, publisher: MutableUser, playtester?: MutableUser): string {
+    if (playtest.bountyContract.type === "custom") return playtest.bountyContract.text;
+
     return contractTemplate
         .replaceAll('{{{publisher}}}', publisher.userName)
         .replaceAll('{{{playtester}}}', playtester?.userName || '{{{playtester}}}')
@@ -50,23 +46,55 @@ export function generateContract(playtest: MutablePlaytest, publisher: MutableUs
               + "The details for how to access this playtest material, as well as a survey link to collect feedback, will be communicated to the Playtester through the Quest Check website when this agreement comes into effect. "
               + "The Playtester agrees to run at least {{Minimum Games}} game sessions using the playtest material provided, record it, and upload each game session to Youtube as a {{Unlisted or Public}} video, and fill in the survey, before {{Deadline}}. "
               + "The Playtester must ensure that all players participating in the game session agree to share the recording with the Publisher, and that they give the Publisher permission to use the recording in promotional material related to the playtest material. "
-              + "\n\n{{Additional Details (optional)}}"
+              + "\n\n{{Additional Task Details (optional)}}"
             )
         )
-        
+        .replace('{{{bounty}}}', 
+            (playtest.bounty === "Name credits only") ? (
+                ''
+            ) : (
+                "### Compensation\n"
+              + (
+                (playtest.bounty === "Discount Code") ? (
+                      "Once the Playtester has accomplished the task outlined in the preceding section, the Publisher agrees to give them a discount code by {{Distribution Method}}, within 14 days after the completion of the task. "
+                    + "The discount code should allow the Playtester to purchase {{Product}} on {{Website}} for {{Discounted Price}} instead of the listed price of {{Listed Price}}. "
+                    + "The discount code should be valid for a duration of at least 1 year, and will be usable {{Only once/At will}}. "
+                ) : (playtest.bounty === "Gift Card") ? (
+                      "Once the Playtester has accomplished the task outlined in the preceding section, the Publisher agrees to give them a gift card by {{Distribution Method}}, within 14 days after the completion of the task. "
+                    + "The gift card must allow the Playtester to receive {{Value}} worth of free products in {{Applicable Stores}}. "
+                    + "The gift card should be valid for a duration of at least 1 year. "
+                ) : (playtest.bounty === "Free PDF") ? (
+                      "Once the Playtester has accomplished the task outlined in the preceding section, the Publisher agrees to gift them a free PDF copy of {{Product}} by {{Distribution Method}}. "
+                    + "The Publisher must provide the free PDF, at the latest, 14 days after the publication of the playtest material. "
+                    + "The Publisher certifies that they have the right to distribute this free PDF copy."
+                ) : (playtest.bounty === "Free Hardcover Copy") ? (
+                     "Once the Playtester has accomplished the task outlined in the preceding section, the Publisher agrees to gift them a free hardcover copy of {{Product}}, and send it by mail at an address the Playtester must communicate to the Publisher in writing at {{Your Email Address}}. "
+                    + "The Publisher must provide the free hardcover copy within 6 months of the publication of the playtest material (barring Force Majeure such as paper shortages, as described below). "
+                    + "The Publisher certifies that they have the right to distribute this free hardcover copy. "
+                ) : (// Payment
+                    "Once the Playtester has accomplished the task outlined in the preceding section, the Publisher agrees to pay the Playtester {{Payment Amount}} through {{Payment Mehod (e.g. Paypal)}}. "
+                  + "The Playtester must communicate to the Publisher the information necessary for the payment (e.g. Paypal address, invoice, etc...) in writing. at {{Your Email Address}}. "
+                  + "The payment must be initiated within 14 days after the completion of the task outlined above. "
+                )
+              )
+              + "\n\n{{Additional Bounty Details (optional)}}"
+            )
+        )
+        .replace("{{{NDA}}}", !playtest.bountyContract.useNDA ? "" : (
+            "### Non-Disclosure Agreement\n"
+          + "Information related to this playtest is considered confidential unless (a) the Publisher specifies otherwise, or (b) it was already publicly known before this agreement came into effect. "
+          + "The Playtester agrees not to publicly disclose this confidential information, until at least 3 months after the publication of the playtest material. "
+          + "\n\nNote: This clause does not prevent the Playtester from reporting unlawful behavior from the Publisher to the relevant authorities. "
+        ))
 }
-
-export const ContractEditor: FC<{ user: User, playtest: Playtest, onChange: (newValue: ContractTemplate) => void, disabled?: boolean}> = ({ user, playtest, onChange, disabled }) => {
-    return (
-        <></>
-    )
-}
-
 
 export const ContractPDF: FC<{ user: MutableUser, playtest: MutablePlaytest, text: string }> = ({ user, playtest, text }) => {
     // Transforms markdown to react-pdf elements
     // This has a few bugs right now
     function parse(paragraph: string) {
+        // Empty
+        if (!paragraph) return null;
+
         // Header
         if (paragraph.match(/^(#+)\s/)) {
             const [hashes, ...rest] = paragraph.split(' ')
@@ -208,7 +236,7 @@ export const ContractPDF: FC<{ user: MutableUser, playtest: MutablePlaytest, tex
                 title={playtest.name}
                 author={user.userName}>
                     <PDF.Page
-                        style={{ padding: '1in', fontSize: '11pt' }}
+                        style={{ padding: '1in', fontSize: '9pt' }}
                         orientation="portrait"
                         size="LETTER">
                             <PDF.View>
