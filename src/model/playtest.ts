@@ -21,6 +21,7 @@ export const PlaytestSchema = z.object({
     privateDescription: z.string().max(600),
     tags: z.array(z.string().min(1).max(64)).max(20),
     maxPositions: z.number().optional(),
+    feedbackURL: z.string().url().min(1),
 
     applicationDeadline: z.number().min(1),
     closedManually: z.boolean(),
@@ -48,6 +49,7 @@ export const newPlaytest = {
     name: '',
     description: '',
     privateDescription: '',
+    feedbackURL: '',
     tags: [],
     applicationDeadline: 0,
     closedManually: false,

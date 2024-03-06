@@ -108,6 +108,24 @@ const BasicInfoEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChan
                         maxLength={PlaytestSchema.shape.privateDescription.maxLength!} />
                 </div>
             </section>
+
+            <section className={styles.row}>
+                <label>Feedback form URL:</label>
+
+                <div className={styles.vstack}>
+                    <p>
+                        This link will only be shown to playtesters after you have accepted their application to your playtest.
+                        Use it to give them a link to an online survey of your choice.
+                    </p>
+
+                    <input 
+                        placeholder="https://..."
+                        type="text"
+                        className={errorPaths['feedbackURL'] ? styles.invalid : undefined}
+                        value={value.feedbackURL}
+                        onChange={e => onChange({ ...value, feedbackURL: e.target.value })} />
+                </div>
+            </section>
         </div>
     )
 }
