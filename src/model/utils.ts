@@ -36,3 +36,51 @@ export function validate<T>(obj: T, schema: ZodSchema<T>) {
 }
 
 export type Prettify<T> = { [K in keyof T]: T[K] } & {}
+
+type PojoMap<K extends PropertyKey, V> = {[key in K]: V}
+
+export function pojoMap<K extends PropertyKey, V>(obj: {[key in K]: any}, mapper: (key: K, index: number) => V) {
+    const map: {[key in K]: V} = {} as any
+    
+    let i = 0
+    for (let key in obj) {
+        map[key] = mapper(key, i)
+        i++
+    }
+
+    return map
+}
+
+export function arrMap<K extends PropertyKey, V>(arr: V[], mapper: (value: V, index: number) => K) {
+    const map: {[key in K]: V} = {} as any
+
+    let i = 0
+    for (let value of arr) {
+        map[mapper(value, i)] = value
+        i++
+    }
+
+    return map
+}
+
+export function enumMap<K extends PropertyKey, V>(arr: readonly K[], mapper: (key: K, index: number) => V) {
+    const map: {[key in K]: V} = {} as any
+
+    let i = 0
+    for (let key of arr) {
+        map[key] = mapper(key, i)
+        i++
+    }
+
+    return map
+}
+
+export const isAlphanumeric = (str: string) => {
+    if (typeof str !== "string") return false;
+
+    return !str.length || /^[a-zA-Z0-9]+$/.test(str)
+}
+
+// Bypasses the fact that Object.keys and for in aren't typed properly.
+// DELETE THIS when TypeScript finally types those things.
+export const keys: <T extends object>(obj: T) => (keyof T)[] = Object.keys as any

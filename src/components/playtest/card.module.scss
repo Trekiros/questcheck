@@ -1,0 +1,18 @@
+.playtest {
+    list-style: none;
+    background: #322;
+    padding: 1em;
+
+    .name {
+        font-size: 2em;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+    }
+    .author {
+        display: flex;
+        justify-content: flex-end;
+        gap: 4px;
+    }
+}

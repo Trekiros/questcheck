@@ -1,21 +1,20 @@
 import { FC, ReactNode, useEffect, useState } from "react"
 import styles from './edit.module.scss'
-import { MutablePlaytest } from "@/model/playtest"
+import { CreatablePlaytest } from "@/model/playtest"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faChevronRight } from "@fortawesome/free-solid-svg-icons"
 import BasicInfoEditor from "./basicInfo"
 import BountyEditor from "./bounty"
 
 export type EditorPropType = {
-    value: MutablePlaytest, 
-    onChange: (newValue: MutablePlaytest) => void,
+    value: CreatablePlaytest, 
+    onChange: (newValue: CreatablePlaytest) => void,
     disabled?: boolean,
-    errorPaths: { [path in keyof MutablePlaytest]?: true },
+    errorPaths: { [path in keyof CreatablePlaytest]?: true },
     confirmBtn: ReactNode,
 }
 
 const StepsList = ['1. Basic Info', '2. Bounty'] as const
-type Step = typeof StepsList[number]
 
 const PlaytestEditor: FC<EditorPropType> = ({ value, onChange, disabled, errorPaths, confirmBtn }) => {
     const [step, setStep] = useState(0)
@@ -44,12 +43,19 @@ const PlaytestEditor: FC<EditorPropType> = ({ value, onChange, disabled, errorPa
             <div className={styles.actions}>
                 <button
                     disabled={step === 0}
-                    onClick={() => setStep(step - 1)}>
+                    onClick={() => {
+                        setStep(step - 1)
+                        window.scrollTo(0,0)
+                    }}>
                         Previous
                 </button>
 
                 { (step === StepsList.length - 1) ? confirmBtn : (
-                    <button onClick={() => { setStep(step + 1); setMaxStep(Math.max(maxStep, step + 1))}}>
+                    <button onClick={() => { 
+                        setStep(step + 1); 
+                        setMaxStep(Math.max(maxStep, step + 1))
+                        window.scrollTo(0,0)
+                    }}>
                         Next
                     </button>
                 )}

@@ -1,5 +1,5 @@
 import { MutableUser } from "@/model/user";
-import { MutablePlaytest } from "@/model/playtest";
+import { CreatablePlaytest } from "@/model/playtest";
 import React, { FC } from "react";
 import PDF from "@react-pdf/renderer";
 import contractTemplate from './contractTemplate.md'
@@ -8,14 +8,13 @@ import contractTemplate from './contractTemplate.md'
     The template is a markdown document, but with the following extra properties:
     Any text surrounded by {{{triple curls}}} will be filled in by the software
     Any text surrounded by {{double curls}} must be filled in by the publisher
-    Any text surrounded by {solo curls} must be filled in by the playtester
+    Any text surrounded by {solo curls} must be filled in by server once a playtester is selected
 */
-export function generateContract(playtest: MutablePlaytest, publisher: MutableUser, playtester?: MutableUser): string {
+export function generateContract(playtest: CreatablePlaytest, publisher: MutableUser, playtester?: MutableUser): string {
     if (playtest.bountyContract.type === "custom") return playtest.bountyContract.text;
 
-    return contractTemplate
+    let result = contractTemplate
         .replaceAll('{{{publisher}}}', publisher.userName)
-        .replaceAll('{{{playtester}}}', playtester?.userName || '{{{playtester}}}')
         .replace('{{{task}}}', 
             (playtest.task ==='Read-through + Feedback') ? (
                 "The Publisher will provide the Playtester with playtest material once this agreement has been signed by both parties. "
@@ -85,9 +84,15 @@ export function generateContract(playtest: MutablePlaytest, publisher: MutableUs
           + "The Playtester agrees not to publicly disclose this confidential information, until at least 3 months after the publication of the playtest material. "
           + "\n\nNote: This clause does not prevent the Playtester from reporting unlawful behavior from the Publisher to the relevant authorities. "
         ))
+
+    if (!!playtester) {
+        result = result.replaceAll('{playtester}', playtester?.userName || '{playtester}')
+    }
+
+    return result
 }
 
-export const ContractPDF: FC<{ user: MutableUser, playtest: MutablePlaytest, text: string }> = ({ user, playtest, text }) => {
+export const ContractPDF: FC<{ user: MutableUser, playtest: CreatablePlaytest, text: string }> = ({ user, playtest, text }) => {
     // Transforms markdown to react-pdf elements
     // This has a few bugs right now
     function parse(paragraph: string) {
@@ -227,8 +232,12 @@ export const ContractPDF: FC<{ user: MutableUser, playtest: MutablePlaytest, tex
             return <PDF.View style={{ marginBottom: '8px' }} />
         }
     
+        // Default: just text.
         return <PDF.Text>{paragraph}</PDF.Text>
     }
+
+    const paragraphs = text.split('\n')
+
     return <>
         <PDF.PDFViewer showToolbar={true} width='100%' height='600px'>
             <PDF.Document
@@ -239,18 +248,11 @@ export const ContractPDF: FC<{ user: MutableUser, playtest: MutablePlaytest, tex
                         orientation="portrait"
                         size="LETTER">
                             <PDF.View>
-                                { (() => {
-                                    const paragraphs = text.split('\n');
-                                    return (
-                                        <>
-                                            {paragraphs.map((paragraph, i) => (
-                                                <React.Fragment key={i}>
-                                                    {parse(paragraph)}
-                                                </React.Fragment>
-                                            ))}
-                                        </>
-                                    )
-                                })()}
+                                {paragraphs.map((paragraph, i) => (
+                                    <React.Fragment key={i}>
+                                        {parse(paragraph)}
+                                    </React.Fragment>
+                                ))}
                             </PDF.View>
                     </PDF.Page>
             </PDF.Document>

@@ -5,6 +5,7 @@
     flex-direction: column;
     padding: 1em;
     align-items: center;
+    width: 100%;
 
     .header {
         width: 100%;
@@ -24,7 +25,17 @@
     }
 
     .list {
+        width: 100%;
 
+        > ul {
+            position: relative;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: min(100%, 400px);
+            align-items: center;
+            justify-content: center;
+        }
     }
 
     section:has(.placeholder) {

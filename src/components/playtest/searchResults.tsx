@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { trpcClient } from "@/server/utils";
 import Link from "next/link";
+import PlaytestCard from "./card";
 
 const SearchResults: FC<{ search: PlaytestSearchParams }> = ({ search }) => {
     const [page, setPage] = useState(0)
@@ -36,11 +37,11 @@ const SearchResults: FC<{ search: PlaytestSearchParams }> = ({ search }) => {
                         No results found. Try broadening your search parameters.
                     </div>
                 ) : (
-                    playtestsQuery.data.map((playtest, i) => (
-                        <div className={styles.playtest} key={i}>
-            
-                        </div>
-                    ))
+                    <ul>
+                        {playtestsQuery.data.map((playtest, i) => (
+                            <PlaytestCard key={playtest._id} playtest={playtest} />
+                        ))}
+                    </ul>
                 )}
             </section>
         </div>

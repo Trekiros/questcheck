@@ -1,11 +1,5 @@
 import { z } from "zod";
-import { Prettify } from "./utils";
-
-export const isAlphanumeric = (str: string) => {
-    if (typeof str !== "string") return false;
-
-    return !str.length || /^[a-zA-Z0-9]+$/.test(str)
-}
+import { Prettify, isAlphanumeric } from "./utils";
 
 export const SystemFamiliarityList = [
     'Is interested in',
@@ -18,6 +12,9 @@ export const SystemFamiliaritySchema = z.enum(SystemFamiliarityList)
 export type SystemFamiliarity = z.infer<typeof SystemFamiliaritySchema>
 
 export const SystemNameSchema = z.string().min(2).max(64)
+
+
+
 
 export const UserSchema = z.object({
     userId: z.string(), // Clerk user id
@@ -41,12 +38,15 @@ export const UserSchema = z.object({
         // WARNING: READONLY. THE USER SHOULD NOT BE ALLOWED TO UPDATE THIS DIRECTLY
         twitterProof: z.string().optional(),
         facebookProof: z.string().optional(),
-        manualProof: z.boolean().optional(),
+        manualProof: z.string().optional(),
     }),
 })
 
 export type User = z.infer<typeof UserSchema>
 
+
+
+// These are the fields a user is allowed to update
 export const MutableUserSchema = UserSchema.omit({ userId: true, userNameLowercase: true })
 export type MutableUser = Prettify<z.infer<typeof MutableUserSchema>>
 
@@ -64,3 +64,8 @@ export const newUser = {
         
     },
 } satisfies Omit<User, "userId"|'userNameLowercase'>
+
+
+// These are the fields another user is allowed to see
+export const PublicUserSchema = UserSchema.omit({ userNameLowercase: true })
+export type PublicUser = z.infer<typeof PublicUserSchema>

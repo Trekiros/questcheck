@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown"
 import Checkbox from "../../utils/checkbox"
 import styles from './edit.module.scss'
 import { FC, useEffect, useState } from "react"
-import { BountyList, MutablePlaytest, MutablePlaytestSchema } from "@/model/playtest"
+import { BountyList, CreatablePlaytest, CreatablePlaytestSchema } from "@/model/playtest"
 import { EditorPropType } from "./edit"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faEye, faPen } from "@fortawesome/free-solid-svg-icons"
@@ -14,7 +14,7 @@ import { faEye, faPen } from "@fortawesome/free-solid-svg-icons"
 type ContractTemplateParams = {[key: string]: string}
 const defaultContractParams: ContractTemplateParams = {}
 
-const TemplateInput: FC<{ name: string, playtest: MutablePlaytest, onChange: (newValue: string) => void}> = ({ name, playtest, onChange }) => {
+const TemplateInput: FC<{ name: string, playtest: CreatablePlaytest, onChange: (newValue: string) => void}> = ({ name, playtest, onChange }) => {
     
     const [internalValue, setInternalValue] = useState('')
     const optional = name.endsWith('(optional)')
@@ -78,7 +78,7 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
                         placeholder="Details..."
                         value={value.bountyDetails}
                         onChange={e => onChange({ ...value, bountyDetails: e.target.value })}
-                        maxLength={MutablePlaytestSchema.shape.bountyDetails.maxLength!}/>
+                        maxLength={CreatablePlaytestSchema.shape.bountyDetails.maxLength!}/>
                 </div>
             </section>
 

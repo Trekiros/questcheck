@@ -1,6 +1,6 @@
 import PlaytestEditor from '@/components/playtest/edit/edit'
 import styles from './new.module.scss'
-import { MutablePlaytest, MutablePlaytestSchema, newPlaytest } from '@/model/playtest'
+import { CreatablePlaytest, CreatablePlaytestSchema, newPlaytest } from '@/model/playtest'
 import { useEffect, useState } from 'react'
 import { validate } from '@/model/utils'
 import { trpcClient } from '@/server/utils'
@@ -14,14 +14,16 @@ import Link from 'next/link'
 import { useDialog } from '@/components/utils/dialog'
 import { generateContract } from '@/components/playtest/edit/contract'
 import Select from '@/components/utils/select'
+import { useUser } from '@clerk/nextjs'
 
 function NewPlaytestPage() {
     const { setDialog } = useDialog()
-    const recentPlaytests = trpcClient.playtests.createdByMe.useQuery({ page: 0, perPage: 10 })
+    const user = useUser()
+    const recentPlaytests = trpcClient.playtests.search.useQuery({ search: { includeClosed: true, includeAuthors: [user.user?.id!] }, page: 0, perPage: 10 })
     const userInfo = trpcClient.users.getSelf.useQuery()
     const createPlaytestMutation = trpcClient.playtests.create.useMutation()
-    const [playtest, setPlaytest] = useState<MutablePlaytest>(newPlaytest)
-    const { isValid, errorPaths } = validate(playtest, MutablePlaytestSchema)
+    const [playtest, setPlaytest] = useState<CreatablePlaytest>(newPlaytest)
+    const { isValid, errorPaths } = validate(playtest, CreatablePlaytestSchema)
     const router = useRouter()
 
     const disabled = userInfo.isFetching || createPlaytestMutation.isLoading
@@ -66,7 +68,7 @@ function NewPlaytestPage() {
                     options={recentPlaytests.data?.map(({ _id, ...recentPlaytest }) => ({ value: recentPlaytest, label: recentPlaytest.name })) || []}
                     value={null}
                     onChange={recentPlaytest => recentPlaytest && setDialog("This will erase all of your current unsaved changes. Are you sure?", confirm => {
-                        setPlaytest(recentPlaytest)
+                        if (confirm) setPlaytest({ ...newPlaytest, ...recentPlaytest })
                     })}
                     disabled={disabled || !recentPlaytests.data || !recentPlaytests.data.length} />
             </h1>

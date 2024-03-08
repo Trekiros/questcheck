@@ -1,8 +1,8 @@
 import { FC, useEffect, useState } from "react"
 import styles from './index.module.scss'
 import { trpcClient } from "@/server/utils"
-import { MutableUser, MutableUserSchema, SystemFamiliarityList, SystemNameSchema, isAlphanumeric, newUser } from "@/model/user"
-import { validate } from "@/model/utils"
+import { MutableUser, MutableUserSchema, SystemFamiliarityList, SystemNameSchema, newUser } from "@/model/user"
+import { isAlphanumeric, validate } from "@/model/utils"
 import Checkbox from "@/components/utils/checkbox"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faCheck, faMultiply, faPlus, faStar } from "@fortawesome/free-solid-svg-icons"
