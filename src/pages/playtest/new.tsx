@@ -43,11 +43,12 @@ function NewPlaytestPage() {
         }
 
         const mandatoryTemplateTags = Array.from(generateContract(playtest, userInfo.data).matchAll(/\{\{(.*?)\}\}/g))
+            .map(match => match[1])
+            .filter(tag => !tag.endsWith('(optional)'))
         
-        for (const match of mandatoryTemplateTags) {
-            const tag = match[0]
-
+        for (const tag of mandatoryTemplateTags) {
             if (!playtest.bountyContract.templateValues[tag]) {
+                console.log(mandatoryTemplateTags, playtest.bountyContract.templateValues)
                 setTemplateIsValid(false)
                 return;
             }

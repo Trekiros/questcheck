@@ -1,6 +1,6 @@
 import MarkdownTextArea from "../../utils/markdownTextArea"
 import Select from "../../utils/select"
-import { ContractPDF, generateContract } from "./contract"
+import { ContractPDF, ContractTemplateEditor, generateContract } from "./contract"
 import { trpcClient } from "@/server/utils"
 import ReactMarkdown from "react-markdown"
 import Checkbox from "../../utils/checkbox"
@@ -13,29 +13,6 @@ import { faEye, faPen } from "@fortawesome/free-solid-svg-icons"
 
 type ContractTemplateParams = {[key: string]: string}
 const defaultContractParams: ContractTemplateParams = {}
-
-const TemplateInput: FC<{ name: string, playtest: CreatablePlaytest, onChange: (newValue: string) => void}> = ({ name, playtest, onChange }) => {
-    
-    const [internalValue, setInternalValue] = useState('')
-    const optional = name.endsWith('(optional)')
-    
-    useEffect(() => {
-        if (playtest.bountyContract.type === 'template') {
-            setInternalValue(playtest.bountyContract.templateValues[name] || '')
-        }
-    }, [playtest])
-    
-    return (
-        <input
-            type="text" 
-            className={(!optional && !internalValue) ? styles.invalid : undefined}
-            placeholder={name} 
-            style={{ width: (2 + (internalValue.length || name.length)) + 'ch' }}
-            value={internalValue}
-            onChange={e => setInternalValue(e.target.value)}
-            onBlur={() => onChange(internalValue)} />
-    )
-}
 
 const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange, disabled, errorPaths }) => {
     const userQuery = trpcClient.users.getSelf.useQuery()
@@ -157,30 +134,17 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
                                             Include a Non-Disclosure Agreement (NDA) ?
                                     </Checkbox>
                                 </div>
-                                <div className={styles.templateEditor}>
-                                    <ReactMarkdown
-                                        allowedElements={[
-                                            "h1", "h2", "h3", "p", "strong", "em", "a", "ul", "li", "hr", "blockquote", "code",
-                                        ]}
-                                        components={{
-                                            code: ({ children }) => <TemplateInput 
-                                                name={String(children)} 
-                                                playtest={value}
-                                                onChange={(newValue) => (value.bountyContract.type === 'template') && onChange({
-                                                    ...value, 
-                                                    bountyContract: { 
-                                                        type: 'template',
-                                                        useNDA: value.bountyContract.useNDA,
-                                                        templateValues: { 
-                                                            ...value.bountyContract.templateValues, 
-                                                            [String(children)]: newValue,
-                                                        },
-                                                    },                                    
-                                                })} />
-                                        }}>
-                                            {generateContract(value, userQuery.data!).replaceAll(/{{(.*?)}}/g, '`$1`')}
-                                    </ReactMarkdown>
-                                </div>
+                                <ContractTemplateEditor
+                                    playtest={value}
+                                    user={userQuery.data}
+                                    onChange={newTemplate => onChange({ 
+                                        ...value,
+                                        bountyContract: {
+                                            type: 'template',
+                                            useNDA: useNDA,
+                                            templateValues: newTemplate,
+                                        }
+                                    })} />
                             </> : (
                                 <div>
                                     <MarkdownTextArea

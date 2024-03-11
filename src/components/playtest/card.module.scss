@@ -1,7 +1,11 @@
 .playtest {
     list-style: none;
     background: #322;
-    padding: 1em;
+
+    > * {
+        padding: 1em;
+    }
+
 
     .name {
         font-size: 2em;
@@ -14,5 +18,17 @@
         display: flex;
         justify-content: flex-end;
         gap: 4px;
+
+        svg { width: 16px }
+    }
+
+    .body {
+        background: #544;
+
+        .row {
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            label { font-weight: bold }
+        }
     }
 }

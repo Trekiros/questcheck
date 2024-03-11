@@ -7,6 +7,7 @@ import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFacebook, faTwitter } from "@fortawesome/free-brands-svg-icons";
 import { faShareFromSquare } from "@fortawesome/free-solid-svg-icons";
+import Markdown from "../utils/markdown";
 
 const PlaytestCard: FC<{ playtest: PlaytestSummary & { author?: PublicUser} }> = ({ playtest }) => {
     return (
@@ -20,30 +21,46 @@ const PlaytestCard: FC<{ playtest: PlaytestSummary & { author?: PublicUser} }> =
                 </Link>
                 
                 { playtest.author && (
-                    <div className={styles.author}>
-                        By 
-
-                        <Link href={'/profile/' + playtest.author.userName}>
+                    <Link 
+                        className={styles.author}
+                        href={
+                            playtest.author.publisherProfile.twitterProof
+                        || playtest.author.publisherProfile.facebookProof
+                        || playtest.author.publisherProfile.manualProof!
+                        } 
+                        target="_blank">
                             {playtest.author.userName}
-                        </Link>
 
-                        {
-                            playtest.author.publisherProfile.twitterProof ? (
-                                <Link href={'https://www.twitter.com/' + playtest.author.publisherProfile.twitterProof}>
-                                    <FontAwesomeIcon icon={faTwitter} />
-                                </Link>
-                            ) : playtest.author.publisherProfile.facebookProof ? (
-                                <Link href={'https://www.facebook.com/' + playtest.author.publisherProfile.facebookProof}>
-                                    <FontAwesomeIcon icon={faFacebook} />
-                                </Link>
-                            ) : playtest.author.publisherProfile.manualProof ? (
-                                <Link href={playtest.author.publisherProfile.manualProof}>
-                                    <FontAwesomeIcon icon={faShareFromSquare} />
-                                </Link>
-                            ) : null
-                        }
-                    </div>
+                            <FontAwesomeIcon icon={
+                                playtest.author.publisherProfile.twitterProof ? faTwitter
+                                : playtest.author.publisherProfile.facebookProof ? faFacebook
+                                : faShareFromSquare
+                            } />
+                    </Link>
                 )}
+            </div>
+
+            <div className={styles.body}>
+                <div className={styles.stakes}>
+                    <div className={styles.row}>
+                        <label>Type:</label>
+                        {playtest.task}
+                    </div>
+                    <div className={styles.row}>
+                        <label>Bounty:</label>
+                        {playtest.bounty}
+                    </div>
+                    { playtest.maxPositions && (
+                        <div className={styles.row}>
+                            <label>Max Playtesters:</label>
+                            {playtest.maxPositions}
+                        </div>
+                    )}
+                </div>
+
+                <div className={styles.description}>
+                    <Markdown text={playtest.description} />
+                </div>
             </div>
         </li>
     )

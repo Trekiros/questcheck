@@ -76,13 +76,18 @@
         }
     }
 
-    .templateEditor {
+    .ContractTemplateEditor {
         background: #ccc;
         color: #333;
         font-size: 10pt;
         padding: 1em;
         max-height: 600px;
         @include scrollable;
+
+        span {
+            display: block;
+            span { display: initial }
+        }
 
         input {
             padding: 6px;

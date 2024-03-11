@@ -1,8 +1,9 @@
 import { MutableUser } from "@/model/user";
 import { CreatablePlaytest } from "@/model/playtest";
-import React, { FC } from "react";
+import React, { FC, ReactNode, useEffect, useState } from "react";
 import PDF from "@react-pdf/renderer";
 import contractTemplate from './contractTemplate.md'
+import styles from './edit.module.scss'
 
 /*
     The template is a markdown document, but with the following extra properties:
@@ -92,153 +93,218 @@ export function generateContract(playtest: CreatablePlaytest, publisher: Mutable
     return result
 }
 
-export const ContractPDF: FC<{ user: MutableUser, playtest: CreatablePlaytest, text: string }> = ({ user, playtest, text }) => {
-    // Transforms markdown to react-pdf elements
-    // This has a few bugs right now
-    function parse(paragraph: string) {
-        // Empty
-        if (!paragraph) return null;
+type MarkdownElement = 'h1'|'h2'|'h3'|'list'|'blockquote'|'param'|'link'|'bold-italic'|'bold'|'italic'|'spacing'|'text'
 
-        // Header
-        if (paragraph.match(/^(#+)\s/)) {
-            const [hashes, ...rest] = paragraph.split(' ')
-    
-            switch (hashes.length) {
-                case 1: return <PDF.Text style={{ fontSize: '24pt' }}>{parse(rest.join(' '))}</PDF.Text>
-                case 2: return <PDF.Text style={{ fontSize: '18pt' }}>{parse(rest.join(' '))}</PDF.Text>
-                default: return <PDF.Text style={{ fontSize: '14pt' }}>{parse(rest.join(' '))}</PDF.Text>
-            }
-        }
-    
-        // List
-        if (paragraph.match(/^(\s+)?\*\s.*/)) {
-            const [spaces, ...rest] = paragraph.split('* ')
-    
-            return <PDF.Text style={{ paddingLeft: `${(spaces.length + 1) * 8}px`}}>- {parse(rest.join('* '))}</PDF.Text>
-        }
-    
-        // Blockquote
-        if (paragraph.match(/^\>\s.*/)) {
-            const rest = paragraph.substring(2)
-    
-            return <PDF.Text style={{ backgroundColor: '#ddd', padding: '4px' }}>{parse(rest)}</PDF.Text>
-        }
+type MarkdownRenderFunction = ((content: ReactNode, type: MarkdownElement, href?: string) => ReactNode)
 
-        // Template param
-        const templateParamRegex = /{{(.*?)}}/
-        const templateParamMatch = templateParamRegex.exec(paragraph)
-        if (templateParamMatch) {
-            const index = templateParamMatch.index
-            const matchKey = templateParamMatch[1]
-            const optional = matchKey.endsWith('(optional)')
-            let value = ''
-            if ((playtest.bountyContract.type === 'template') && (playtest.bountyContract.templateValues[matchKey])) {
-                value = playtest.bountyContract.templateValues[matchKey]
-            } else if (!optional) {
-                value = `{${matchKey}}`
-            }
+function parse(markdown: string, render: MarkdownRenderFunction): ReactNode {
+    // Empty
+    if (!markdown) return null;
 
-            const beforeMatch = paragraph.substring(0, index)
-            const afterMatch = paragraph.substring(index + matchKey.length + 4)
+    // Multiple paragraphs
+    const paragraphs = markdown.split('\n')
+    if (paragraphs.length > 1) return paragraphs.map(paragraph => render(parse(paragraph, render), 'text'))
 
-            return (
-                <PDF.Text>
-                    {parse(beforeMatch)}
-                    {value && parse(value)}
-                    {parse(afterMatch)}
-                </PDF.Text>
-            )
+    // Header
+    if (markdown.match(/^(#+)\s/)) {
+        const [hashes, ...rest] = markdown.split(' ')
+
+        switch (hashes.length) {
+            case 1: return render(parse(rest.join(' '), render), 'h1')
+            case 2: return render(parse(rest.join(' '), render), 'h2')
+            default: return render(parse(rest.join(' '), render), 'h3')
         }
-    
-        // Links
-        const linkRegex = /\[(.*?)\]\((.*?)\)/
-        const linkMatch = linkRegex.exec(paragraph)
-        if (linkMatch) {
-            const index = linkMatch.index
-            const linkText = linkMatch[1]
-            const href = linkMatch[2]
-    
-            const beforeMatch = paragraph.substring(0, index)
-            const afterMatch = paragraph.substring(index + linkText.length + href.length + 4)
-    
-            return (
-                <PDF.Text>
-                    {parse(beforeMatch)}
-                    <PDF.Link href={href}>{linkText}</PDF.Link>
-                    {parse(afterMatch)}
-                </PDF.Text>
-            )
-        }
-        
-        // Bold-Italic
-        const boldItalicRegex = /\*\*\*(.*?)\*\*\*/
-        const boldItalicMatch = boldItalicRegex.exec(paragraph)
-        if (boldItalicMatch) {
-            const index = boldItalicMatch.index
-            const boldItaliced = boldItalicMatch[1]
-    
-            const beforeMatch = paragraph.substring(0, index)
-            const afterMatch = paragraph.substring(index + boldItaliced.length + 6)
-    
-            return (
-                <PDF.Text>
-                    {parse(beforeMatch)}
-                    <PDF.Text style={{ fontFamily: 'Helvetica-BoldOblique' }}>{parse(boldItaliced)}</PDF.Text>
-                    {parse(afterMatch)}
-                </PDF.Text>
-            )
-        }
-    
-        // Bold
-        const boldRegex = /\*\*(.*?)\*\*/
-        const boldMatch = boldRegex.exec(paragraph)
-        if (boldMatch) {
-            const index = boldMatch.index
-            const bolded = boldMatch[1]
-    
-            const beforeMatch = paragraph.substring(0, index)
-            const afterMatch = paragraph.substring(index + bolded.length + 4)
-    
-            return (
-                <PDF.Text>
-                    {parse(beforeMatch)}
-                    <PDF.Text style={{ fontFamily: 'Helvetica-Bold' }}>{parse(bolded)}</PDF.Text>
-                    {parse(afterMatch)}
-                </PDF.Text>
-            )
-        }
-    
-        // Italics
-        const italicsRegex = /\*(.*?)\*/
-        const italicsMatch = italicsRegex.exec(paragraph)
-        if (italicsMatch) {
-            const index = italicsMatch.index
-            const italicsed = italicsMatch[1]
-    
-            const beforeMatch = paragraph.substring(0, index)
-            const afterMatch = paragraph.substring(index + italicsed.length + 2)
-    
-            return (
-                <PDF.Text>
-                    {parse(beforeMatch)}
-                    <PDF.Text style={{ fontFamily: 'Helvetica-Oblique' }}>{parse(italicsed)}</PDF.Text>
-                    {parse(afterMatch)}
-                </PDF.Text>
-            )
-        }
-    
-        // Spacing
-        if ((paragraph === "___") || (paragraph === "___\r")) {
-            return <PDF.View style={{ marginBottom: '8px' }} />
-        }
-    
-        // Default: just text.
-        return <PDF.Text>{paragraph}</PDF.Text>
     }
 
-    const paragraphs = text.split('\n')
+    // List
+    if (markdown.match(/^(\s+)?\*\s.*/)) {
+        const [_, ...rest] = markdown.split('* ')
 
-    return <>
+        return render(parse(rest.join('* '), render), 'list')
+    }
+
+    // Blockquote
+    if (markdown.match(/^\>\s.*/)) {
+        const rest = markdown.substring(2)
+
+        return render(parse(rest, render), 'blockquote')
+    }
+
+    // Template param
+    const templateParamRegex = /{{(.*?)}}/
+    const templateParamMatch = templateParamRegex.exec(markdown)
+    if (templateParamMatch) {
+        const index = templateParamMatch.index
+        const matchKey = templateParamMatch[1]
+        
+        const beforeMatch = markdown.substring(0, index)
+        const afterMatch = markdown.substring(index + matchKey.length + 4)
+
+        return (
+            render(
+                <>
+                    {parse(beforeMatch, render)}
+                    {render(matchKey, 'param')}
+                    {parse(afterMatch, render)}
+                </>,
+                'text'
+            )
+        )
+    }
+
+    // Links
+    const linkRegex = /\[(.*?)\]\((.*?)\)/
+    const linkMatch = linkRegex.exec(markdown)
+    if (linkMatch) {
+        const index = linkMatch.index
+        const linkText = linkMatch[1]
+        const href = linkMatch[2]
+
+        const beforeMatch = markdown.substring(0, index)
+        const afterMatch = markdown.substring(index + linkText.length + href.length + 4)
+
+        return (
+            render(
+                <>
+                    {parse(beforeMatch, render)}
+                    {render(parse(linkText, render), 'link', href)}
+                    {parse(afterMatch, render)}
+                </>,
+                'text'
+            )
+        )
+    }
+    
+    // Bold-Italic
+    const boldItalicRegex = /\*\*\*(.*?)\*\*\*/
+    const boldItalicMatch = boldItalicRegex.exec(markdown)
+    if (boldItalicMatch) {
+        const index = boldItalicMatch.index
+        const boldItaliced = boldItalicMatch[1]
+
+        const beforeMatch = markdown.substring(0, index)
+        const afterMatch = markdown.substring(index + boldItaliced.length + 6)
+
+        return (
+            render(
+                <>
+                    {parse(beforeMatch, render)}
+                    {render(parse(boldItaliced, render), 'bold-italic')}
+                    {parse(afterMatch, render)}
+                </>,
+                'text'
+            )
+        )
+    }
+
+    // Bold
+    const boldRegex = /\*\*(.*?)\*\*/
+    const boldMatch = boldRegex.exec(markdown)
+    if (boldMatch) {
+        const index = boldMatch.index
+        const bolded = boldMatch[1]
+
+        const beforeMatch = markdown.substring(0, index)
+        const afterMatch = markdown.substring(index + bolded.length + 4)
+
+        return (
+            render(
+                <>
+                    {parse(beforeMatch, render)}
+                    {render(parse(bolded, render), 'bold')}
+                    {parse(afterMatch, render)}
+                </>,
+                'text'
+            )
+        )
+    }
+
+    // Italics
+    const italicsRegex = /\*(.*?)\*/
+    const italicsMatch = italicsRegex.exec(markdown)
+    if (italicsMatch) {
+        const index = italicsMatch.index
+        const italicsed = italicsMatch[1]
+
+        const beforeMatch = markdown.substring(0, index)
+        const afterMatch = markdown.substring(index + italicsed.length + 2)
+
+        return (
+            render(
+                <>
+                    {parse(beforeMatch, render)}
+                    {render(parse(italicsed, render), 'italic')}
+                    {parse(afterMatch, render)}
+                </>,
+                'text'
+            )
+        )
+    }
+
+    // Spacing
+    if ((markdown === "___") || (markdown === "___\r")) {
+        return render(null, 'spacing')
+    }
+
+    // Default: just text.
+    return render(markdown, 'text')
+}
+
+const TemplateInput: FC<{ name: string, playtest: CreatablePlaytest, onChange: (newValue: string) => void}> = ({ name, playtest, onChange }) => {
+    const [internalValue, setInternalValue] = useState('')
+    const optional = name.endsWith('(optional)')
+    
+    useEffect(() => {
+        if (playtest.bountyContract.type === 'template') {
+            setInternalValue(playtest.bountyContract.templateValues[name] || '')
+        }
+    }, [playtest])
+    
+    return (
+        <input
+            type="text" 
+            className={(!optional && !internalValue) ? styles.invalid : undefined}
+            placeholder={name} 
+            style={{ width: (2 + (internalValue.length || name.length)) + 'ch' }}
+            value={internalValue}
+            onChange={e => setInternalValue(e.target.value)}
+            onBlur={() => onChange(internalValue)} />
+    )
+}
+
+export const ContractTemplateEditor: FC<{ user: MutableUser, playtest: CreatablePlaytest, onChange: (newTemplate: {[key: string]: string}) => void }> = ({ user, playtest, onChange }) => {
+    let i = 0
+
+    return (
+        <div className={styles.ContractTemplateEditor}>
+            {parse(generateContract(playtest, user), (content, type, href) => {
+                switch (type) {
+                    case 'h1': return <h1 key={i++}>{content}</h1>
+                    case 'h2': return <h2 key={i++}>{content}</h2>
+                    case 'h3': return <h3 key={i++}>{content}</h3>
+                    case 'list': return <ul key={i++}><li>{content}</li></ul>
+                    case 'blockquote': return <blockquote key={i++}>{content}</blockquote>
+                    case 'link': return <a href={href} key={i++}>{content}</a>
+                    case 'bold-italic': return <em key={i++}><b>{content}</b></em>
+                    case 'bold': return <strong key={i++}>{content}</strong>
+                    case 'italic': return <em key={i++}>{content}</em>
+                    case 'spacing': return <hr key={i++} />
+                    case 'text': return <span key={i++}>{content}</span>
+                    case 'param': return (
+                        <TemplateInput 
+                            name={String(content)}
+                            playtest={playtest}
+                            onChange={newValue => (playtest.bountyContract.type === 'template') && onChange({ ...playtest.bountyContract.templateValues, [String(content)]: newValue })}
+                            key={i++} />
+                    )
+                }
+            })}
+        </div>
+    )
+}
+
+export const ContractPDF: FC<{ user: MutableUser, playtest: CreatablePlaytest, text: string }> = ({ user, playtest, text }) => {
+    return (
         <PDF.PDFViewer showToolbar={true} width='100%' height='600px'>
             <PDF.Document
                 title={playtest.name}
@@ -248,14 +314,34 @@ export const ContractPDF: FC<{ user: MutableUser, playtest: CreatablePlaytest, t
                         orientation="portrait"
                         size="LETTER">
                             <PDF.View>
-                                {paragraphs.map((paragraph, i) => (
-                                    <React.Fragment key={i}>
-                                        {parse(paragraph)}
-                                    </React.Fragment>
-                                ))}
+                                {parse(text, (content, type, href) => {
+                                    switch (type) {
+                                        case 'h1': return <PDF.Text style={{ fontSize: '24pt' }}>{content}</PDF.Text>
+                                        case 'h2': return <PDF.Text style={{ fontSize: '18pt' }}>{content}</PDF.Text>
+                                        case 'h3': return <PDF.Text style={{ fontSize: '14pt' }}>{content}</PDF.Text>
+                                        case 'list': return <PDF.Text style={{ paddingLeft: '8px'}}>- {content}</PDF.Text>
+                                        case 'blockquote': <PDF.Text style={{ backgroundColor: '#ddd', padding: '4px' }}>{content}</PDF.Text>
+                                        case 'link': return <PDF.Link href={href}>{content}</PDF.Link>
+                                        case 'bold-italic': return <PDF.Text style={{ fontFamily: 'Helvetica-BoldOblique' }}>{content}</PDF.Text>
+                                        case 'bold': return <PDF.Text style={{ fontFamily: 'Helvetica-Bold' }}>{content}</PDF.Text>
+                                        case 'italic': return <PDF.Text style={{ fontFamily: 'Helvetica-Oblique' }}>{content}</PDF.Text>
+                                        case 'spacing': return <PDF.View style={{ marginBottom: '8px' }} />
+                                        case 'text': return  <PDF.Text>{content}</PDF.Text>
+                                        case 'param': {
+                                            let value = ''
+                                            if ((playtest.bountyContract.type === 'template') && (playtest.bountyContract.templateValues[String(content)])) {
+                                                value = playtest.bountyContract.templateValues[String(content)]
+                                            } else if (!String(content).endsWith('(optional)')) {
+                                                value = `{${content}}`
+                                            }
+
+                                            return <PDF.Text>{value}</PDF.Text>
+                                        }
+                                    }
+                                })}
                             </PDF.View>
                     </PDF.Page>
             </PDF.Document>
         </PDF.PDFViewer>
-    </>
+    )
 }
