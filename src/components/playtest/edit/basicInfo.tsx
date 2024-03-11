@@ -1,5 +1,5 @@
 import TagInput from "../../utils/tagInput"
-import { EnginesList, GenreList, SystemsList } from "@/model/tags"
+import { EnginesList, GenreList, MaterialList, SystemsList } from "@/model/tags"
 import { tagClassName } from "../searchParams"
 import Calendar from "../../utils/calendar"
 import { FC } from "react"
@@ -55,6 +55,7 @@ const BasicInfoEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChan
                     placeholder="Search or create tags..."
                     categories={{
                         'Game:': SystemsList,
+                        'Material:': MaterialList,
                         'Engine:': EnginesList,
                         'Genre:': GenreList,
                     }}

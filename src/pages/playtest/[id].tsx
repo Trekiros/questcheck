@@ -1,20 +1,20 @@
 import { NextSeo } from 'next-seo'
-import styles from './list.module.scss'
+import styles from './[id].module.scss'
+import { FC } from 'react'
 import Page, { ServerSideProps } from '@/components/utils/page'
 import { serverPropsGetter } from '@/components/utils/pageProps';
-import { FC } from 'react';
 
 export const getServerSideProps = serverPropsGetter;
 
-const PlaytestListPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
+const PlaytestDetailsPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
     return (
         <Page userCtx={userCtx}>
-            <div className={styles.playtestList}>
-                <NextSeo title="My Playtests" />
+            <div className={styles.playtestDetails}>
+                <NextSeo title="Playtest" />
 
             </div>
         </Page>
     )
 }
 
-export default PlaytestListPage
+export default PlaytestDetailsPage

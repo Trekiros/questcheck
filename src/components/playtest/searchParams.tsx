@@ -1,7 +1,7 @@
 import { BountyList, DefaultSearchParams, PlaytestSearchParams, Task, TaskList } from "@/model/playtest";
 import { FC, useState } from "react";
 import styles from './searchParams.module.scss'
-import { EnginesList, GenreList, SystemsList, TagSuggestions } from "@/model/tags";
+import { EnginesList, GenreList, MaterialList, SystemsList } from "@/model/tags";
 import TagInput from "../utils/tagInput";
 import Checkbox from "../utils/checkbox";
 import Select from "../utils/select";
@@ -13,16 +13,11 @@ import { useDialog } from "../utils/dialog";
 export function tagClassName(tag: string, category?: string) {
     const tagCat = tag.split(' ')[0]
 
-    switch (tagCat) {
+    switch (category || tagCat) {
         case 'Game:': return 'systemTag'
         case 'Engine:': return 'engineTag'
         case 'Genre:':  return 'genreTag'
-    }
-
-    switch (category) {
-        case 'Game:': return 'systemTag'
-        case 'Engine:': return 'engineTag'
-        case 'Genre:':  return 'genreTag'
+        case 'Material:': return 'materialTag'
     }
 
     return ''
@@ -61,7 +56,7 @@ const SearchParams: FC<PropType> = ({ value, onChange }) => {
                     <div>
                         <label>Must include:</label>
                         <TagInput
-                            tagClassName={tagClassName}                    
+                            tagClassName={tagClassName}
                             values={value.includeTags || []}
                             onChange={newValue => update(clone => {
                                 const actualNewValue = newValue.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag))
@@ -70,6 +65,7 @@ const SearchParams: FC<PropType> = ({ value, onChange }) => {
                             })}
                             categories={{
                                 "Game:": SystemsList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
+                                "Material:": MaterialList.filter(tag =>!value.excludeTags ||!value.excludeTags?.includes(tag)),
                                 "Engine:": EnginesList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
                                 "Genre:": GenreList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
                             }} />
@@ -86,6 +82,7 @@ const SearchParams: FC<PropType> = ({ value, onChange }) => {
                             })}
                             categories={{
                                 "Game:": SystemsList.filter(tag => !value.includeTags || !value.includeTags?.includes(tag)),
+                                "Material:": MaterialList.filter(tag =>!value.includeTags ||!value.includeTags?.includes(tag)),
                                 "Engine:": EnginesList.filter(tag => !value.includeTags || !value.includeTags?.includes(tag)),
                                 "Genre:": GenreList.filter(tag =>!value.includeTags || !value.includeTags?.includes(tag)),
                             }} />

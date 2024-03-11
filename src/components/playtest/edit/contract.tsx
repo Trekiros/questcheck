@@ -265,7 +265,7 @@ const TemplateInput: FC<{ name: string, playtest: CreatablePlaytest, onChange: (
             type="text" 
             className={(!optional && !internalValue) ? styles.invalid : undefined}
             placeholder={name} 
-            style={{ width: (2 + (internalValue.length || name.length)) + 'ch' }}
+            style={{ width: 'min(100%, ' + (2 + (internalValue.length || name.length)) + 'ch)' }}
             value={internalValue}
             onChange={e => setInternalValue(e.target.value)}
             onBlur={() => onChange(internalValue)} />
@@ -328,14 +328,11 @@ export const ContractPDF: FC<{ user: MutableUser, playtest: CreatablePlaytest, t
                                         case 'spacing': return <PDF.View style={{ marginBottom: '8px' }} />
                                         case 'text': return  <PDF.Text>{content}</PDF.Text>
                                         case 'param': {
-                                            let value = ''
                                             if ((playtest.bountyContract.type === 'template') && (playtest.bountyContract.templateValues[String(content)])) {
-                                                value = playtest.bountyContract.templateValues[String(content)]
+                                                return <PDF.Text>{playtest.bountyContract.templateValues[String(content)]}</PDF.Text>
                                             } else if (!String(content).endsWith('(optional)')) {
-                                                value = `{${content}}`
-                                            }
-
-                                            return <PDF.Text>{value}</PDF.Text>
+                                                return <PDF.Text style={{ color: "red"}}>{`{${content}}`}</PDF.Text>
+                                            } else return null;
                                         }
                                     }
                                 })}

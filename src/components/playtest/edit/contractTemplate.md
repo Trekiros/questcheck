@@ -2,8 +2,8 @@
 This is an agreement between:
 
 **The Publisher:** {{{publisher}}}
-
 **The Playtester:** {playtester}
+
 ___
 **Effective Date:** This agreement is effective starting when the Playtester applies to the playtest {playtestId} on the Quest Check website, and the Publisher accepts the Playtester's application. By applying and accepting the application, the Playtester and Publisher agree to the following terms under {{Your Country}} law:
 

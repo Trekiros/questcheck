@@ -1,14 +1,20 @@
 import { FC } from "react";
 import styles from './legal.module.scss'
 import { NextSeo } from "next-seo";
+import Page, { ServerSideProps } from "@/components/utils/page";
+import { serverPropsGetter } from "@/components/utils/pageProps";
 
-const PrivacyPolicy: FC<{}> = () => {
+export const getServerSideProps = serverPropsGetter;
+
+const PrivacyPolicy: FC<{} & ServerSideProps> = ({ userCtx }) => {
     return (
-        <div className={styles.legal}>
-            <NextSeo title="Privacy Policy" />
+        <Page userCtx={userCtx}>
+            <div className={styles.legal}>
+                <NextSeo title="Privacy Policy" />
 
-            <iframe title="Privacy Policy" src="/legal/privacy.html" />
-        </div>
+                <iframe title="Privacy Policy" src="/legal/privacy.html" />
+            </div>
+        </Page>
     )
 }
 

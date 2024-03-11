@@ -3,17 +3,23 @@ import { FC } from "react";
 import SearchParams from "@/components/playtest/searchParams";
 import SearchResults from "@/components/playtest/searchResults";
 import styles from './index.module.scss'
-import { useLocalStorageState, useURLState } from "@/model/hooks";
+import { useLocalStorageState } from "@/model/hooks";
+import Page, { ServerSideProps } from "@/components/utils/page";
+import { serverPropsGetter } from "@/components/utils/pageProps";
 
-const PlaytestBrowser: FC<{}> = ({}) => {
+export const getServerSideProps = serverPropsGetter;
+
+const PlaytestBrowser: FC<{} & ServerSideProps> = ({ userCtx }) => {
     const [searchParams, setSearchParams] = useLocalStorageState("search", PlaytestSearchParamSchema, DefaultSearchParams)
 
     return (
-        <div className={styles.browser}>
-            <SearchParams value={searchParams} onChange={setSearchParams} />
+        <Page userCtx={userCtx}>
+            <div className={styles.browser}>
+                <SearchParams value={searchParams} onChange={setSearchParams} />
 
-            <SearchResults search={searchParams} />
-        </div>
+                <SearchResults search={searchParams} />
+            </div>
+        </Page>
     )
 }
 

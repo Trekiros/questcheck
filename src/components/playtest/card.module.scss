@@ -1,6 +1,7 @@
 .playtest {
     list-style: none;
     background: #322;
+    position: relative;
 
     > * {
         padding: 1em;
@@ -13,22 +14,51 @@
         display: -webkit-box;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 1;
+
+        &:hover { text-decoration: underline }
     }
     .author {
         display: flex;
         justify-content: flex-end;
-        gap: 4px;
+        
+        a {
+            display: flex;
+            gap: 4px;
+            &:hover { text-decoration: underline }
+        }
 
         svg { width: 16px }
     }
 
     .body {
         background: #544;
+        display: flex;
+        flex-direction: column;
 
         .row {
             display: grid;
             grid-template-columns: 60px 1fr;
             label { font-weight: bold }
+        }
+
+        .tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+
+            > * {
+                border-radius: 4px;
+                padding: 4px;
+            }
+        }
+
+        .description > * {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 4;
+
+            h2, h3, h4 { margin: 0 }
         }
     }
 }

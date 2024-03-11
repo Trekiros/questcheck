@@ -100,7 +100,7 @@ const RGPD: FC<PropType> = () => {
                         <div className={styles.choice}>
                             <Checkbox value={!!suggestedPrefs.useLocalStorage} onToggle={update(v => v.useLocalStorage = !v.useLocalStorage)}>
                                 <span>
-                                    {"Use your browser's local storage to save your cookie & data preferences, so you don't have to answer this form every time you come back."}
+                                    Use your browser's local storage to save your cookie & data preferences, so you don't have to answer this form every time you come back.
                                 </span>
                                 <FontAwesomeIcon icon={faGear} className={styles.icon} />
                             </Checkbox>

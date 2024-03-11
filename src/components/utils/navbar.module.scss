@@ -13,27 +13,15 @@
     background: #544;
     height: $topNavHeight;
 
-    $vpad: 8px;
-    padding: $vpad 1em;
-
-    .logo {
-        font-size: $topNavHeight * 0.4;
-        font-family: mc;
-        font-weight: normal;
-        display: flex;
-        gap: 8px;
-        align-items: center;
-
-        img {
-            height: calc($topNavHeight - $vpad * 2);
-            width: calc(($topNavHeight - $vpad * 2) * 45 / 64)
-        }
-    }
+    padding: 8px 1em;
 
     .actions {
         display: flex;
         align-items: center;
 
+        > button {
+            padding: 8px;
+        }
     }
 
     .warning {
@@ -47,4 +35,16 @@
         grid-template-columns: 150px auto;
         align-items: center;
     }
+}
+
+.admin {
+    display: flex;
+    flex-direction: column;
+    * { margin: 0 }
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 100px 400px;
+    align-items: center;
 }

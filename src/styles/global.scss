@@ -34,6 +34,7 @@ div, button, nav, section, main, body, ul, li, input, footer {
 
 main {
     padding-top: $topNavHeight;
+    min-height: 100dvh;
 }
 
 h1, h2 { margin: 0 }
@@ -206,6 +207,7 @@ button .tooltip {
 }
 
 footer {
+    background: linear-gradient(0deg, #433 70%, #322 100%);
     padding: 2em;
     width: 100%;
     display: flex;
@@ -221,9 +223,9 @@ footer {
     }
 
     .header {
-        font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+        font-family: mc;
         letter-spacing: 1px;
-        font-size: 2em;
+        font-size: 1.5em;
     }
 
     ul {
@@ -234,10 +236,11 @@ footer {
     li {
         margin: 4px;
         list-style: none;
+        text-align: left;
     }
 
     a {
-        font-size: 1.5em;
+        font-size: 1.1em;
         color: #fff;
         transition: color 0.2s;
         text-decoration: none;
@@ -280,7 +283,27 @@ p {
 
 // Using html selector to increase specificity
 html {
-    .systemTag { background: #464; &:hover{ background: #686 }}
-    .engineTag { background: #557; &:hover{ background: #779 }}
-    .genreTag  { background: #466; &:hover{ background: #688 }}
+    .systemTag { background: #464 }
+    .engineTag { background: #557 }
+    .genreTag  { background: #466 }
+    .materialTag  { background: #844 }
+
+    button.systemTag:hover{ background: #686 }
+    button.engineTag:hover{ background: #779 }
+    button.genreTag:hover{ background: #688 }
+    button.materialTag:hover{ background: #a66 }
+}
+
+.logo {
+    font-size: $topNavHeight * 0.4;
+    font-family: mc;
+    font-weight: normal;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+
+    img {
+        height: calc($topNavHeight - 16px);
+        width: calc(($topNavHeight - 16px) * 45 / 64)
+    }
 }

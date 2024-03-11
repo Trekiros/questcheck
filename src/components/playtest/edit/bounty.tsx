@@ -1,21 +1,20 @@
 import MarkdownTextArea from "../../utils/markdownTextArea"
 import Select from "../../utils/select"
 import { ContractPDF, ContractTemplateEditor, generateContract } from "./contract"
-import { trpcClient } from "@/server/utils"
-import ReactMarkdown from "react-markdown"
 import Checkbox from "../../utils/checkbox"
 import styles from './edit.module.scss'
 import { FC, useEffect, useState } from "react"
-import { BountyList, CreatablePlaytest, CreatablePlaytestSchema } from "@/model/playtest"
+import { BountyList, CreatablePlaytestSchema } from "@/model/playtest"
 import { EditorPropType } from "./edit"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faEye, faPen } from "@fortawesome/free-solid-svg-icons"
+import { useUserCtx } from "@/components/utils/page"
 
 type ContractTemplateParams = {[key: string]: string}
 const defaultContractParams: ContractTemplateParams = {}
 
 const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange, disabled, errorPaths }) => {
-    const userQuery = trpcClient.users.getSelf.useQuery()
+    const userCtx = useUserCtx()
     const [preview, setPreview] = useState(false)
     
     // This state allows the UI to save the user's template params if they temporarily switch to the manual contract mode
@@ -77,7 +76,7 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
                         and will not be held accountable for any legal dispute between you and your playtesters related to your playtest.
                     </p>
 
-                    { !!userQuery.data && <div className={styles.contractEditor}>
+                    { !!userCtx?.user && <div className={styles.contractEditor}>
                         <div className={styles.type}>
                             <button
                                 disabled={disabled}
@@ -99,7 +98,7 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
 
                                     setPreview(false)
                                     setTemplateParams(value.bountyContract.templateValues)
-                                    onChange({ ...value, bountyContract: { type: 'custom', text: generateContract(value, userQuery.data!)}})
+                                    onChange({ ...value, bountyContract: { type: 'custom', text: generateContract(value, userCtx.user!)}})
                                 }}>
                                     Customize Contract
                             </button>
@@ -120,9 +119,9 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
 
                         { preview ? (
                             <ContractPDF 
-                            user={userQuery.data!} 
+                            user={userCtx.user!} 
                             playtest={value} 
-                            text={generateContract(value, userQuery.data!)} />
+                            text={generateContract(value, userCtx.user!)} />
                         ) : (
                             value.bountyContract.type === 'template' ? <>
                                 <div className={styles.templateOptions}>
@@ -136,7 +135,7 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
                                 </div>
                                 <ContractTemplateEditor
                                     playtest={value}
-                                    user={userQuery.data}
+                                    user={userCtx.user}
                                     onChange={newTemplate => onChange({ 
                                         ...value,
                                         bountyContract: {

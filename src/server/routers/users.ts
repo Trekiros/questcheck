@@ -1,109 +1,173 @@
 import { Collections } from "../mongodb";
-import { MutableUser, MutableUserSchema, User, UserSchema, newUser } from "@/model/user";
-import { protectedProcedure, publicProcedure, router } from "../trpc";
+import { MutableUserSchema, User, UserSchema, newUser } from "@/model/user";
+import { protectedProcedure, router } from "../trpc";
 import { Prettify } from "@/model/utils";
 import { UpdateFilter } from "mongodb";
-import { Writeable } from "zod";
+import { Writeable, z } from "zod";
 import { clerkClient } from "@clerk/nextjs";
 import { User as ClerkUser } from "@clerk/backend";
 
-export const UserRouter = router({
-    getSelf: publicProcedure
-        .query(async ({ ctx: { auth: { userId } } }) => {
-            if (!userId) return null
-        
-            const users = await Collections.users()
-            const user: Prettify<MutableUser>|null = await users.findOne({ userId }, { 
-                projection: { _id: 0, userId: 0, userNameLowercase: 0
+export type Permissions = {
+    canCreate: boolean,
+    admin: boolean,
+}
+export async function getPermissions(userId: string|null): Promise<{ user: User|null, permissions: Permissions }> {
+    if (!userId) return {user: null, permissions: { canCreate: false, admin: false } }
+
+    const playtests = await Collections.playtests()
+    const users = await Collections.users()
+    
+    const [ userInfo, recentPlaytests ] = await Promise.all([
+        users.findOne({ userId }),
+        playtests.countDocuments({ createdTimestamp: { $lte: Date.now() - 24 * 60 * 60 * 1000 } }),
+    ])
+
+    if (userId === process.env.ADMIN_USERID) return  { user: userInfo, permissions: { canCreate: true, admin: true }}
+
+    if (
+        !userInfo
+     || userInfo.banned
+     || !userInfo.isPublisher
+     || (
+            !userInfo.publisherProfile.facebookProof
+         && !userInfo.publisherProfile.twitterProof
+         && !userInfo.publisherProfile.manualProof
+     )
+     || (recentPlaytests >= 3)
+    ) return { user: userInfo, permissions: { canCreate: false, admin: false } }
+
+    return  { user: userInfo, permissions: { canCreate: true, admin: false } }
+}
+
+const updateSelf = protectedProcedure
+    .input(MutableUserSchema)
+    .mutation(async ({ input, ctx: { auth } }) => {
+        const users = await Collections.users()
+
+        const existingUserName = await users.findOne({ userNameLowercase: input.userName.toLowerCase(), userId: { $ne: auth.userId }})
+        if (existingUserName) {
+            throw new Error('Username taken')
+        }
+
+        const { publisherProfile, ...userClean } = input
+
+        const clerkUser = await clerkClient.users.getUser(auth.userId)
+        const emails = clerkUser.emailAddresses.map(e => e.emailAddress)
+
+        type UserWithoutId = Prettify<Omit<User, "userId">>
+        type UserUpdate = UpdateFilter<UserWithoutId>
+        type UserSet = Writeable<NonNullable<UserUpdate["$set"]>>
+        const $set: UserSet = {
+            ...userClean,
+            userNameLowercase: input.userName.toLowerCase(),
+            emails,
+        }
+
+        // Publisher readonly fields. Flattening the set avoids overwriting the manual verification process
+        if (userClean.isPublisher) {
+            let user: ClerkUser|null = null;
+
+            if (publisherProfile.twitterProof) {
+                user = await clerkClient.users.getUser(auth.userId)
+                
+                const fromAuth = user.externalAccounts.find(socialConnection => socialConnection.provider === 'oauth_x')?.username
+                if (publisherProfile.twitterProof !== fromAuth) {
+                    throw new Error('You must link your twitter account to do this')
+                }
+
+                $set["publisherProfile.twitterProof"] = fromAuth
+            } else {
+                $set["publisherProfile.twitterProof"] = ''
+            }
+
+            if (publisherProfile.facebookProof) {
+                if (!user) user = await clerkClient.users.getUser(auth.userId)
+
+                const fromAuth = auth.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'oauth_facebook')?.username
+                if (publisherProfile.twitterProof!== fromAuth) {
+                    throw new Error('You must link your facebook account to do this')
+                }
+
+                $set["publisherProfile.facebookProof"] = fromAuth
+            } else {
+                $set["publisherProfile.facebookProof"] = ''
+            }
+        }
+
+        const result = await users.updateOne({ userId: auth.userId }, { $set }, { upsert: true })
+
+        // Re-ban a user if they tried to bypass a ban by deleting their data.
+        if (result.upsertedId) {
+            const bannedUsers = await Collections.bannedUsers()
+            const isBanned = await bannedUsers.countDocuments({ email: {
+                $in: emails
             }})
 
-            // Just in case these fields weren't deleted properly.
-            if (user) {
-                if (!user.isPlayer) user.playerProfile = newUser.playerProfile
-                if (!user.isPublisher) user.publisherProfile = newUser.publisherProfile
+            if (!!isBanned) {
+                await users.updateOne({ _id: result.upsertedId }, { banned: true })
             }
+        }
+    })
 
-            return user
-        }),
+const deleteSelf = protectedProcedure
+    .mutation(async ({ ctx }) => {
+        const userId = ctx.auth.userId
 
-    updateSelf: protectedProcedure
-        .input(MutableUserSchema)
-        .mutation(async ({ input, ctx: { auth } }) => {
-            const users = await Collections.users()
+        const usersDb = await Collections.users()
 
-            const existingUserName = await users.findOne({ userNameLowercase: input.userName.toLowerCase(), userId: { $ne: auth.userId }})
-            if (existingUserName) {
-                throw new Error('Username taken')
-            }
+        await Promise.all([
+            clerkClient.users.deleteUser(ctx.auth.userId),
+            usersDb.findOneAndUpdate({ userId }, { $set: {
+                ...newUser,
+                userId,
+                userName: '[deleted user]',
+            } }),
+        ])
+    })
 
-            const { publisherProfile, ...userClean } = input
+const isUsernameTaken = protectedProcedure
+    .input(UserSchema.shape.userName)
+    .mutation(async ({ input, ctx }) => {
+        const users = await Collections.users()
 
-            type UserWithoutId = Prettify<Omit<User, "userId">>
-            type UserUpdate = UpdateFilter<UserWithoutId>
-            type UserSet = Writeable<NonNullable<UserUpdate["$set"]>>
-            const $set: UserSet = {
-                ...userClean,
-                userNameLowercase: input.userName.toLowerCase(),
-            }
+        const existingUserName = await users.findOne({ userNameLowercase: input.toLowerCase(), userId: { $ne: ctx.auth.userId }})
+        return !!existingUserName
+    })
 
-            // Publisher readonly fields. Flattening the set avoids overwriting the manual verification process
-            if (userClean.isPublisher) {
-                let user: ClerkUser|null = null;
+const banUser = protectedProcedure
+    .input(z.string())
+    .mutation(async ({ input, ctx }) => {
+        const perms = await getPermissions(ctx.auth.userId)
+        if (!perms.permissions.admin) throw new Error('Unauthorized')
 
-                if (publisherProfile.twitterProof) {
-                    user = await clerkClient.users.getUser(auth.userId)
-                    
-                    const fromAuth = user.externalAccounts.find(socialConnection => socialConnection.provider === 'oauth_x')?.username
-                    if (publisherProfile.twitterProof !== fromAuth) {
-                        throw new Error('You must link your twitter account to do this')
-                    }
+        const users = await Collections.users()
+        const bannedUsers = await Collections.bannedUsers()
 
-                    $set["publisherProfile.twitterProof"] = fromAuth
-                } else {
-                    $set["publisherProfile.twitterProof"] = ''
-                }
+        const user = await users.findOneAndUpdate({ userName: input }, { $set: { banned: true } })
+        
+        if (!user) throw new Error('User not found')
+        
+        if (!user.emails.length) throw new Error('No emails to ban')
 
-                if (publisherProfile.facebookProof) {
-                    if (!user) user = await clerkClient.users.getUser(auth.userId)
+        await bannedUsers.insertMany(user.emails.map(email => ({ email })))
+    })
 
-                    const fromAuth = auth.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'oauth_facebook')?.username
-                    if (publisherProfile.twitterProof!== fromAuth) {
-                        throw new Error('You must link your facebook account to do this')
-                    }
+const validateUser = protectedProcedure
+    .input(z.object({ userName: z.string(), href: z.string() }))
+    .mutation(async ({ input: { userName, href }, ctx }) => {
+        const perms = await getPermissions(ctx.auth.userId)
+        if (!perms.permissions.admin) throw new Error('Unauthorized')
 
-                    $set["publisherProfile.facebookProof"] = fromAuth
-                } else {
-                    $set["publisherProfile.facebookProof"] = ''
-                }
-            }
+        const users = await Collections.users()
+        await users.updateOne({ userName }, { $set: { 'publisherProfile.manualProof': href } })
+    })
 
-            const result = await users.findOneAndUpdate({ userId: auth.userId }, { $set }, { upsert: true })
+export const UserRouter = router({
+    updateSelf,
+    deleteSelf,
+    isUsernameTaken,
 
-            return result
-        }),
-
-    deleteSelf: protectedProcedure
-        .mutation(async ({ ctx }) => {
-            const userId = ctx.auth.userId
-
-            const usersDb = await Collections.users()
-
-            await Promise.all([
-                clerkClient.users.deleteUser(ctx.auth.userId),
-                usersDb.findOneAndUpdate({ userId }, { $set: {
-                    ...newUser,
-                    userId,
-                    userName: '[deleted user]',
-                } }),
-            ])
-        }),
-
-    isUsernameTaken: protectedProcedure
-        .input(UserSchema.shape.userName)
-        .mutation(async ({ input, ctx }) => {
-            const users = await Collections.users()
-
-            const existingUserName = await users.findOne({ userNameLowercase: input.toLowerCase(), userId: { $ne: ctx.auth.userId }})
-            return !!existingUserName
-        })
+    // Admin
+    banUser,
+    validateUser,
 })

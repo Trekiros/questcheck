@@ -69,5 +69,7 @@ async function initialize() {
 // By exporting this instead of the DB function, we ensure all uses are typed properly
 export const Collections = {
     users: async () => (await initialize()).collection<Omit<User, '_id'>>('users'),
+    bannedUsers: async () => (await initialize()).collection<{ email: string }>('bannedUsers'), // This survives even if a user deletes their data, and ensures they can't bypass a ban.
+
     playtests: async () => (await initialize()).collection<Omit<Playtest, '_id'>>('playtests'),
 }

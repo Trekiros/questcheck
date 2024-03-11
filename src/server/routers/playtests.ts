@@ -2,46 +2,17 @@ import { PlaytestSearchParamSchema, Playtest, CreatablePlaytestSchema, PerPageSc
 import { Collections } from "../mongodb";
 import { z } from "zod";
 import { Filter, FindCursor } from "mongodb";
-import { protectedProcedure, publicProcedure, router } from "../trpc";
+import {  protectedProcedure, router, publicProcedure } from "../trpc";
 import { arrMap, pojoMap } from "@/model/utils";
-import { PublicUser, PublicUserSchema, User } from "@/model/user";
-
-// Returns true if the user is allowed to create a new playtest
-async function _canCreate(userId: string|null) {
-    if (!userId) return false;
-
-    const playtests = await Collections.playtests()
-    const users = await Collections.users()
-    
-    const [ userInfo, recentPlaytests ] = await Promise.all([
-        users.findOne({ userId }),
-        playtests.countDocuments({ createdTimestamp: { $lte: Date.now() - 3 * 24 * 60 * 60 * 1000 } }),
-    ])
-
-    if (!userInfo) return false // User not exists
-    if (!userInfo.isPublisher) return false // User isn't publisher
-    if (
-        !userInfo.publisherProfile.facebookProof
-     && !userInfo.publisherProfile.twitterProof
-     && !userInfo.publisherProfile.manualProof
-    ) return false // User has not given any proof of identity
-
-    if (recentPlaytests >= 3) return false
-
-    return true
-}
-
-const canCreate = publicProcedure
-    .query(async ({ ctx: { auth: { userId }}}) => {
-        return await _canCreate(userId)
-    })
+import { PublicUser, PublicUserSchema } from "@/model/user";
+import { getPermissions } from "./users";
 
 // Returns the id of the new Playtest
 const create =  protectedProcedure
     .input(CreatablePlaytestSchema)
     .mutation(async ({ input, ctx: { auth: { userId }} }) => {
-        const isAllowed = await _canCreate(userId)
-        if (!isAllowed) throw new Error('Unauthorized')
+        const { permissions } = await getPermissions(userId)
+        if (!permissions.canCreate) throw new Error('Unauthorized')
         
         // Create playtest
         const playtests = await Collections.playtests()
@@ -134,11 +105,7 @@ const search = publicProcedure
     })
 
 
-
-
-
 export const PlaytestRouter = router({
-    canCreate,
     create,
     search,
 })

@@ -1,16 +1,20 @@
-import NavBar from '@/components/utils/navbar'
 import RGPD from '@/components/utils/rgpd'
 import { ClerkProvider } from '@clerk/nextjs'
-import type { AppProps, AppType } from 'next/app'
+import type { AppProps } from 'next/app'
 import { Toaster } from 'sonner'
 import { trpcClient } from '@/server/utils'
 import '../styles/global.scss'
 import { DefaultSeo } from 'next-seo'
 import { DialogProvider } from '@/components/utils/dialog'
+import Image from 'next/image'
+import Link from 'next/link'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faDiscord, faWordpress, faYoutube } from '@fortawesome/free-brands-svg-icons'
+import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
 
 export { reportWebVitals } from 'next-axiom';
 
-const App: AppType = ({ Component, pageProps: { session, ...pageProps } }: AppProps) => {
+const App = ({ Component, pageProps: { session, ...pageProps }}: AppProps) => {
   	return (
 		<ClerkProvider>
 			<DialogProvider>
@@ -33,13 +37,47 @@ const App: AppType = ({ Component, pageProps: { session, ...pageProps } }: AppPr
 
 				/>
 
-				<NavBar />
-				<main>
-					<Component {...pageProps} />
-				</main>
+				<Component {...pageProps} />
 
 				<Toaster toastOptions={{ unstyled: true, classNames: { toast: "toast" } }}/>
 				<RGPD />
+
+				<footer>
+					<div>
+						<div className="logo">
+							<Image alt="Logo" src="/logo.webp" width={45} height={64} />
+							Quest Check
+						</div>
+						<ul>
+							<li><Link href="/settings">User Profile</Link></li>
+							<li><Link href="/privacy">Privacy Policy</Link></li>
+							<li><Link href="/tos">Terms of Use</Link></li>
+							<li><Link href="/data">Delete my data</Link></li>
+						</ul>
+						<div>©2024 Trekiros | All Rights Reserved</div>
+					</div>
+
+					<div>
+						<label className="header">
+							LINKS
+						</label>
+						<div>
+							<Link href="https://discord.com/invite/9AJtv5DJ6f" target="_blank">
+							<FontAwesomeIcon icon={faDiscord as any} title="Join the Discord server!" />
+							</Link>
+							<Link href="https://www.youtube.com/@trekiros" target="_blank">
+							<FontAwesomeIcon icon={faYoutube as any} title="Follow me on YouTube!" />
+							</Link>
+							<Link href="https://www.trekiros.com" target="_blank">
+							<FontAwesomeIcon icon={faWordpress as any} title="Follow my blog!" />
+							</Link>
+							<Link href="mailto:trekiros.contact@gmail.com" target="_blank">
+							<FontAwesomeIcon icon={faEnvelope} title="Contact through e-mail" />
+							</Link>
+						</div>
+					</div>
+
+				</footer>
 			</DialogProvider>
 		</ClerkProvider>
   	)

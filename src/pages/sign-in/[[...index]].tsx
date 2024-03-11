@@ -1,3 +1,5 @@
+import Page, { ServerSideProps } from "@/components/utils/page";
+import { serverPropsGetter } from "@/components/utils/pageProps";
 import { SignIn } from "@clerk/nextjs"
 import { NextSeo } from "next-seo"
 import { FC } from "react"
@@ -30,13 +32,15 @@ export const ClerkTheme: NonNullable<React.ComponentProps<typeof SignIn>['appear
     }
 }
 
-const SignInPage: FC<{}> = () => {
+export const getServerSideProps = serverPropsGetter;
+
+const SignInPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
     return (
-        <div>
+        <Page userCtx={userCtx}>
             <NextSeo title="Sign In" />
 
             <SignIn appearance={ClerkTheme}/>
-        </div>
+        </Page>
     )
 }
 

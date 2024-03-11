@@ -14,7 +14,7 @@ export const SystemsList = [
     'Stormlight',
 
     // Popular open licenses for 3rd parties
-    'Pathfinder 1E',
+    /*'Pathfinder 1E',
     'Starfinder',
     'Call of Cthulu',
     'Blades in the Dark',
@@ -27,14 +27,14 @@ export const SystemsList = [
     'Old School Essentials',
     'Mutants & Masterminds',
     'D&D 4e',
-    'D&D 3.5e',
+    'D&D 3.5e',*/
 ] as const
 
 export const EnginesList = [
     'd20',
-    'OSR',
     'PbtA',
     'Fate',
+    'Old School Essentials',
     'Year Zero Engine',
 ] as const
 
@@ -52,7 +52,8 @@ export const GenreList = [
     'Combat-light'
 ]
 
-export const TagSuggestions = [
-    ...SystemsList.map(system => `System: ${system}`) as `System: ${(typeof SystemsList)[number]}`[],
-    ...EnginesList.map(engine => `Engine: ${engine}`) as `Engine: ${(typeof EnginesList)[number]}`[],
+export const MaterialList = [
+    'Short Adventure',
+    'Long Adventure',
+    'Player Options',
 ]

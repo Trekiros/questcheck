@@ -21,7 +21,7 @@ export const PlaytestSchema = z.object({
     name: z.string().min(4).max(128),
     description: z.string().max(2000),
     privateDescription: z.string().max(600),
-    tags: z.array(z.string().min(1).max(64)).max(20),
+    tags: z.array(z.string().min(1).max(64)).max(20).refine(arr => arr.length === (new Set(arr)).size), // No duplicates
     maxPositions: z.number().optional(),
     feedbackURL: z.string().url().min(1),
 
