@@ -11,6 +11,9 @@ export type Permissions = {
     canCreate: boolean,
     admin: boolean,
 }
+
+const adminConfKey = "ADMIN_USERID"
+
 export async function getPermissions(userId: string|null): Promise<{ user: User|null, permissions: Permissions }> {
     if (!userId) return {user: null, permissions: { canCreate: false, admin: false } }
 
@@ -22,7 +25,7 @@ export async function getPermissions(userId: string|null): Promise<{ user: User|
         playtests.countDocuments({ createdTimestamp: { $lte: Date.now() - 24 * 60 * 60 * 1000 } }),
     ])
 
-    if (userId === process.env.ADMIN_USERID) return  { user: userInfo, permissions: { canCreate: true, admin: true }}
+    if (userId === process.env[adminConfKey]) return  { user: userInfo, permissions: { canCreate: true, admin: true }}
 
     if (
         !userInfo
@@ -137,26 +140,27 @@ const isUsernameTaken = protectedProcedure
 const banUser = protectedProcedure
     .input(z.string())
     .mutation(async ({ input, ctx }) => {
-        const perms = await getPermissions(ctx.auth.userId)
-        if (!perms.permissions.admin) throw new Error('Unauthorized')
+        if (ctx.auth.userId !== process.env[adminConfKey]) throw new Error('Unauthorized')
 
+        // Mark user account as banned
         const users = await Collections.users()
-        const bannedUsers = await Collections.bannedUsers()
-
         const user = await users.findOneAndUpdate({ userName: input }, { $set: { banned: true } })
-        
         if (!user) throw new Error('User not found')
-        
-        if (!user.emails.length) throw new Error('No emails to ban')
 
+        // Mark all playtests from this user as closed
+        const playtests = await Collections.playtests()
+        await playtests.updateMany({ userId: user.userId }, { $set: { closedManually: true } })
+        
+        // Save user emails so they can't dodge the ban by deleting their data
+        const bannedUsers = await Collections.bannedUsers()
+        if (!user.emails.length) throw new Error('No emails to ban')
         await bannedUsers.insertMany(user.emails.map(email => ({ email })))
     })
 
 const validateUser = protectedProcedure
     .input(z.object({ userName: z.string(), href: z.string() }))
     .mutation(async ({ input: { userName, href }, ctx }) => {
-        const perms = await getPermissions(ctx.auth.userId)
-        if (!perms.permissions.admin) throw new Error('Unauthorized')
+        if (ctx.auth.userId !== process.env[adminConfKey]) throw new Error('Unauthorized')
 
         const users = await Collections.users()
         await users.updateOne({ userName }, { $set: { 'publisherProfile.manualProof': href } })

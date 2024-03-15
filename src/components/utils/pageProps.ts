@@ -29,7 +29,7 @@ async function getUserCtx(userId: string|null): Promise<ServerSideProps['userCtx
 }
 
 // Server side (every single page should re-export this function)
-export const serverPropsGetter: ServerSidePropsGetter<ServerSideProps> = (async (ctx) => {
+export const serverPropsGetter = (async (ctx) => {
     const { userId } = getAuth(ctx.req);
 
     return {
@@ -38,4 +38,4 @@ export const serverPropsGetter: ServerSidePropsGetter<ServerSideProps> = (async 
             userCtx: await getUserCtx(userId),
         }
     }
-})
+}) satisfies ServerSidePropsGetter<ServerSideProps>

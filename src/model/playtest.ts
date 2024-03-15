@@ -40,13 +40,20 @@ export const PlaytestSchema = z.object({
     // Initialized by the server on creation
     // Can be updated later
     closedManually: z.boolean(),
+    applications: z.record(z.string(), z.boolean()), // { [userId: string]: boolean is accepted }
 })
 
 
 // On creation
 export type Playtest = z.infer<typeof PlaytestSchema>
 
-export const CreatablePlaytestSchema = PlaytestSchema.omit({ _id: true, userId: true, createdTimestamp: true, closedManually: true })
+export const CreatablePlaytestSchema = PlaytestSchema.omit({ 
+    _id: true, 
+    userId: true, 
+    createdTimestamp: true, 
+    closedManually: true,
+    applications: true,
+})
 export type CreatablePlaytest = Prettify<z.infer<typeof CreatablePlaytestSchema>>
 
 export const newPlaytest = {

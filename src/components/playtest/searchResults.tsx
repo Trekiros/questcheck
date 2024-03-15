@@ -48,9 +48,13 @@ const SearchResults: FC<{ search: PlaytestSearchParams }> = ({ search }) => {
                     </div>
                 ) : (
                     <ul>
-                        {playtestsQuery.data.map((playtest, i) => (
-                            <PlaytestCard key={playtest._id} playtest={playtest} />
-                        ))}
+                        {playtestsQuery.data.map((result, i) => {
+                            const { author, ...summary } = result
+
+                            return (
+                                <PlaytestCard key={summary._id} summary={summary} author={author!} />
+                            )
+                        })}
                     </ul>
                 )}
             </section>

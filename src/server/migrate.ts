@@ -7,13 +7,13 @@ import { Db } from "mongodb"
  * Don't forget to remove migrations which have already been executed in prod
  */
 export default async function migration(db: Db) {
-    /*await performMigration('publisherprofile', async () => {
-        await db.collection<User>('users').updateMany({
-            
+    await performMigration('applications', async () => {
+        await db.collection<User>('playtests').updateMany({
+            applications: { $ne: true }
         }, {
-            $set: { publisherProfile: {  } },
+            $set: { applications: {} },
         })
-    })*/
+    })
 
 
 

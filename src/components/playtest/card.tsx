@@ -1,5 +1,5 @@
 
-import { PlaytestSummary } from "@/model/playtest";
+import { Playtest, PlaytestSummary } from "@/model/playtest";
 import { FC } from "react";
 import styles from './card.module.scss'
 import { PublicUser } from "@/model/user";
@@ -9,60 +9,78 @@ import { faFacebook, faTwitter } from "@fortawesome/free-brands-svg-icons";
 import { faShareFromSquare } from "@fortawesome/free-solid-svg-icons";
 import Markdown from "../utils/markdown";
 import { tagClassName } from "./searchParams";
+import { ContractPDF, generateContract } from "./edit/contract";
+import { useUserCtx } from "../utils/page";
+import { useUser } from "@clerk/nextjs";
 
-const PlaytestCard: FC<{ playtest: PlaytestSummary & { author?: PublicUser} }> = ({ playtest }) => {
+type PropType = {
+    author: PublicUser,
+} & (
+    { playtest: Playtest, summary?: undefined }
+  | { summary: PlaytestSummary, playtest?: undefined }
+)
+
+const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
+    const userCtx = useUserCtx()
+    const user = useUser()
+    const common = playtest || summary
+
     return (
-        <li className={styles.playtest}>
-            <div className={styles.header}>
-                <Link 
-                    title={playtest.name}
-                    href={'/playtest/' + playtest._id}
-                    className={styles.name}>
-                        {playtest.name}
-                </Link>
+        <li className={`${styles.playtest} ${!playtest && styles.summary}`}>
+            <section className={styles.header}>
+                { playtest ? (
+                    <h1>{playtest.name}</h1>
+                ) : (
+                    <Link 
+                        title={summary.name}
+                        href={'/playtest/' + summary._id}
+                        className={styles.name}>
+                            {summary.name}
+                    </Link>
+                )}
                 
-                { playtest.author && (
+                { author && (
                     <div className={styles.author}>
                         <Link
                             href={
-                                playtest.author.publisherProfile.twitterProof ? `https://twitter.com/${playtest.author.publisherProfile.twitterProof}`
-                              : playtest.author.publisherProfile.facebookProof ? `https://www.facebook.com/${playtest.author.publisherProfile.facebookProof}`
-                              : playtest.author.publisherProfile.manualProof!
+                                author.publisherProfile.twitterProof ? `https://twitter.com/${author.publisherProfile.twitterProof}`
+                              : author.publisherProfile.facebookProof ? `https://www.facebook.com/${author.publisherProfile.facebookProof}`
+                              : author.publisherProfile.manualProof!
                             } 
                             target="_blank">
-                                {playtest.author.userName}
+                                {author.userName}
 
                                 <FontAwesomeIcon icon={
-                                    playtest.author.publisherProfile.twitterProof ? faTwitter
-                                    : playtest.author.publisherProfile.facebookProof ? faFacebook
+                                    author.publisherProfile.twitterProof ? faTwitter
+                                    : author.publisherProfile.facebookProof ? faFacebook
                                     : faShareFromSquare
                                 } />
                         </Link>
                     </div>
                 )}
-            </div>
+            </section>
 
-            <div className={styles.body}>
+            <section className={styles.body}>
                 <div className={styles.stakes}>
                     <div className={styles.row}>
                         <label>Type:</label>
-                        {playtest.task}
+                        {common.task}
                     </div>
                     <div className={styles.row}>
                         <label>Bounty:</label>
-                        {playtest.bounty}
+                        {common.bounty}
                     </div>
-                    { !!playtest.maxPositions && (
+                    { !!common.maxPositions && (
                         <div className={styles.row}>
                             <label>Spots:</label>
-                            {playtest.maxPositions}
+                            {common.maxPositions}
                         </div>
                     )}
-                    { !!playtest.tags.length && (
+                    { !!common.tags.length && (
                         <div className={styles.row}>
                             <label>Tags:</label>
                             <div className={styles.tags}>
-                                {playtest.tags.map(tag => (
+                                {common.tags.map(tag => (
                                     <span 
                                         key={tag} 
                                         className={tagClassName(tag)}>
@@ -75,9 +93,42 @@ const PlaytestCard: FC<{ playtest: PlaytestSummary & { author?: PublicUser} }> =
                 </div>
 
                 <div className={styles.description}>
-                    <Markdown text={playtest.description} />
+                    <Markdown text={common.description} />
                 </div>
-            </div>
+
+            </section>
+
+            { !!playtest && (
+                <section className={styles.bountyDetails}>
+                    { !!playtest.bountyDetails && <>
+                        <h3>Bounty Details</h3>
+
+                        <Markdown text={common.bountyDetails} />
+                    </>}
+
+                    { (playtest.userId !== user.user?.id) && <>
+                        <hr />
+
+                        <h3>Playtest Agreement</h3>
+
+                        By submitting an application to this playtest, you agree that if the publisher accepts your application, 
+                        the following agreement will come into effect.
+
+                        <p>
+                            Important Note:<br />
+                            The contract you end up signing with the publisher is what will arbitrate your relationship with the publisher.
+                            Quest Check only exists to facilitate your meeting with publishers, not to moderate it.
+                            By applying to a playtest on this website, you agree that Quest Check is not your lawyer, does not provide legal advice, 
+                            and will not be held accountable for any legal dispute between you and the publisher related to this playtest.
+                        </p>
+
+                        <ContractPDF 
+                            playtest={playtest} 
+                            user={author} 
+                            text={generateContract(playtest, author, userCtx?.user)} />
+                    </>}
+                </section>
+            )}
         </li>
     )
 }

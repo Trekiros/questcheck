@@ -53,12 +53,22 @@
         }
 
         .description > * {
-            overflow: hidden;
-            display: -webkit-box;
-            -webkit-box-orient: vertical;
-            -webkit-line-clamp: 4;
 
             h2, h3, h4 { margin: 0 }
         }
+    }
+
+    &.summary .description > * {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 4;
+    }
+
+    .bountyDetails {
+        display: grid;
+
+        hr { width: 100% }
+        h3 { margin: 0 }
     }
 }

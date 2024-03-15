@@ -1,7 +1,7 @@
 import { PlaytestSearchParamSchema, Playtest, CreatablePlaytestSchema, PerPageSchema, Task, Bounty, PlaytestSummarySchema, PlaytestSummary } from "@/model/playtest";
 import { Collections } from "../mongodb";
 import { z } from "zod";
-import { Filter, FindCursor } from "mongodb";
+import { Filter, FindCursor, ObjectId } from "mongodb";
 import {  protectedProcedure, router, publicProcedure } from "../trpc";
 import { arrMap, pojoMap } from "@/model/utils";
 import { PublicUser, PublicUserSchema } from "@/model/user";
@@ -21,6 +21,7 @@ const create =  protectedProcedure
             userId,
             createdTimestamp: Date.now(),
             closedManually: false,
+            applications: {},
         }
         const result = await playtests.insertOne(newPlaytest)
 
@@ -98,14 +99,52 @@ const search = publicProcedure
         // Map playtests to their authors
         const result: (PlaytestSummary & { author?: PublicUser })[] = playtests.map(playtest => ({ 
             ...playtest,
-            author: usersById[playtest.userId],
+            author: usersById[playtest.userId]!,
         }))
 
         return result
     })
 
 
+const apply = protectedProcedure
+    .input(z.string().length(12))
+    .mutation(async ({ input, ctx: { auth: { userId } } }) => {
+        const playtestCol = await Collections.playtests()
+        const result = await playtestCol.updateOne(
+            { 
+                _id: new ObjectId(input), 
+                closedManually: false, 
+                applicationDeadline: { $gte: Date.now() } 
+            },
+            { $set: { 
+                ["applications." + userId]: false 
+            } },
+        )
+
+        return !!result.modifiedCount
+    })
+
+const accept = protectedProcedure
+    .input(z.object({ playtestId: z.string(), applicantId: z.string() }))
+    .mutation(async ({ input: { playtestId, applicantId }, ctx: { auth: { userId }}}) => {
+        const playtestCol = await Collections.playtests()
+        const result = await playtestCol.updateOne(
+            { 
+                _id: new ObjectId(playtestId),
+                userId,
+                ["applications." + applicantId]: false,
+            },
+            { $set: { 
+                ["applications." + applicantId]: true,
+            } },
+        )
+
+        return !!result.modifiedCount
+    })
+
 export const PlaytestRouter = router({
     create,
     search,
+    apply,
+    accept,
 })

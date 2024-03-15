@@ -4,6 +4,19 @@ import React, { FC, ReactNode, useEffect, useState } from "react";
 import PDF from "@react-pdf/renderer";
 import contractTemplate from './contractTemplate.md'
 import styles from './edit.module.scss'
+import dynamic from "next/dynamic";
+
+// react-pdf can't be run server-side (and even if it could, it's probably a bad idea to)
+// This ensures it is only ever imported & ran client-side
+const PDFViewer = dynamic(
+  () => import("@react-pdf/renderer").then((mod) => mod.PDFViewer),
+  {
+    ssr: false,
+    loading: () => <p>Loading...</p>,
+  },
+);
+
+
 
 /*
     The template is a markdown document, but with the following extra properties:
@@ -85,6 +98,7 @@ export function generateContract(playtest: CreatablePlaytest, publisher: Mutable
           + "The Playtester agrees not to publicly disclose this confidential information, until at least 3 months after the publication of the playtest material. "
           + "\n\nNote: This clause does not prevent the Playtester from reporting unlawful behavior from the Publisher to the relevant authorities. "
         ))
+        .replaceAll('{playtestId}', playtest.name)
 
     if (!!playtester) {
         result = result.replaceAll('{playtester}', playtester?.userName || '{playtester}')
@@ -305,7 +319,7 @@ export const ContractTemplateEditor: FC<{ user: MutableUser, playtest: Creatable
 
 export const ContractPDF: FC<{ user: MutableUser, playtest: CreatablePlaytest, text: string }> = ({ user, playtest, text }) => {
     return (
-        <PDF.PDFViewer showToolbar={true} width='100%' height='600px'>
+        <PDFViewer showToolbar={true} width='100%' height='600px'>
             <PDF.Document
                 title={playtest.name}
                 author={user.userName}>
@@ -339,6 +353,6 @@ export const ContractPDF: FC<{ user: MutableUser, playtest: CreatablePlaytest, t
                             </PDF.View>
                     </PDF.Page>
             </PDF.Document>
-        </PDF.PDFViewer>
+        </PDFViewer>
     )
 }
