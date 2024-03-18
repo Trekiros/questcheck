@@ -4,7 +4,11 @@ import { FC, ReactNode, createContext, useContext } from "react";
 import NavBar from "./navbar";
 
 export type ServerSideProps = {
-    userCtx: { user: MutableUser, permissions: Permissions } | null,
+    userCtx: { 
+        user: MutableUser, 
+        permissions: Permissions,
+        userId: string,
+    } | null,
 }
 
 // Client side (hte props are those given by getServerSideProps)

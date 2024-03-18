@@ -108,6 +108,14 @@ const NavBar: FC<{}> = ({}) => {
 								<AdminActions />
 							</>}
 
+							{ mongoUser.user.isPlayer && (
+								<Link href='/applications'>My Applications</Link>
+							)}
+
+							{ mongoUser.user.isPublisher && (
+								<Link href='/playtest'>My Playtests</Link>
+							)}
+
 							<Link href='/settings'>{mongoUser.user.userName} { mongoUser.permissions.admin ? <i>(admin)</i> : null }</Link>
 							<UserButton appearance={ClerkTheme} />
 						</> : <>

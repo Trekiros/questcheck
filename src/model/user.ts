@@ -69,5 +69,5 @@ export const newUser = {
 
 
 // These are the fields another user is allowed to see
-export const PublicUserSchema = UserSchema.omit({ userNameLowercase: true })
+export const PublicUserSchema = UserSchema.omit({ userNameLowercase: true, emails: true })
 export type PublicUser = z.infer<typeof PublicUserSchema>

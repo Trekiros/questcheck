@@ -43,6 +43,10 @@ const search = publicProcedure
         type PlaytestFilter = Filter<Omit<Playtest, '_id'>>
         const $and: NonNullable<PlaytestFilter["$and"]> = []
 
+        if (!search.includeClosed) { $and.push( {
+            closedManually: { $ne: true },
+            applicationDeadline: { $lt: Date.now() },
+        })}
         if (search.includeTags?.length) { $and.push({ tags: { $in: search.includeTags }}) }
         if (search.excludeTags?.length) { $and.push({ tags: { $nin: search.excludeTags }}) }
         if (search.includeAuthors) { $and.push({ userId: { $in: search.includeAuthors }}) }
@@ -107,7 +111,7 @@ const search = publicProcedure
 
 
 const apply = protectedProcedure
-    .input(z.string().length(12))
+    .input(z.string().max(30))
     .mutation(async ({ input, ctx: { auth: { userId } } }) => {
         const playtestCol = await Collections.playtests()
         const result = await playtestCol.updateOne(
@@ -142,9 +146,28 @@ const accept = protectedProcedure
         return !!result.modifiedCount
     })
 
+const close = protectedProcedure
+    .input(z.string().max(30))
+    .mutation(async ({ input, ctx: { auth: { userId } } }) => {
+        const playtestCol = await Collections.playtests()
+        const result = await playtestCol.updateOne(
+            { 
+                _id: new ObjectId(input),
+                userId,
+                closedManually: false,
+            },
+            { $set: {
+                closedManually: true,
+            } },
+        )
+
+        return !!result.modifiedCount
+    })
+
 export const PlaytestRouter = router({
     create,
     search,
     apply,
     accept,
+    close,
 })

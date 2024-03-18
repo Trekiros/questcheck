@@ -6,12 +6,13 @@ import { PublicUser } from "@/model/user";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFacebook, faTwitter } from "@fortawesome/free-brands-svg-icons";
-import { faShareFromSquare } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faEllipsis, faExclamationTriangle, faLock, faPerson, faQuestionCircle, faShareFromSquare, faUsers } from "@fortawesome/free-solid-svg-icons";
 import Markdown from "../utils/markdown";
 import { tagClassName } from "./searchParams";
 import { ContractPDF, generateContract } from "./edit/contract";
 import { useUserCtx } from "../utils/page";
 import { useUser } from "@clerk/nextjs";
+import { keys } from "@/model/utils";
 
 type PropType = {
     author: PublicUser,
@@ -24,6 +25,9 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
     const userCtx = useUserCtx()
     const user = useUser()
     const common = playtest || summary
+
+    const participants = !summary ? 0 : keys(summary.applications).filter(applicantId => !!summary.applications[applicantId]).length
+    const applicants = !summary ? 0 : keys(summary.applications).filter(applicantId => !summary.applications[applicantId]).length
 
     return (
         <li className={`${styles.playtest} ${!playtest && styles.summary}`}>
@@ -106,7 +110,7 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
                         <Markdown text={common.bountyDetails} />
                     </>}
 
-                    { (playtest.userId !== user.user?.id) && <>
+                    { (!!user.user) && (playtest.userId !== user.user?.id) && <>
                         <hr />
 
                         <h3>Playtest Agreement</h3>
@@ -127,6 +131,30 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
                             user={author} 
                             text={generateContract(playtest, author, userCtx?.user)} />
                     </>}
+                </section>
+            )}
+
+            { !!summary && (
+                <section className={styles.summary}>
+                    { 
+                        summary.closedManually ? <div className={styles.closed}><FontAwesomeIcon icon={faLock}/> Closed Manually</div> 
+                      : (summary.applicationDeadline < Date.now()) && <div className={styles.closed}><FontAwesomeIcon icon={faLock}/> Applications closed</div>
+                    }
+
+                    { !!participants && (
+                        <div><FontAwesomeIcon icon={faUsers} /> Participants: {participants}</div>
+                    )}
+                    { !!applicants && (
+                        <div><FontAwesomeIcon icon={faQuestionCircle} /> Open Applications: {applicants}</div>
+                    )}
+
+                    { user.user && (summary.applications[user.user?.id] !== undefined) && (
+                        summary.applications[user.user?.id] ? (
+                            <div><FontAwesomeIcon icon={faCheck} /> You are a participant!</div>
+                        ):(
+                            <div><FontAwesomeIcon icon={faEllipsis} /> You have applied!</div>
+                        )
+                    )}
                 </section>
             )}
         </li>

@@ -71,4 +71,18 @@
         hr { width: 100% }
         h3 { margin: 0 }
     }
+
+    .summary {
+        display: grid;
+        gap: 6px;
+
+        > * {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .closed { color: #aaa }
+        svg { width: 16px; height: 16px }
+    }
 }

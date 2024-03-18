@@ -35,7 +35,7 @@ const SettingsPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
     const twitterUsername = clerkUser.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'x')?.username
     const facebookUsername = clerkUser.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'facebook')?.username
 
-    const disabled = !userCtx?.user || userMutation.isLoading
+    const disabled = userMutation.isLoading
 
     // On username changed: wait 2s then check if it's taken
     useEffect(() => {

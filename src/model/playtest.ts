@@ -87,6 +87,8 @@ export const PlaytestSummarySchema = PlaytestSchema.pick({
 
     bounty: true,
     bountyDetails: true,
+
+    applications: true,
 })
 export type PlaytestSummary = z.infer<typeof PlaytestSummarySchema>
 

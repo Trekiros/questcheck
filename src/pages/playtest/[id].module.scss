@@ -1,5 +1,92 @@
+@import '../../styles/mixins';
+
 .playtestDetails {
     padding: 1em;
     width: min(800px, 100%);
     margin: auto auto;
+    display: grid;
+
+    .secret {
+        background: #655;
+        padding: 1em;
+        display: grid;
+
+        h3 { margin: 0 }
+
+        > a {
+            @include clickable;
+        }
+    }
+
+    .applicationForm {
+        padding: 1em;
+        background: #544;
+        display: grid;
+
+        .agreeBtn { justify-content: start }
+        h3, p { margin: 0 }
+    }
+
+    .applications {
+
+        .actions {
+            margin-top: 1em;
+            display: grid;
+        }
+        
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 1em;
+        }
+
+        .placeholder { color: #aaa }
+
+        .application {
+            display: grid;
+            gap: 1em;
+            padding: 1em;
+            background: #544;
+
+            .userName {
+                font-size: 1.5em;
+            }
+
+            .systems {
+                display: grid;
+                gap: 1em;
+            }
+
+            .system {
+                .header { display: flex; gap: 1em }
+                label { font-weight: bold }
+                svg { width: 16px; height: 16px; }
+
+                .stars {
+                    display: flex;
+                    align-items: center;
+                    gap: 0;
+                    
+                    .star {
+                        width: 20px; 
+                        height: 20px;
+
+                        &:not(.familiar) { color: #888 }
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+.acceptDialog {
+    display: grid;
+    gap: 1em;
+    width: 600px;
+
+    h3 { margin: 0 }
+
 }

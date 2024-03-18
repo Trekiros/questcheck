@@ -25,7 +25,7 @@ async function getUserCtx(userId: string|null): Promise<ServerSideProps['userCtx
         if (!user.isPublisher) user.publisherProfile = newUser.publisherProfile
     }
 
-    return { user: result, permissions }
+    return { user: result, permissions, userId }
 }
 
 // Server side (every single page should re-export this function)

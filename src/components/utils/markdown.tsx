@@ -1,7 +1,5 @@
-import { FC, useState } from 'react'
+import { FC } from 'react'
 import ReactMarkdown from 'react-markdown'
-import rehypeRaw from 'rehype-raw'
-import remarkGfm from 'remark-gfm'
 import styles from './markdown.module.scss'
 import Link from 'next/link'
 
@@ -26,7 +24,8 @@ const Markdown: FC<PropType> = ({ text }) => {
                 ]}
                 components={{
                     // h2 is demoted to h2 for SEO reasons: a web page should only have a single h1 tag.
-                    h1: ({ children, ...props}) => <h2 {...props}>{children}</h2>
+                    h1: ({ children, ...props}) => <h2 {...props}>{children}</h2>,
+                    a: ({ children, href }) => <Link href={href!} target="_blank">{children}</Link>
                 }}>
                     {text}
             </ReactMarkdown>

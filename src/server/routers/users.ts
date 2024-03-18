@@ -110,6 +110,16 @@ const updateSelf = protectedProcedure
                 await users.updateOne({ _id: result.upsertedId }, { banned: true })
             }
         }
+
+        // If the user is a new one, ensure the publisher profile isn't undefined because that would make them impossible to parse
+        if (result.upsertedId && !input.isPublisher) {
+            await users.updateOne({ 
+                _id: result.upsertedId, 
+                publisherProfile: { $exists: false }, 
+            }, { 
+                $set: { publisherProfile: { } },
+            })
+        }
     })
 
 const deleteSelf = protectedProcedure
