@@ -1,20 +1,18 @@
 import { NextSeo } from 'next-seo'
 import styles from './[id].module.scss'
-import { FC, useState } from 'react'
+import { FC, useMemo, useState } from 'react'
 import Page, { ServerSideProps } from '@/components/utils/page'
 import { serverPropsGetter } from '@/components/utils/pageProps';
 import type { GetServerSideProps as ServerSidePropsGetter } from 'next'
 import { Playtest } from '@/model/playtest';
 import { Collections } from '@/server/mongodb';
-import { ObjectId, WithId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import { getAuth } from "@clerk/nextjs/server";
-import { PublicUser, PublicUserSchema, SystemFamiliarityList, User } from '@/model/user';
+import { PublicUser, PublicUserSchema, SystemFamiliarity, SystemFamiliarityList, User } from '@/model/user';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFacebook, faTwitter } from '@fortawesome/free-brands-svg-icons';
-import { faClose, faDownload, faFile, faShareFromSquare, faStar } from '@fortawesome/free-solid-svg-icons';
-import { pojoMap } from '@/model/utils';
-import { tagClassName } from '@/components/playtest/searchParams';
+import { faCheck, faChevronDown, faChevronUp, faClose, faDownload, faFile, faShareFromSquare, faStar } from '@fortawesome/free-solid-svg-icons';
+import { keys, pojoMap } from '@/model/utils';
 import Markdown from '@/components/utils/markdown';
 import PlaytestCard from '@/components/playtest/card';
 import Checkbox from '@/components/utils/checkbox';
@@ -48,18 +46,18 @@ export const getServerSideProps: ServerSidePropsGetter<PageProps> = async (ctx) 
     if (!canSee) {
         playtest.privateDescription = ""
         playtest.feedbackURL = ""
-        playtest.applications = {}
     }
 
     // Get Author & applicants
     const users = await Collections.users()
     const userProjection = pojoMap(PublicUserSchema.shape, () => 1 as const)
+    const applicantIds = keys(playtest.applications).filter(appId => playtest.applications[appId] !== false)
     const [authorDoc, applicants] = await Promise.all([
         users.findOne({ userId: playtest.userId }, { projection: userProjection }),
-        !Object.keys(playtest.applications).length ? (
+        !applicantIds.length ? (
             new Promise(resolve => resolve([])) satisfies Promise<PublicUser[]>
         ) : (
-            users.find({ userId: { $in: Object.keys(playtest.applications)}}, { projection: userProjection})
+            users.find({ userId: { $in: applicantIds}}, { projection: userProjection})
                 .map(({ _id, ...user }) => user)
                 .toArray() satisfies Promise<PublicUser[]>
         ),
@@ -89,24 +87,10 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applica
     const [agreed, setAgreed] = useState(isApplicant)
     const applyMutation = trpcClient.playtests.apply.useMutation()
     const acceptMutation = trpcClient.playtests.accept.useMutation()
+    const rejectMutation = trpcClient.playtests.reject.useMutation()
     const closeMutation = trpcClient.playtests.close.useMutation()
     const { setDialog } = useDialog()
     const router = useRouter()
-
-    // Sort systems known by the applicants, so that the ones useful for the playtest appear first.
-    const systemsList = playtest.tags.filter(t => t.startsWith('Game: ')).map(t => t.substring('Game: '.length))
-    type System = User['playerProfile']['systems'][number]
-    function sortSystems(system1: System, system2: System) {
-        const system1IsUseful = systemsList.includes(system1.system)
-        const system2IsUseful = systemsList.includes(system2.system)
-
-        if (system1IsUseful && system2IsUseful) return 0
-
-        if (system1IsUseful) return 1
-        if (system2IsUseful) return -1
-
-        return 0
-    }
 
     return (
         <Page userCtx={userCtx}>
@@ -171,7 +155,9 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applica
                         <ul>
                             { applicants.map(applicant => (
                                 <li key={applicant.userId} className={styles.application}>
-                                    <label className={styles.userName}>{applicant.userName}</label>
+                                    <label className={styles.userName}>
+                                        {applicant.userName}
+                                    </label>
                                     
                                     { !!applicant.userBio.length && (
                                         <section>
@@ -180,30 +166,13 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applica
                                         </section>
                                     )}
 
-                                    { applicant.playerProfile.systems.length && (
-                                        <section className={styles.systems}>
-                                            <label>Systems known:</label>
-                                            <ul>
-                                                { applicant.playerProfile.systems.sort(sortSystems).map(({ system, details, familiarity }, i) => (
-                                                    <li key={i} className={styles.system}>
-                                                        <div className={styles.header}>
-                                                            <label>{system}</label>
-                                                            <div className={styles.stars}>
-                                                                {[1,2,3,4,5].map(star => (
-                                                                    <FontAwesomeIcon
-                                                                        key={star}
-                                                                        className={`${styles.star} ${familiarity >= star ? styles.familiar : undefined}`}
-                                                                        icon={faStar} />
-                                                                ))}
-                                                            </div>
-                                                            <span>({SystemFamiliarityList[familiarity - 1]})</span>
-                                                        </div>
+                                    <SystemsDisplay user={applicant} playtest={playtest} />
 
-                                                        <Markdown text={details} />
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </section>
+                                    { (playtest.applications[applicant.userId] === true) && (
+                                        <div className={styles.isParticipant}>
+                                            <FontAwesomeIcon icon={faCheck} />
+                                            { applicant.userName } is a participant!
+                                        </div>
                                     )}
 
                                     { isCreator && (
@@ -219,7 +188,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applica
                                                     Download Agreement
                                                     <FontAwesomeIcon icon={faFile} />
                                                 </button>
-                                            </> : (
+                                            </> : <>
                                                 <button onClick={() => setDialog(<div className={styles.acceptDialog}>
                                                     <h3>Confirm</h3>
 
@@ -237,7 +206,17 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applica
                                                 })}>
                                                     Accept
                                                 </button>
-                                            )}
+                                                <button onClick={() => setDialog(
+                                                    "Are you sure you want to reject this application? This cannot be undone.",
+                                                    async confirm => {
+                                                        if (!confirm) return;
+                                                        await rejectMutation.mutateAsync({ playtestId: playtest._id, applicantId: applicant.userId })
+                                                        router.refresh() // TODO: replace this with playtestQuery.revalidate
+                                                    }
+                                                )}>
+                                                    Reject
+                                                </button>
+                                            </>}
                                         </section>
                                     )}
                                 </li>
@@ -245,24 +224,86 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applica
                         </ul>
                     )}
 
-                    <div className={styles.actions}>
-                        <button 
-                            disabled={playtest.closedManually || Date.now() > playtest.applicationDeadline}
-                            onClick={() => setDialog("Are you sure? This cannot be undone.", async confirm => {
-                                if (!confirm) return;
-                                await closeMutation.mutateAsync(playtest._id)
-                                router.refresh() // TODO: replace this with playtestQuery.revalidate
-                            })}>
-                                { (playtest.closedManually || Date.now() > playtest.applicationDeadline)
-                                    ? "Applications Closed"
-                                    : "Close Applications"
-                                }
-                                <FontAwesomeIcon icon={faClose} />
-                        </button>
-                    </div>
                 </section>
+
+                { isCreator && (
+                    <button 
+                        className={styles.closeBtn}
+                        disabled={playtest.closedManually || Date.now() > playtest.applicationDeadline}
+                        onClick={() => setDialog("Are you sure? This cannot be undone.", async confirm => {
+                            if (!confirm) return;
+                            await closeMutation.mutateAsync(playtest._id)
+                            router.refresh() // TODO: replace this with playtestQuery.revalidate
+                        })}>
+                            { (playtest.closedManually || Date.now() > playtest.applicationDeadline)
+                                ? "Applications Closed"
+                                : "Close Applications"
+                            }
+                            <FontAwesomeIcon icon={faClose} />
+                    </button>
+                )}
             </div>
         </Page>
+    )
+}
+
+const SystemsDisplay: FC<{ user: PublicUser, playtest: Playtest }> = ({ user, playtest }) => {
+    const [collapsed, setCollapsed] = useState(true)
+    const sortedSystems = useMemo(() => {
+        // Sort systems known by the applicants, so that the ones useful for the playtest appear first.
+        const systemsList = playtest.tags.filter(t => t.startsWith('Game: ')).map(t => t.substring('Game: '.length))
+        type System = User['playerProfile']['systems'][number]
+        function sortSystems(system1: System, system2: System) {
+            const system1IsUseful = systemsList.includes(system1.system)
+            const system2IsUseful = systemsList.includes(system2.system)
+
+            console.log(system1, system1IsUseful)
+
+            if (system1IsUseful && system2IsUseful) return 0
+
+            if (system1IsUseful) return -1
+            if (system2IsUseful) return 1
+
+            return 0
+        }
+
+        return user.playerProfile.systems.sort(sortSystems)
+    }, [playtest.tags, user.playerProfile.systems])
+    
+    if (!user.playerProfile.systems.length) return null;
+
+    return (
+        <section className={styles.systems}>
+            <label>
+                Systems known
+
+                { (sortedSystems.length > 3) && (
+                    <button onClick={() => setCollapsed(!collapsed)}>
+                        <FontAwesomeIcon icon={collapsed ? faChevronDown : faChevronUp} />
+                    </button>
+                )}
+            </label>
+            <ul>
+                { (collapsed ? sortedSystems.slice(0, 3) : sortedSystems).map(({ system, details, familiarity }, i) => (
+                    <li key={i} className={styles.system}>
+                        <div className={styles.header}>
+                            <label>{system}</label>
+                            <div className={styles.stars}>
+                                {[1,2,3,4,5].map(star => (
+                                    <FontAwesomeIcon
+                                        key={star}
+                                        className={`${styles.star} ${familiarity >= star ? styles.familiar : undefined}`}
+                                        icon={faStar} />
+                                ))}
+                            </div>
+                            <span>({SystemFamiliarityList[familiarity - 1]})</span>
+                        </div>
+
+                        <Markdown text={details} />
+                    </li>
+                ))}
+            </ul>
+        </section>
     )
 }
 

@@ -5,7 +5,6 @@ import { serverPropsGetter } from '@/components/utils/pageProps';
 import { FC, useState } from 'react';
 import { trpcClient } from '@/server/utils';
 import PlaytestCard from '@/components/playtest/card';
-import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 
@@ -15,7 +14,7 @@ const PlaytestListPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
     const [page, setPage] = useState(0)
     const [perPage, setPerPage] = useState<10|25|50>(10)
     const searchQuery = trpcClient.playtests.search.useQuery({ page, perPage, search: {
-        includeAuthors: [userCtx!.userId],
+        includesMe: true,
         includeClosed: true,
     }})
     const { count, playtests } = searchQuery.data || {}
@@ -31,14 +30,13 @@ const PlaytestListPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
                     { 
                         !playtests ? <div className={styles.placeholder}>Loading...</div>
                       : (playtests.length === 0) ? <div className={styles.placeholder}>
-                            No playtests found.
-                            <Link href='/playtest/new'>Create new playtest!</Link>
+                            No playtests found - apply to a playtest and it will be displayed here!
                         </div>
                       : (
                         playtests.map(playtest => (
                             <PlaytestCard
                                 key={playtest._id} 
-                                author={{ userId: userCtx!.userId, ...userCtx!.user! }} 
+                                author={playtest.author!} 
                                 summary={playtest} />
                         ))
                       )

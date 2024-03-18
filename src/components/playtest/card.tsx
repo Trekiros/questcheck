@@ -6,7 +6,7 @@ import { PublicUser } from "@/model/user";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFacebook, faTwitter } from "@fortawesome/free-brands-svg-icons";
-import { faCheck, faEllipsis, faExclamationTriangle, faLock, faPerson, faQuestionCircle, faShareFromSquare, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faClose, faEllipsis, faLock, faQuestionCircle, faShareFromSquare, faUsers } from "@fortawesome/free-solid-svg-icons";
 import Markdown from "../utils/markdown";
 import { tagClassName } from "./searchParams";
 import { ContractPDF, generateContract } from "./edit/contract";
@@ -27,20 +27,20 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
     const common = playtest || summary
 
     const participants = !summary ? 0 : keys(summary.applications).filter(applicantId => !!summary.applications[applicantId]).length
-    const applicants = !summary ? 0 : keys(summary.applications).filter(applicantId => !summary.applications[applicantId]).length
+    const applicants = !summary ? 0 : keys(summary.applications).filter(applicantId => (summary.applications[applicantId] === null)).length
 
     return (
         <li className={`${styles.playtest} ${!playtest && styles.summary}`}>
             <section className={styles.header}>
-                { playtest ? (
-                    <h1>{playtest.name}</h1>
-                ) : (
+                { !!summary ? (
                     <Link 
                         title={summary.name}
                         href={'/playtest/' + summary._id}
                         className={styles.name}>
                             {summary.name}
                     </Link>
+                ) : (
+                    <h1>{playtest.name}</h1>
                 )}
                 
                 { author && (
@@ -136,7 +136,7 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
 
             { !!summary && (
                 <section className={styles.summary}>
-                    { 
+                    {
                         summary.closedManually ? <div className={styles.closed}><FontAwesomeIcon icon={faLock}/> Closed Manually</div> 
                       : (summary.applicationDeadline < Date.now()) && <div className={styles.closed}><FontAwesomeIcon icon={faLock}/> Applications closed</div>
                     }
@@ -149,10 +149,12 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
                     )}
 
                     { user.user && (summary.applications[user.user?.id] !== undefined) && (
-                        summary.applications[user.user?.id] ? (
+                        (summary.applications[user.user?.id] === null) ? (
+                            <div><FontAwesomeIcon icon={faEllipsis} /> You have applied!</div>
+                        ) : summary.applications[user.user?.id] ? (
                             <div><FontAwesomeIcon icon={faCheck} /> You are a participant!</div>
                         ):(
-                            <div><FontAwesomeIcon icon={faEllipsis} /> You have applied!</div>
+                            <div><FontAwesomeIcon icon={faClose} /> Application Rejected</div>
                         )
                     )}
                 </section>

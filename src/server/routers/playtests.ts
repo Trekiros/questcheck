@@ -38,15 +38,21 @@ const search = publicProcedure
         page: z.number(),
         perPage: PerPageSchema,
     }))
-    .query(async ({input: { search, page, perPage }}) => {
+    .query(async ({ input: { search, page, perPage }, ctx }) => {
         // Create filter
         type PlaytestFilter = Filter<Omit<Playtest, '_id'>>
         const $and: NonNullable<PlaytestFilter["$and"]> = []
 
-        if (!search.includeClosed) { $and.push( {
-            closedManually: { $ne: true },
-            applicationDeadline: { $lt: Date.now() },
-        })}
+        if (search.includesMe) {
+            if (!ctx.auth.userId) throw new Error('Unauthorized')
+
+            $and.push({ [`applications.${ctx.auth.userId}`]: { $exists: true } })
+        }
+
+        if (!search.includeClosed) { 
+            $and.push( { closedManually: { $ne: true } })
+            $and.push({ applicationDeadline: { $gt: Date.now() } })
+        }
         if (search.includeTags?.length) { $and.push({ tags: { $in: search.includeTags }}) }
         if (search.excludeTags?.length) { $and.push({ tags: { $nin: search.excludeTags }}) }
         if (search.includeAuthors) { $and.push({ userId: { $in: search.includeAuthors }}) }
@@ -88,13 +94,14 @@ const search = publicProcedure
         if (page !== 0) { cursor = cursor.skip((page - 1) * perPage) }
 
         const playtests: PlaytestSummary[] = await cursor.toArray()
+        const count = await playtestCol.countDocuments(filter)
 
         // Fetch users who created the playtests
-        const userIds = playtests.map(playtest => playtest.userId)
+        const userIds = new Set(playtests.map(playtest => playtest.userId))
         const userCol = await Collections.users()
         const userProjection = pojoMap(PublicUserSchema.shape, () => 1 as const)
-        const users: PublicUser[] = !userIds.length ? []
-            : await userCol.find({ userId: { $in: userIds } }, { projection: userProjection })
+        const users: PublicUser[] = !userIds.size ? []
+            : await userCol.find({ userId: { $in: Array.from(userIds) } }, { projection: userProjection })
                 .map(user => ({ ...user, _id: user._id.toString() }))    
                 .toArray()
         const usersById = arrMap(users, user => user.userId)
@@ -106,7 +113,7 @@ const search = publicProcedure
             author: usersById[playtest.userId]!,
         }))
 
-        return result
+        return { count, playtests: result }
     })
 
 
@@ -121,7 +128,7 @@ const apply = protectedProcedure
                 applicationDeadline: { $gte: Date.now() } 
             },
             { $set: { 
-                ["applications." + userId]: false 
+                ["applications." + userId]: null 
             } },
         )
 
@@ -136,10 +143,29 @@ const accept = protectedProcedure
             { 
                 _id: new ObjectId(playtestId),
                 userId,
-                ["applications." + applicantId]: false,
+                ["applications." + applicantId]: { $eq: null },
             },
             { $set: { 
                 ["applications." + applicantId]: true,
+            } },
+        )
+
+        return !!result.modifiedCount
+    })
+    
+
+const reject = protectedProcedure
+    .input(z.object({ playtestId: z.string(), applicantId: z.string() }))
+    .mutation(async ({ input: { playtestId, applicantId }, ctx: { auth: { userId }}}) => {
+        const playtestCol = await Collections.playtests()
+        const result = await playtestCol.updateOne(
+            { 
+                _id: new ObjectId(playtestId),
+                userId,
+                ["applications." + applicantId]: { $eq: null },
+            },
+            { $set: { 
+                ["applications." + applicantId]: false,
             } },
         )
 
@@ -169,5 +195,6 @@ export const PlaytestRouter = router({
     search,
     apply,
     accept,
+    reject,
     close,
 })

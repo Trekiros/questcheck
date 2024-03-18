@@ -40,7 +40,7 @@ export const PlaytestSchema = z.object({
     // Initialized by the server on creation
     // Can be updated later
     closedManually: z.boolean(),
-    applications: z.record(z.string(), z.boolean()), // { [userId: string]: boolean is accepted }
+    applications: z.record(z.string(), z.boolean().or(z.null())), // Key: userId of the applicant. Value: null if pending, false if rejected, true if accepted.
 })
 
 
@@ -102,6 +102,7 @@ export type Days = z.infer<typeof DaysSchema>
 
 export const PlaytestSearchParamSchema = z.object({
     includeClosed: z.boolean(),
+    includesMe: z.boolean(),
 
     includeAuthors: z.array(z.string().max(32)).max(20),
     excludeAuthors: z.array(z.string().max(32)).max(20),
@@ -119,6 +120,4 @@ export const PlaytestSearchParamSchema = z.object({
 
 export type PlaytestSearchParams = z.infer<typeof PlaytestSearchParamSchema>
 
-export const DefaultSearchParams: PlaytestSearchParams = {
-    includeClosed: false,
-}
+export const DefaultSearchParams: PlaytestSearchParams = {}

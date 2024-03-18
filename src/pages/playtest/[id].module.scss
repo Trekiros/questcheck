@@ -32,6 +32,7 @@
         .actions {
             margin-top: 1em;
             display: grid;
+            grid-template-columns: 1fr 1fr;
         }
         
         ul {
@@ -57,6 +58,21 @@
             .systems {
                 display: grid;
                 gap: 1em;
+
+                > label {
+                    display: flex;
+                    align-items: center;
+                    gap: 1em;
+
+                    button { padding: 8px }
+                }
+            }
+
+            .isParticipant {
+                display: flex;
+                gap: 8px;
+
+                svg { width: 16px; height: 16px }
             }
 
             .system {

@@ -2,7 +2,7 @@ import { PlaytestSearchParams } from "@/model/playtest";
 import { FC, useEffect, useState } from "react";
 import styles from './searchResults.module.scss'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faChevronLeft, faChevronRight, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { trpcClient } from "@/server/utils";
 import Link from "next/link";
 import PlaytestCard from "./card";
@@ -22,6 +22,7 @@ const SearchResults: FC<{ search: PlaytestSearchParams }> = ({ search }) => {
     }, [search])
 
     const playtestsQuery = trpcClient.playtests.search.useQuery({ search: throttledSearch, page, perPage })
+    const { playtests, count } = playtestsQuery.data || {}
 
     return (
         <div className={styles.results}>
@@ -38,17 +39,17 @@ const SearchResults: FC<{ search: PlaytestSearchParams }> = ({ search }) => {
 
 
             <section className={styles.list}>
-                { !playtestsQuery.data ? (
+                { !playtests ? (
                     <div className={styles.placeholder}>
                         Loading...
                     </div>
-                ) : !playtestsQuery.data.length ? (
+                ) : !playtests.length ? (
                     <div className={styles.placeholder}>
                         No results found. Try broadening your search parameters.
                     </div>
                 ) : (
                     <ul>
-                        {playtestsQuery.data.map((result, i) => {
+                        {playtests.map((result, i) => {
                             const { author, ...summary } = result
 
                             return (
@@ -58,6 +59,22 @@ const SearchResults: FC<{ search: PlaytestSearchParams }> = ({ search }) => {
                     </ul>
                 )}
             </section>
+
+            {  !!count && (count > perPage) && (
+                <section className={styles.page}>
+                    <button
+                        disabled={page === 0}
+                        onClick={() => setPage(page - 1)}>
+                            <FontAwesomeIcon icon={faChevronLeft} />
+                    </button>
+                    <span>Page {page + 1} / {Math.ceil(count! / perPage)}</span>
+                    <button
+                        disabled={count! < perPage * (page + 1)}
+                        onClick={() => setPage(page + 1)}>
+                            <FontAwesomeIcon icon={faChevronRight} />
+                    </button>
+                </section>
+            )}
         </div>
     )
 }

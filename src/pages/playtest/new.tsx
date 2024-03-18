@@ -70,12 +70,12 @@ const NewPlaytestPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
 
                     <Select
                         placeholder='Copy recent playtest?'
-                        options={recentPlaytests.data?.map(({ _id, ...recentPlaytest }) => ({ value: recentPlaytest, label: recentPlaytest.name })) || []}
+                        options={recentPlaytests.data?.playtests.map(({ _id, ...recentPlaytest }) => ({ value: recentPlaytest, label: recentPlaytest.name })) || []}
                         value={null}
                         onChange={recentPlaytest => recentPlaytest && setDialog("This will erase all of your current unsaved changes. Are you sure?", confirm => {
                             if (confirm) setPlaytest({ ...newPlaytest, ...recentPlaytest })
                         })}
-                        disabled={disabled || !recentPlaytests.data || !recentPlaytests.data.length} />
+                        disabled={disabled || !recentPlaytests.data || !recentPlaytests.data.playtests.length} />
                 </h1>
 
                 <PlaytestEditor
