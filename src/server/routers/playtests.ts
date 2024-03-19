@@ -1,11 +1,10 @@
-import { PlaytestSearchParamSchema, Playtest, CreatablePlaytestSchema, PerPageSchema, Task, Bounty, PlaytestSummarySchema, PlaytestSummary } from "@/model/playtest";
+import { PlaytestSearchParamSchema, Playtest, CreatablePlaytestSchema, PerPageSchema, Task, Bounty, PlaytestSummarySchema, PlaytestSummary, ApplicationStatusMap } from "@/model/playtest";
 import { Collections } from "../mongodb";
 import { z } from "zod";
-import { Filter, FindCursor, ObjectId } from "mongodb";
+import { AggregationCursor, Filter, FindCursor, ObjectId, WithId } from "mongodb";
 import {  protectedProcedure, router, publicProcedure } from "../trpc";
 import { arrMap, pojoMap } from "@/model/utils";
-import { PublicUser, PublicUserSchema } from "@/model/user";
-import { UserReviewSchema } from "@/model/reviews";
+import { PublicUser, PublicUserSchema, User } from "@/model/user";
 import { getPermissions } from "./users";
 
 // Returns the id of the new Playtest
@@ -22,7 +21,7 @@ const create =  protectedProcedure
             userId,
             createdTimestamp: Date.now(),
             closedManually: false,
-            applications: {},
+            applications: [],
         }
         const result = await playtests.insertOne(newPlaytest)
 
@@ -117,6 +116,93 @@ const search = publicProcedure
         return { count, playtests: result }
     })
 
+// Retrieves a single Playtest, and performs a bunch of joins to ensure all of the data is available
+export const playtestById = async (playtestId: string, userId: string|null) => {
+    // Get Playtest
+    const playtestCol = await Collections.playtests()
+    const usersCol = await Collections.users()
+
+    type ResultType = WithId<Playtest> & {
+        author: PublicUser[], 
+        applicants: (PublicUser & Pick<User, "playerReviews">)[] | null,
+        reviewers: Pick<User, "userId"|"userName">[] | null
+    }
+    const publicUserProjection = { ...pojoMap(PublicUserSchema.shape, () => 1 as const), _id: 0 }
+    const cursor = (((playtestCol.aggregate<WithId<Playtest>>()
+        .match({ _id: new ObjectId(playtestId) })
+        .lookup({
+            from: usersCol.collectionName,
+            localField: "userId",
+            foreignField: "userId",
+            pipeline: [
+                { $project: publicUserProjection },
+            ],
+            as: "author",
+        }) as AggregationCursor<Omit<ResultType, "applicants"|"reviewers">>) // This should say "satisfies" instead of "as", but mongo's library gave up typing lookups
+        .lookup({
+            from: usersCol.collectionName,
+            localField: "applications.applicantId",
+            foreignField: "userId",
+            pipeline: [
+                { $project: { ...publicUserProjection, playerReviews: 1 } },
+            ],
+            as: "applicants",
+        }) as AggregationCursor<Omit<ResultType, "reviewers">>) // Same as above
+        .lookup({
+            from: usersCol.collectionName,
+            localField: "applicants.playerReviews.byUserId",
+            foreignField: "userId",
+            pipeline: [
+                { $project: { userId: 1, userName: 1 } },
+            ],
+            as: "reviewers",
+        }) as AggregationCursor<ResultType>) // Same as above
+
+    const result = await cursor.next()
+    await cursor.close()
+
+    if (!result) throw new Error("404 - Playtest not found")
+    const { applicants, reviewers, author, _id, ...playtestData } = result
+    const playtest: Playtest = { _id: _id.toString(), ...playtestData }
+
+    // Hide secret fields from the user if they aren't allowed to see them
+    const isCreator = !!userId && (playtest.userId === userId)
+    const isParticipant = !!playtest.applications.find(app => app.applicantId === userId)
+    if (!isCreator && !isParticipant) {
+        playtest.privateDescription = ""
+        playtest.feedbackURL = ""
+    }
+    if (!isCreator) {
+        if (applicants) {
+            for (const applicant of applicants) {
+                applicant.playerReviews = []
+            }
+        }
+    }
+
+    // Map reviewers
+    const reviewerNameById: {[key: string]: string} = {}
+    if (isCreator && !!reviewers) {
+        for (const reviewer of reviewers) {
+            reviewerNameById[reviewer.userId] = reviewer.userName
+        }
+    }
+
+    return { 
+        playtest, 
+        author: author[0], 
+        applicants: applicants || [], 
+        reviewerNameById,
+    }
+}
+
+const find = publicProcedure
+    .input(z.string())
+    .query(async ({ input, ctx }) => {
+        if (!ObjectId.isValid(input)) throw new Error('Invalid Input!')
+
+        return await playtestById(input, ctx.auth.userId)
+    })
 
 const apply = protectedProcedure
     .input(z.string().max(30))
@@ -125,11 +211,20 @@ const apply = protectedProcedure
         const result = await playtestCol.updateOne(
             { 
                 _id: new ObjectId(input), 
+
+                // Can't apply if applications are closed
                 closedManually: false, 
-                applicationDeadline: { $gte: Date.now() } 
+                applicationDeadline: { $gte: Date.now() },
+
+                // Can't apply if already an applicant
+                "applications.applicantId": { $ne: userId },
             },
-            { $set: { 
-                ["applications." + userId]: null 
+            { $push: {
+                applications: {
+                    applicantId: userId,
+                    createdTimestamp: Date.now(),
+                    status: ApplicationStatusMap.pending,
+                }
             } },
         )
 
@@ -140,18 +235,24 @@ const accept = protectedProcedure
     .input(z.object({ playtestId: z.string(), applicantId: z.string() }))
     .mutation(async ({ input: { playtestId, applicantId }, ctx: { auth: { userId }}}) => {
         const playtestCol = await Collections.playtests()
-        const result = await playtestCol.updateOne(
+        const result = await playtestCol.findOneAndUpdate(
             { 
                 _id: new ObjectId(playtestId),
                 userId,
-                ["applications." + applicantId]: { $eq: null },
+                "applications.applicantId": applicantId,
             },
             { $set: { 
-                ["applications." + applicantId]: true,
+                "applications.$.status": ApplicationStatusMap.accepted,
             } },
         )
 
-        return !!result.modifiedCount
+        console.log({ 
+            _id: new ObjectId(playtestId),
+            userId,
+            "applications.userId": applicantId,
+        })
+
+        return !!result
     })
     
 
@@ -163,10 +264,10 @@ const reject = protectedProcedure
             { 
                 _id: new ObjectId(playtestId),
                 userId,
-                ["applications." + applicantId]: { $eq: null },
+                "applications.applicantId": applicantId,
             },
             { $set: { 
-                ["applications." + applicantId]: false,
+                "applications.$.status": ApplicationStatusMap.rejected,
             } },
         )
 
@@ -191,29 +292,12 @@ const close = protectedProcedure
         return !!result.modifiedCount
     })
 
-export const review = protectedProcedure
-    .input(UserReviewSchema.omit({}))
-    .mutation(async ({ input, ctx }) => {
-        const reviewsCol = await Collections.userReviews()
-        await reviewsCol.updateOne({
-            byUserId: input.byUserId,
-            ofUserId: input.ofUserId,
-            duringPlaytestId: input.duringPlaytestId,
-        }, { $set: {
-            rating: input.rating,
-            comment: input.comment,
-            createdTimestamp: Date.now(),
-        }}, {
-            upsert: true,
-        })
-    })
-
 export const PlaytestRouter = router({
     create,
     search,
+    find,
     apply,
     accept,
     reject,
     close,
-    review,
 })

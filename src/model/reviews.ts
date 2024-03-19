@@ -1,12 +1,11 @@
 import { z } from "zod";
 
 export const UserReviewSchema = z.object({
-    byUserId: z.string(),
-    ofUserId: z.string(),
-    duringPlaytestId: z.string(),
+    byUserId: z.string().max(64),
+    duringPlaytestId: z.string().max(64),
 
     rating: z.number().min(1).max(5),
-    comment: z.string().max(2000),
+    comment: z.string().max(300),
     createdTimestamp: z.number(),
 })
 

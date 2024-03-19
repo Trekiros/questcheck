@@ -1,5 +1,6 @@
+import { Playtest } from "@/model/playtest"
 import { User } from "@/model/user"
-import { Db } from "mongodb"
+import { BSONType, Db, UpdateResult } from "mongodb"
 
 /**
  * Runs migration scripts if necessary.
@@ -7,11 +8,19 @@ import { Db } from "mongodb"
  * Don't forget to remove migrations which have already been executed in prod
  */
 export default async function migration(db: Db) {
-    await performMigration('applications', async () => {
-        await db.collection<User>('playtests').updateMany({
-            applications: { $ne: true }
+    await performMigration('applications are now arrays', async () => {
+        return await db.collection<Playtest>('playtests').updateMany({
+            applications: { $type: BSONType.object },
         }, {
-            $set: { applications: {} },
+            $set: { applications: [] },
+        })
+    })
+
+    await performMigration('users now have reviews', async () => {
+        return await db.collection<User>('users').updateMany({
+            playerReviews: { $exists: false }
+        }, {
+            $set: { playerReviews: [] },
         })
     })
 
@@ -19,7 +28,7 @@ export default async function migration(db: Db) {
 
     
     
-    async function performMigration(name: string, callback: () => Promise<void>) {
+    async function performMigration(name: string, callback: () => Promise<UpdateResult<any>>) {
         const upsertResult = await db.collection<{ name: string, done: boolean }>('migrations').updateOne({ name }, { $set: { done: true } }, { upsert: true })
 
         if (!upsertResult.upsertedId) {
@@ -28,8 +37,8 @@ export default async function migration(db: Db) {
         }
 
         console.log(`Migration: executing ${name}`)
-        await callback()
-        console.log(`Migration: executed ${name} successfully`)
+        const result = await callback()
+        console.log(`Migration: executed ${name} successfully. ${result.modifiedCount} documents updated.`)
     }
 }
 

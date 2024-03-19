@@ -29,6 +29,8 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
     const participants = !summary ? 0 : keys(summary.applications).filter(applicantId => !!summary.applications[applicantId]).length
     const applicants = !summary ? 0 : keys(summary.applications).filter(applicantId => (summary.applications[applicantId] === null)).length
 
+    const userApplication = summary?.applications.find(app => app.applicantId === userCtx?.userId)
+
     return (
         <li className={`${styles.playtest} ${!playtest && styles.summary}`}>
             <section className={styles.header}>
@@ -148,10 +150,10 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
                         <div><FontAwesomeIcon icon={faQuestionCircle} /> Open Applications: {applicants}</div>
                     )}
 
-                    { user.user && (summary.applications[user.user?.id] !== undefined) && (
-                        (summary.applications[user.user?.id] === null) ? (
+                    { !!userApplication && (
+                        (userApplication.status === 'pending') ? (
                             <div><FontAwesomeIcon icon={faEllipsis} /> You have applied!</div>
-                        ) : summary.applications[user.user?.id] ? (
+                        ) : (userApplication.status === 'accepted') ? (
                             <div><FontAwesomeIcon icon={faCheck} /> You are a participant!</div>
                         ):(
                             <div><FontAwesomeIcon icon={faClose} /> Application Rejected</div>

@@ -1,4 +1,4 @@
-import { ZodSchema } from "zod";
+import { ZodSchema, z } from "zod";
 
 /**
  * Validates the given object, logs the errors if it finds any, and returns a map of errors so the UI can be updated accordingly.
@@ -37,8 +37,21 @@ export function validate<T>(obj: T, schema: ZodSchema<T>) {
 
 export type Prettify<T> = { [K in keyof T]: T[K] } & {}
 
-type PojoMap<K extends PropertyKey, V> = {[key in K]: V}
-
+/**
+ * Creates a new object by mapping each key of the source object to a new value.
+ * @param obj the object to remap
+ * @param mapper a function that maps each key in the object to a new value
+ * 
+ * @example 
+ * 1. Create a schema and a limited version of that schema
+ * const UserSchema = z.object({ id: z.string(), name: z.string(), email: z.string() })
+ * const PublicUserSchema = UserSchema.omit({ email: true })
+ * type PublicUser = z.infer<typeof PublicUserSchema>
+ * 
+ * 2. Fetch the limited version of that schema using a projection
+ * const userProjection = pojoMap(PublicUserSchema.shape, () => 1) // Shape: { id: 1, name: 1 } (note that email is not present)
+ * const users: PublicUser[] = await db.users.find({}, { projection: userProjection }).toArray()
+ */
 export function pojoMap<K extends PropertyKey, V>(obj: {[key in K]: any}, mapper: (key: K, index: number) => V) {
     const map: {[key in K]: V} = {} as any
     
@@ -51,6 +64,15 @@ export function pojoMap<K extends PropertyKey, V>(obj: {[key in K]: any}, mapper
     return map
 }
 
+/**
+ * Creates a new object by mapping each element of the source array to a key.
+ * @param obj the object to map
+ * @param mapper a function that maps each element of the source array to a new key
+ * 
+ * @example 
+ * const users = await db.users.find().toArray()
+ * const usersById: { [userId: string]: User } = arrMap(users, user => user.userId)
+ */
 export function arrMap<K extends PropertyKey, V>(arr: V[], mapper: (value: V, index: number) => K) {
     const map: {[key in K]: V} = {} as any
 
@@ -63,6 +85,21 @@ export function arrMap<K extends PropertyKey, V>(arr: V[], mapper: (value: V, in
     return map
 }
 
+/**
+ * Creates a new object by mapping each value of an enum to a value.
+ * @param arr the enum to map
+ * @param mapper a function which maps each key from the enum to a value
+ * 
+ * @example 
+ * const statusEnum = ['pending', 'accepted', 'rejected'] as const
+ * const statusMap = enumMap(statusEnum, status => status.toUpperCase())
+ * 
+ * Result: {
+ *     pending: 'PENDING',
+ *     accepted: 'ACCEPTED',
+ *     rejected: 'REJECTED',
+ * }
+ */
 export function enumMap<K extends PropertyKey, V>(arr: readonly K[], mapper: (key: K, index: number) => V) {
     const map: {[key in K]: V} = {} as any
 

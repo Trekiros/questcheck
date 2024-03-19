@@ -1,11 +1,12 @@
 import { Collections } from "../mongodb";
 import { MutableUserSchema, User, UserSchema, newUser } from "@/model/user";
 import { protectedProcedure, router } from "../trpc";
-import { Prettify } from "@/model/utils";
-import { UpdateFilter } from "mongodb";
+import { Prettify, keys } from "@/model/utils";
+import { ObjectId, UpdateFilter } from "mongodb";
 import { Writeable, z } from "zod";
 import { clerkClient } from "@clerk/nextjs";
 import { User as ClerkUser } from "@clerk/backend";
+import { UserReviewSchema } from "@/model/reviews";
 
 export type Permissions = {
     canCreate: boolean,
@@ -97,7 +98,22 @@ const updateSelf = protectedProcedure
             }
         }
 
-        const result = await users.updateOne({ userId: auth.userId }, { $set }, { upsert: true })
+        const result = await users.updateOne(
+            { userId: auth.userId },
+            {
+                $set,
+                $setOnInsert: {
+                    playerReviews: [],
+
+                    // Only $setOnInsert publisherProfile if the $set won't already create it, otherwise it causes a path conflict.
+                    ...((!input.isPublisher || !keys($set).find(key => key.startsWith('publisherProfile')))
+                        ? { publisherProfile: { } }
+                        : {}
+                    ),
+                },
+            },
+            { upsert: true },
+        )
 
         // Re-ban a user if they tried to bypass a ban by deleting their data.
         if (result.upsertedId) {
@@ -111,13 +127,11 @@ const updateSelf = protectedProcedure
             }
         }
 
-        // If the user is a new one, ensure the publisher profile isn't undefined because that would make them impossible to parse
-        if (result.upsertedId && !input.isPublisher) {
+        // If the user is a new one, ensure all necessary fields are present
+        if (result.upsertedId) {
             await users.updateOne({ 
-                _id: result.upsertedId, 
-                publisherProfile: { $exists: false }, 
-            }, { 
-                $set: { publisherProfile: { } },
+                _id: result.upsertedId,
+            }, {
             })
         }
     })
@@ -145,6 +159,37 @@ const isUsernameTaken = protectedProcedure
 
         const existingUserName = await users.findOne({ userNameLowercase: input.toLowerCase(), userId: { $ne: ctx.auth.userId }})
         return !!existingUserName
+    })
+
+    
+const review = protectedProcedure
+    .input(z.object({ playtesterId: z.string(), review: UserReviewSchema.omit({ byUserId: true, createdTimestamp: true }) }))
+    .mutation(async ({ input, ctx }) => {
+        // 1. Check if the user is allowed to submit the review => they are if the user they are reviewing is a player in their playtest
+        const playtestCol = await Collections.playtests()
+        const isAllowed = await playtestCol.findOne({
+            userId: ctx.auth.userId,
+            _id: new ObjectId(input.review.duringPlaytestId),
+            applications: {
+                applicantId: input.playtesterId,
+                status: "accepted",
+            },
+        }, { projection: { _id: true } })
+        if (!isAllowed) throw new Error('Unauthorized')
+
+        // 2. Save the review
+        const usersCol = await Collections.users()
+        await usersCol.updateOne({
+            userId: input.playtesterId,
+        }, { $push: {
+            playerReviews: {
+                ...input.review,
+                createdTimestamp: Date.now(),
+                byUserId: ctx.auth.userId
+            },
+            // Only the last 100 reviews are saved
+            $slice: -100,
+        }})
     })
 
 const banUser = protectedProcedure
@@ -180,6 +225,7 @@ export const UserRouter = router({
     updateSelf,
     deleteSelf,
     isUsernameTaken,
+    review,
 
     // Admin
     banUser,

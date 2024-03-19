@@ -5,106 +5,53 @@ import Page, { ServerSideProps } from '@/components/utils/page'
 import { serverPropsGetter } from '@/components/utils/pageProps';
 import type { GetServerSideProps as ServerSidePropsGetter } from 'next'
 import { Playtest } from '@/model/playtest';
-import { Collections } from '@/server/mongodb';
-import { ObjectId } from 'mongodb';
 import { getAuth } from "@clerk/nextjs/server";
-import { PublicUser, PublicUserSchema, SystemFamiliarity, SystemFamiliarityList, User } from '@/model/user';
+import { PublicUser, SystemFamiliarityList, User } from '@/model/user';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faChevronDown, faChevronUp, faClose, faDownload, faFile, faShareFromSquare, faStar } from '@fortawesome/free-solid-svg-icons';
-import { keys, pojoMap } from '@/model/utils';
+import { faCheck, faChevronDown, faChevronUp, faClose, faFile, faStar } from '@fortawesome/free-solid-svg-icons';
 import Markdown from '@/components/utils/markdown';
 import PlaytestCard from '@/components/playtest/card';
 import Checkbox from '@/components/utils/checkbox';
 import { trpcClient } from '@/server/utils';
 import { useDialog } from '@/components/utils/dialog';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/router';
 import { ContractPDF, generateContract } from '@/components/playtest/edit/contract';
-import { UserReview } from '@/model/reviews';
+import { playtestById } from '@/server/routers/playtests';
 
-
-type PageProps = ServerSideProps & { 
-    playtest: Playtest,
-    author: PublicUser,
-    applicants: PublicUser[],
-    reviewsByApplicant: { [applicantId: string]: UserReview[] },
-}
+type DataType = Awaited<ReturnType<typeof playtestById>>
+type PageProps = ServerSideProps & { initialData: DataType }
 
 export const getServerSideProps: ServerSidePropsGetter<PageProps> = async (ctx) => {
     const playtestId = ctx.params?.id as string
     if (!playtestId) throw new Error('Internal Server Error')
 
-    // Get Playtest
-    const playtests = await Collections.playtests()
-    const playtestDoc = await playtests.findOne({ _id: new ObjectId(playtestId) })
-    if (!playtestDoc) throw new Error('404 - Playtest not found')
-    const playtest: Playtest = { ...playtestDoc, _id: playtestDoc._id.toString() }
-
-    // Hide secret fields from the user if they aren't allowed to see them
     const userId = getAuth(ctx.req).userId;
-    const canSee = !!userId && (
-        (playtest.userId === userId) || (playtest.applications[userId] !== undefined)
-    )
-    if (!canSee) {
-        playtest.privateDescription = ""
-        playtest.feedbackURL = ""
-    }
-
-    // Get Author, applicants & user reviews
-    const users = await Collections.users()
-    const userReviews = await Collections.userReviews()
-    const userProjection = pojoMap(PublicUserSchema.shape, () => 1 as const)
-    const applicantIds = keys(playtest.applications).filter(appId => playtest.applications[appId] !== false)
-    const [authorDoc, applicants, ...reviews] = await Promise.all([
-        users.findOne({ userId: playtest.userId }, { projection: userProjection }),
-        !applicantIds.length ? (
-            new Promise(resolve => resolve([])) satisfies Promise<PublicUser[]>
-        ) : (
-            users.find({ userId: { $in: applicantIds}}, { projection: userProjection})
-                .map(({ _id, ...user }) => user)
-                .toArray() satisfies Promise<PublicUser[]>
-        ),
-        ...(
-            !applicantIds.length ? (
-                []
-            ) : (
-                applicantIds.map(applicantId => (
-                    userReviews.find({ ofUserId: applicantId }, { sort: { createdTimestamp: -1 } })
-                        .limit(5)
-                        .map(({ _id, ...review }) => review)
-                        .toArray()
-                ))
-            )
-        )
-    ])
-    if (!authorDoc) throw new Error('404 - Author not found')
-    const { _id, ...author } = authorDoc
-
-    const reviewsByApplicant: { [userId: string]: UserReview[] } = pojoMap(applicantIds, id => [])
-    for (const reviewsList of reviews) {
-        if (reviewsList.length) {
-            reviewsByApplicant[reviewsList[0].ofUserId] = reviewsList
-        }
-    }
 
     return {
         props: {
             ...(await serverPropsGetter(ctx)).props,
-            playtest,
-            author,
-            applicants,
-            reviewsByApplicant,
+            initialData: await playtestById(playtestId, userId),
         }
     }
 };
 
+const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData }) => {
+    const router = useRouter()
+    const queryResult = trpcClient.playtests.find.useQuery(String(router.query.id), { enabled: false })
+    const [{ playtest, author, applicants, reviewerNameById }, setState] = useState(initialData)
 
-const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applicants, reviewsByApplicant }) => {
-    const croppedName = playtest.name.length > 20 ? (playtest.name.substring(0, 20) + "...") : playtest.name
+    async function refetch() {
+        const { data } = await queryResult.refetch()
+        setState(data!)
+    }
+
+    const croppedName = useMemo(() => playtest.name.length > 20 ? (playtest.name.substring(0, 20) + "...") : playtest.name, [playtest.name])
     
+    const userApplication = userCtx && playtest.applications.find(app => app.applicantId === userCtx.userId)
     const isCreator = (userCtx?.userId === playtest.userId)
-    const isApplicant = !!userCtx?.userId && (playtest.applications[userCtx?.userId] !== undefined)
-    const isAccepted = userCtx?.userId && playtest.applications[userCtx?.userId]
+    const isApplicant = !!userApplication
+    const isAccepted = userApplication?.status === "accepted"
     
     const [agreed, setAgreed] = useState(isApplicant)
     const applyMutation = trpcClient.playtests.apply.useMutation()
@@ -112,7 +59,20 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applica
     const rejectMutation = trpcClient.playtests.reject.useMutation()
     const closeMutation = trpcClient.playtests.close.useMutation()
     const { setDialog } = useDialog()
-    const router = useRouter()
+
+    // If true, no action can be performed
+    const disabled = !userCtx
+        || queryResult.isFetching 
+        || applyMutation.isLoading 
+        || acceptMutation.isLoading
+        || rejectMutation.isLoading
+        || closeMutation.isLoading
+
+    // If true, new applications cannot be added
+    const applicationDisabled = 
+           isApplicant
+        || playtest.closedManually 
+        || playtest.applicationDeadline < Date.now()
 
     return (
         <Page userCtx={userCtx}>
@@ -145,20 +105,20 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applica
 
                         <Checkbox 
                             className={styles.agreeBtn}
-                            disabled={isApplicant || playtest.closedManually || playtest.applicationDeadline < Date.now()}
+                            disabled={disabled || applicationDisabled}
                             value={agreed} 
                             onToggle={() => setAgreed(!agreed)}>
                                 I agree to the terms above
                         </Checkbox>
 
                         <button 
-                            disabled={isApplicant || !agreed || applyMutation.isLoading || playtest.closedManually || playtest.applicationDeadline < Date.now()} 
+                            disabled={!agreed || disabled || applicationDisabled} 
                             onClick={() => setDialog(
                                 "Are you sure you wish to apply to this playtest? This cannot be undone.", 
                                 async result => {
                                     if (!result) return;
                                     await applyMutation.mutateAsync(playtest._id)
-                                    router.refresh() // TODO: replace this with playtestQuery.revalidate
+                                    await refetch()
                                 }
                             )}>
                                 { isApplicant ? "You have applied!" : "Apply" }
@@ -175,74 +135,78 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applica
                         </div>
                     ) : (
                         <ul>
-                            { applicants.map(applicant => (
-                                <li key={applicant.userId} className={styles.application}>
-                                    <label className={styles.userName}>
-                                        {applicant.userName}
-                                    </label>
-                                    
-                                    { !!applicant.userBio.length && (
-                                        <section>
-                                            Bio:
-                                            <Markdown text={applicant.userBio} />
-                                        </section>
-                                    )}
+                            { applicants.map(applicant => {
+                                const application = playtest.applications.find(app => app.applicantId === applicant.userId)!
 
-                                    <SystemsDisplay user={applicant} playtest={playtest} />
+                                return (
+                                    <li key={applicant.userId} className={styles.application}>
+                                        <label className={styles.userName}>
+                                            {applicant.userName}
+                                        </label>
+                                        
+                                        { !!applicant.userBio.length && (
+                                            <section>
+                                                Bio:
+                                                <Markdown text={applicant.userBio} />
+                                            </section>
+                                        )}
 
-                                    { (playtest.applications[applicant.userId] === true) && (
-                                        <div className={styles.isParticipant}>
-                                            <FontAwesomeIcon icon={faCheck} />
-                                            { applicant.userName } is a participant!
-                                        </div>
-                                    )}
+                                        <SystemsDisplay user={applicant} playtest={playtest} />
 
-                                    { isCreator && (
-                                        <section className={styles.actions}>
-                                            { playtest.applications[applicant.userId] ? <>
-                                                <h3>You have accepted this application</h3>
-                                                <button onClick={() => setDialog(<div style={{ width: '600px' }}>
-                                                    <ContractPDF
-                                                        playtest={playtest}
-                                                        user={userCtx.user}
-                                                        text={generateContract(playtest, userCtx.user, applicant)}/>
-                                                </div>, () => {})}>
-                                                    Download Agreement
-                                                    <FontAwesomeIcon icon={faFile} />
-                                                </button>
-                                            </> : <>
-                                                <button onClick={() => setDialog(<div className={styles.acceptDialog}>
-                                                    <h3>Confirm</h3>
+                                        { (playtest.applications.find(app => app.applicantId === applicant.userId)?.status === "accepted") && (
+                                            <div className={styles.isParticipant}>
+                                                <FontAwesomeIcon icon={faCheck} />
+                                                { applicant.userName } is a participant!
+                                            </div>
+                                        )}
 
-                                                    Are you sure? By Accepting this application, you agree to the following terms. 
-                                                    You should download this PDF and keep a copy of it (you can also download it later).
+                                        { isCreator && (
+                                            <section className={styles.actions}>
+                                                { (application.status === "accepted") ? <>
+                                                    <h3>You have accepted this application</h3>
+                                                    <button disabled={disabled} onClick={() => setDialog(<div style={{ width: '600px' }}>
+                                                        <ContractPDF
+                                                            playtest={playtest}
+                                                            user={userCtx.user}
+                                                            text={generateContract(playtest, userCtx.user, applicant)}/>
+                                                    </div>, () => {})}>
+                                                        Download Agreement
+                                                        <FontAwesomeIcon icon={faFile} />
+                                                    </button>
+                                                </> : <>
+                                                    <button disabled={disabled} onClick={() => setDialog(<div className={styles.acceptDialog}>
+                                                        <h3>Confirm</h3>
 
-                                                    <ContractPDF
-                                                        playtest={playtest}
-                                                        user={userCtx.user}
-                                                        text={generateContract(playtest, userCtx.user, applicant)}/>
-                                                </div>, async result => {
-                                                    if (!result) return;
-                                                    await acceptMutation.mutateAsync({ playtestId: playtest._id, applicantId: applicant.userId })
-                                                    router.refresh() // TODO: replace this with playtestQuery.revalidate
-                                                })}>
-                                                    Accept
-                                                </button>
-                                                <button onClick={() => setDialog(
-                                                    "Are you sure you want to reject this application? This cannot be undone.",
-                                                    async confirm => {
-                                                        if (!confirm) return;
-                                                        await rejectMutation.mutateAsync({ playtestId: playtest._id, applicantId: applicant.userId })
-                                                        router.refresh() // TODO: replace this with playtestQuery.revalidate
-                                                    }
-                                                )}>
-                                                    Reject
-                                                </button>
-                                            </>}
-                                        </section>
-                                    )}
-                                </li>
-                            ))}
+                                                        Are you sure? By Accepting this application, you agree to the following terms. 
+                                                        You should download this PDF and keep a copy of it (you can also download it later).
+
+                                                        <ContractPDF
+                                                            playtest={playtest}
+                                                            user={userCtx.user}
+                                                            text={generateContract(playtest, userCtx.user, applicant)}/>
+                                                    </div>, async result => {
+                                                        if (!result) return;
+                                                        await acceptMutation.mutateAsync({ playtestId: playtest._id, applicantId: applicant.userId })
+                                                        await refetch()
+                                                    })}>
+                                                        Accept
+                                                    </button>
+                                                    <button onClick={() => setDialog(
+                                                        "Are you sure you want to reject this application? This cannot be undone.",
+                                                        async confirm => {
+                                                            if (!confirm) return;
+                                                            await rejectMutation.mutateAsync({ playtestId: playtest._id, applicantId: applicant.userId })
+                                                            await refetch()
+                                                        }
+                                                    )}>
+                                                        Reject
+                                                    </button>
+                                                </>}
+                                            </section>
+                                        )}
+                                    </li>
+                                )
+                            })}
                         </ul>
                     )}
 
@@ -251,11 +215,11 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applica
                 { isCreator && (
                     <button 
                         className={styles.closeBtn}
-                        disabled={playtest.closedManually || Date.now() > playtest.applicationDeadline}
+                        disabled={disabled || applicationDisabled}
                         onClick={() => setDialog("Are you sure? This cannot be undone.", async confirm => {
                             if (!confirm) return;
                             await closeMutation.mutateAsync(playtest._id)
-                            router.refresh() // TODO: replace this with playtestQuery.revalidate
+                            await refetch()
                         })}>
                             { (playtest.closedManually || Date.now() > playtest.applicationDeadline)
                                 ? "Applications Closed"
@@ -278,8 +242,6 @@ const SystemsDisplay: FC<{ user: PublicUser, playtest: Playtest }> = ({ user, pl
         function sortSystems(system1: System, system2: System) {
             const system1IsUseful = systemsList.includes(system1.system)
             const system2IsUseful = systemsList.includes(system2.system)
-
-            console.log(system1, system1IsUseful)
 
             if (system1IsUseful && system2IsUseful) return 0
 

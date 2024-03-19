@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Prettify, isAlphanumeric } from "./utils";
+import { UserReviewSchema } from "./reviews";
 
 export const SystemFamiliarityList = [
     'Is interested in',
@@ -36,6 +37,9 @@ export const UserSchema = z.object({
          })).max(20),
     }),
 
+    // Readonly
+    playerReviews: z.array(UserReviewSchema),
+
     publisherProfile: z.object({
         // WARNING: READONLY. THE USER SHOULD NOT BE ALLOWED TO UPDATE THIS DIRECTLY
         twitterProof: z.string().optional(),
@@ -49,7 +53,7 @@ export type User = z.infer<typeof UserSchema>
 
 
 // These are the fields a user is allowed to update
-export const MutableUserSchema = UserSchema.omit({ userId: true, userNameLowercase: true, banned: true, emails: true })
+export const MutableUserSchema = UserSchema.omit({ userId: true, userNameLowercase: true, banned: true, emails: true, playerReviews: true })
 export type MutableUser = Prettify<z.infer<typeof MutableUserSchema>>
 
 export const newUser = {
@@ -69,5 +73,5 @@ export const newUser = {
 
 
 // These are the fields another user is allowed to see
-export const PublicUserSchema = UserSchema.omit({ userNameLowercase: true, emails: true })
+export const PublicUserSchema = UserSchema.omit({ userNameLowercase: true, emails: true, playerReviews: true })
 export type PublicUser = z.infer<typeof PublicUserSchema>
