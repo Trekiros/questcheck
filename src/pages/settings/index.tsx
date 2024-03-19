@@ -332,6 +332,26 @@ const SettingsPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
                             </div>
                         </div>
                     </div>
+
+                    <div className={styles.row}>
+                        <label>Publisher Resources</label>
+
+                        <div className={styles.vstack}>
+                            <div style={{ paddingTop: "1em" }}>You might find the following resources helpful in organizing a playtest:</div>
+
+                            <ul>
+                                <li>
+                                    <Link href="https://chromewebstore.google.com/detail/atom20/bgnbdhlpicccdnhhpihcpccejngaionp" target="_blank">Atom20</Link>: a Chrome extension allowing you to create a character sheet or a bestiary on Google Sheets, 
+                                    and binds it to Roll20 so you can use the spreadsheet to send dice rolls, or update a character's health bar.
+                                    This extension allows you to iterate extremely quickly, as spreadsheets are easy to set up and modify for any purpose.
+                                </li>
+                                <li>
+                                    <Link href="https://www.drivethrurpg.com/product/437880/Pestos-Guide-to-Testing" target="_blank">Pesto's Guide to Testing</Link>: a comprehensive guide to TTRPG testing full of advice for new and experienced creators alike,
+                                    by <Link href="https://twitter.com/PestoEnthusiast" target="_blank">Spencer Hibnick</Link>.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </> }
 
                 <hr />

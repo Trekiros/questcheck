@@ -17,8 +17,11 @@ body, input, button { font-size: 10pt; }
 
 a {
     color: #fff;
-    text-decoration: none;
     font-weight: bold;
+
+    &:not(:hover) {
+        text-decoration: none;
+    }
 }
 
 .content {

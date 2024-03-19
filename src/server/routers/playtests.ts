@@ -5,6 +5,7 @@ import { Filter, FindCursor, ObjectId } from "mongodb";
 import {  protectedProcedure, router, publicProcedure } from "../trpc";
 import { arrMap, pojoMap } from "@/model/utils";
 import { PublicUser, PublicUserSchema } from "@/model/user";
+import { UserReviewSchema } from "@/model/reviews";
 import { getPermissions } from "./users";
 
 // Returns the id of the new Playtest
@@ -190,6 +191,23 @@ const close = protectedProcedure
         return !!result.modifiedCount
     })
 
+export const review = protectedProcedure
+    .input(UserReviewSchema.omit({}))
+    .mutation(async ({ input, ctx }) => {
+        const reviewsCol = await Collections.userReviews()
+        await reviewsCol.updateOne({
+            byUserId: input.byUserId,
+            ofUserId: input.ofUserId,
+            duringPlaytestId: input.duringPlaytestId,
+        }, { $set: {
+            rating: input.rating,
+            comment: input.comment,
+            createdTimestamp: Date.now(),
+        }}, {
+            upsert: true,
+        })
+    })
+
 export const PlaytestRouter = router({
     create,
     search,
@@ -197,4 +215,5 @@ export const PlaytestRouter = router({
     accept,
     reject,
     close,
+    review,
 })

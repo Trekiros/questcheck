@@ -2,6 +2,7 @@ import { MongoClient, MongoClientOptions } from 'mongodb'
 import migration from './migrate';
 import { User } from '@/model/user';
 import { Playtest } from '@/model/playtest';
+import { UserReview } from '@/model/reviews';
 
 let client: MongoClient|undefined;
 
@@ -70,6 +71,7 @@ async function initialize() {
 export const Collections = {
     users: async () => (await initialize()).collection<Omit<User, '_id'>>('users'),
     bannedUsers: async () => (await initialize()).collection<{ email: string }>('bannedUsers'), // This survives even if a user deletes their data, and ensures they can't bypass a ban.
+    userReviews: async () => (await initialize()).collection<UserReview>('userReviews'),
 
     playtests: async () => (await initialize()).collection<Omit<Playtest, '_id'>>('playtests'),
 }

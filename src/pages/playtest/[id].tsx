@@ -20,12 +20,14 @@ import { trpcClient } from '@/server/utils';
 import { useDialog } from '@/components/utils/dialog';
 import { useRouter } from 'next/navigation';
 import { ContractPDF, generateContract } from '@/components/playtest/edit/contract';
+import { UserReview } from '@/model/reviews';
 
 
 type PageProps = ServerSideProps & { 
     playtest: Playtest,
     author: PublicUser,
     applicants: PublicUser[],
+    reviewsByApplicant: { [applicantId: string]: UserReview[] },
 }
 
 export const getServerSideProps: ServerSidePropsGetter<PageProps> = async (ctx) => {
@@ -48,11 +50,12 @@ export const getServerSideProps: ServerSidePropsGetter<PageProps> = async (ctx) 
         playtest.feedbackURL = ""
     }
 
-    // Get Author & applicants
+    // Get Author, applicants & user reviews
     const users = await Collections.users()
+    const userReviews = await Collections.userReviews()
     const userProjection = pojoMap(PublicUserSchema.shape, () => 1 as const)
     const applicantIds = keys(playtest.applications).filter(appId => playtest.applications[appId] !== false)
-    const [authorDoc, applicants] = await Promise.all([
+    const [authorDoc, applicants, ...reviews] = await Promise.all([
         users.findOne({ userId: playtest.userId }, { projection: userProjection }),
         !applicantIds.length ? (
             new Promise(resolve => resolve([])) satisfies Promise<PublicUser[]>
@@ -61,10 +64,28 @@ export const getServerSideProps: ServerSidePropsGetter<PageProps> = async (ctx) 
                 .map(({ _id, ...user }) => user)
                 .toArray() satisfies Promise<PublicUser[]>
         ),
+        ...(
+            !applicantIds.length ? (
+                []
+            ) : (
+                applicantIds.map(applicantId => (
+                    userReviews.find({ ofUserId: applicantId }, { sort: { createdTimestamp: -1 } })
+                        .limit(5)
+                        .map(({ _id, ...review }) => review)
+                        .toArray()
+                ))
+            )
+        )
     ])
     if (!authorDoc) throw new Error('404 - Author not found')
     const { _id, ...author } = authorDoc
 
+    const reviewsByApplicant: { [userId: string]: UserReview[] } = pojoMap(applicantIds, id => [])
+    for (const reviewsList of reviews) {
+        if (reviewsList.length) {
+            reviewsByApplicant[reviewsList[0].ofUserId] = reviewsList
+        }
+    }
 
     return {
         props: {
@@ -72,12 +93,13 @@ export const getServerSideProps: ServerSidePropsGetter<PageProps> = async (ctx) 
             playtest,
             author,
             applicants,
+            reviewsByApplicant,
         }
     }
 };
 
 
-const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applicants }) => {
+const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applicants, reviewsByApplicant }) => {
     const croppedName = playtest.name.length > 20 ? (playtest.name.substring(0, 20) + "...") : playtest.name
     
     const isCreator = (userCtx?.userId === playtest.userId)
@@ -115,7 +137,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, playtest, author, applica
                     </section>
                 )}
 
-                { !isCreator && (
+                { !isCreator && !!userCtx && (
                     <section className={styles.applicationForm}>
                         <h3>Send Application</h3>
 
