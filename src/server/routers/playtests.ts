@@ -246,12 +246,6 @@ const accept = protectedProcedure
             } },
         )
 
-        console.log({ 
-            _id: new ObjectId(playtestId),
-            userId,
-            "applications.userId": applicantId,
-        })
-
         return !!result
     })
     

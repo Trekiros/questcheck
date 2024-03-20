@@ -6,7 +6,7 @@ import { ObjectId, UpdateFilter } from "mongodb";
 import { Writeable, z } from "zod";
 import { clerkClient } from "@clerk/nextjs";
 import { User as ClerkUser } from "@clerk/backend";
-import { UserReviewSchema } from "@/model/reviews";
+import { ReviewInputSchema, UserReviewSchema } from "@/model/reviews";
 
 export type Permissions = {
     canCreate: boolean,
@@ -163,33 +163,42 @@ const isUsernameTaken = protectedProcedure
 
     
 const review = protectedProcedure
-    .input(z.object({ playtesterId: z.string(), review: UserReviewSchema.omit({ byUserId: true, createdTimestamp: true }) }))
+    .input(z.object({ playtesterId: z.string(), review: ReviewInputSchema }))
     .mutation(async ({ input, ctx }) => {
         // 1. Check if the user is allowed to submit the review => they are if the user they are reviewing is a player in their playtest
         const playtestCol = await Collections.playtests()
-        const isAllowed = await playtestCol.findOne({
+        const isAllowed = !!await playtestCol.findOne({
             userId: ctx.auth.userId,
             _id: new ObjectId(input.review.duringPlaytestId),
             applications: {
-                applicantId: input.playtesterId,
-                status: "accepted",
+                $elemMatch: {
+                    applicantId: input.playtesterId,
+                    status: "accepted",
+                }
             },
         }, { projection: { _id: true } })
         if (!isAllowed) throw new Error('Unauthorized')
 
         // 2. Save the review
         const usersCol = await Collections.users()
-        await usersCol.updateOne({
+        const result = await usersCol.updateOne({
             userId: input.playtesterId,
         }, { $push: {
-            playerReviews: {
-                ...input.review,
-                createdTimestamp: Date.now(),
-                byUserId: ctx.auth.userId
+            playerReviews: { 
+                $each: [
+                    {
+                        ...input.review,
+                        createdTimestamp: Date.now(),
+                        byUserId: ctx.auth.userId,
+                    },
+                ],
+                
+                // Only the last 100 reviews are saved
+                $slice: -100,
             },
-            // Only the last 100 reviews are saved
-            $slice: -100,
         }})
+
+        console.log(result)
     })
 
 const banUser = protectedProcedure

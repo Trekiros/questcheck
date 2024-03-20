@@ -13,6 +13,7 @@ import { ContractPDF, generateContract } from "./edit/contract";
 import { useUserCtx } from "../utils/page";
 import { useUser } from "@clerk/nextjs";
 import { keys } from "@/model/utils";
+import Expandable from "../utils/expandable";
 
 type PropType = {
     author: PublicUser,
@@ -99,7 +100,12 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
                 </div>
 
                 <div className={styles.description}>
-                    <Markdown text={common.description} />
+                    { summary ? (
+                        <Expandable lines={3}><Markdown text={summary.description} /></Expandable>
+                    ) : (
+                        <Markdown text={playtest.description} />
+                    )}
+                    
                 </div>
 
             </section>

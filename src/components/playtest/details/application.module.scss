@@ -1,0 +1,57 @@
+.application {
+    display: grid;
+    gap: 1em;
+    padding: 1em;
+    background: #544;
+
+    .userName {
+        font-size: 1.5em;
+
+        .isParticipant {
+            float: right;
+            font-size: 1rem;
+            display: flex;
+            gap: 8px;
+    
+            svg { width: 16px; height: 16px }
+        }
+    }
+
+    .userInfo {
+        display: grid;
+        align-items: start;
+
+        @media (width > 800px) { grid-template-columns: 1fr 1fr }
+
+        @media (width <= 800px) {
+            > :first-child:not(:last-child) {
+                padding-bottom: 1em;
+                border-bottom: 1px solid white;
+            }
+        }
+    }
+
+    .reviews {
+        display: grid;
+        
+        hr { width: 100% }
+    }
+
+    .actions {
+        margin-top: 1em;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .downloadBtn {
+        display: flex;
+    }
+}
+
+.acceptDialog {
+    display: grid;
+    gap: 1em;
+    width: 600px;
+
+    h3 { margin: 0 }
+}

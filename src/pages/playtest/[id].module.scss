@@ -28,13 +28,6 @@
     }
 
     .applications {
-
-        .actions {
-            margin-top: 1em;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-        }
-        
         ul {
             list-style: none;
             padding: 0;
@@ -44,65 +37,6 @@
         }
 
         .placeholder { color: #aaa }
-
-        .application {
-            display: grid;
-            gap: 1em;
-            padding: 1em;
-            background: #544;
-
-            .userName {
-                font-size: 1.5em;
-            }
-
-            .systems {
-                display: grid;
-                gap: 1em;
-
-                > label {
-                    display: flex;
-                    align-items: center;
-                    gap: 1em;
-
-                    button { padding: 8px }
-                }
-            }
-
-            .isParticipant {
-                display: flex;
-                gap: 8px;
-
-                svg { width: 16px; height: 16px }
-            }
-
-            .system {
-                .header { display: flex; gap: 1em }
-                label { font-weight: bold }
-                svg { width: 16px; height: 16px; }
-
-                .stars {
-                    display: flex;
-                    align-items: center;
-                    gap: 0;
-                    
-                    .star {
-                        width: 20px; 
-                        height: 20px;
-
-                        &:not(.familiar) { color: #888 }
-                    }
-                }
-            }
-        }
     }
-
 }
 
-.acceptDialog {
-    display: grid;
-    gap: 1em;
-    width: 600px;
-
-    h3 { margin: 0 }
-
-}

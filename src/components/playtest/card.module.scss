@@ -7,7 +7,6 @@
         padding: 1em;
     }
 
-
     .name {
         font-size: 2em;
         overflow: hidden;
@@ -56,13 +55,6 @@
 
             h2, h3, h4 { margin: 0 }
         }
-    }
-
-    &.summary .description > * {
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 4;
     }
 
     .bountyDetails {

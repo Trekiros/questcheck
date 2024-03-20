@@ -1,0 +1,52 @@
+.systems, .reviews, .reviewForm {
+    display: grid;
+    gap: 1em;
+
+    > label {
+        display: flex;
+        align-items: center;
+        gap: 1em;
+        font-weight: bold;
+        
+        .percentage {
+            font-style: italic;
+            font-weight: normal;
+            font-size: smaller;
+        }
+
+        button { padding: 8px }
+
+        svg { width: 16px; height: 16px; }
+    }
+
+    .system, .review {
+        .header { display: flex; gap: 1em }
+        label { font-weight: bold }
+        svg { width: 16px; height: 16px; }
+    }
+
+    .stars {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        
+        .star {
+            background: none!important;
+            padding: 4px;
+
+            &svg, > svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            &:not(.familiar) { color: #888 }
+        }
+    }
+}
+
+
+.reviewForm {
+    .endorse {
+        justify-content: start;
+    }
+}
