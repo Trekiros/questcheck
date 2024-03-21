@@ -7,6 +7,8 @@ The website is used to create playtests, browse playtests, apply to playtests, a
 
 It also comes with a corresponding Discord app, which notifies players about new playtest opportunities, so they don't have to change their daily routine and check the website regularly - the info is displayed where they were going to look anyway.
 
+QuestCheck is available at https://www.questcheck.org
+
 ## Getting Started
 * **Basic Setup**
     * Create a fork of this repository and clone your fork on your machine
@@ -14,6 +16,7 @@ It also comes with a corresponding Discord app, which notifies players about new
     * Install mongodb: https://www.mongodb.com/docs/manual/installation/
     * Install dependencies: `npm i`
     * Create a `.env` file: `cp .env.example .env`
+
 * **Clerk Configuration**
     * Create a free project on Clerk: https://clerk.com/
     * Go to **Users & Authentications** then **Social Connections**
@@ -21,6 +24,7 @@ It also comes with a corresponding Discord app, which notifies players about new
         * Enable **X / Twitter v2** 
         * *(the Facebook connection won't work in dev without manual verification by a Facebook employee, but isn't necessary to contribute to this project)*
     * Go to **API Keys** and copy the public & secret keys into your `.env` file
+
 * **Discord Configuration**
     * Create a new application on Discord: https://discord.com/developers
     * Go to **Installation**
@@ -31,9 +35,12 @@ It also comes with a corresponding Discord app, which notifies players about new
         * Click "Reset Token" and paste the token into your `.env` file
     * Go to **OAuth2**
         * Use the client ID and secret in your Clerk project, as described here: https://clerk.com/docs/authentication/social-connections/discord
+
 * **Running the project**
     * Run in dev mode: `npm run dev`
     * Open `http://localhost:3000` with your web browser to see the result.
+    * To act as admin, log in and add your Clerk user id to the `.env` file
+
 * **Contributing**
     * Make changes and commit them in a branch of your choice on your fork
     * Pull any changes that might have happened in the meantime from the main branch of the original repo, and solve any versioning conflicts that may arise
