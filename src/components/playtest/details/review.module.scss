@@ -49,4 +49,21 @@
     .endorse {
         justify-content: start;
     }
+
+    :global(.tooltipContainer):hover .tooltip {
+        display: grid;
+    }
+    
+    .tooltip {
+        width: 400px;
+        background: #322;
+
+        h3 { margin: 0 }
+
+        ul {
+            display: block;
+            list-style: circle;
+            padding-left: 2em;
+        }
+    }
 }

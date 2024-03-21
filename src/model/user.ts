@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Prettify, isAlphanumeric } from "./utils";
 import { UserReviewSchema } from "./reviews";
+import { NotificationSettingSchema } from "./notifications";
 
 export const SystemFamiliarityList = [
     'Is interested in',
@@ -34,7 +35,8 @@ export const UserSchema = z.object({
             system: SystemNameSchema, 
             familiarity: z.number().min(1).max(5),
             details: z.string().max(300),
-         })).max(20),
+        })).max(10),
+        notifications: z.array(NotificationSettingSchema).max(20),
     }),
 
     // Readonly
@@ -64,6 +66,7 @@ export const newUser = {
 
     playerProfile: {
         systems: [],
+        notifications: [],
     },
 
     publisherProfile: {

@@ -1,0 +1,10 @@
+.target {
+    display: grid;
+    
+    .row {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 1em;
+        align-items: center;
+    }
+}

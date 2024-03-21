@@ -52,12 +52,16 @@ async function getDB() {
 let initialized = (process.env.NODE_ENV === "development") ?
     !!(global as any).isDBInitialized
     : false
+let ongoingMigration: Promise<any>|null = null
 async function initialize() {
     const db = await getDB()
 
     if (!initialized) {
-        await migration(db)
+        if (!ongoingMigration) ongoingMigration = migration(db)
+
+        await ongoingMigration
         initialized = true
+        ongoingMigration = null
 
         if (process.env.NODE_ENV === "development") {
             (global as any).isDBInitialized = true
@@ -73,4 +77,6 @@ export const Collections = {
     bannedUsers: async () => (await initialize()).collection<{ email: string }>('bannedUsers'), // This survives even if a user deletes their data, and ensures they can't bypass a ban.
 
     playtests: async () => (await initialize()).collection<Omit<Playtest, '_id'>>('playtests'),
+
+    lastCron: async () => (await initialize()).collection<{ timestamp: number }>('lastCron'),
 }

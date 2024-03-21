@@ -8,19 +8,11 @@ import { BSONType, Db, UpdateResult } from "mongodb"
  * Don't forget to remove migrations which have already been executed in prod
  */
 export default async function migration(db: Db) {
-    await performMigration('applications are now arrays', async () => {
-        return await db.collection<Playtest>('playtests').updateMany({
-            applications: { $type: BSONType.object },
-        }, {
-            $set: { applications: [] },
-        })
-    })
-
-    await performMigration('users now have reviews', async () => {
+    await performMigration('player profile now has notifications', async () => {
         return await db.collection<User>('users').updateMany({
-            playerReviews: { $exists: false }
+            "playerProfile.notifications": { $exists: false },
         }, {
-            $set: { playerReviews: [] },
+            $set: { "playerProfile.notifications": [] },
         })
     })
 

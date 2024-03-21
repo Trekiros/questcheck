@@ -3,6 +3,7 @@ import { serverPropsGetter } from "@/components/utils/pageProps";
 import { SignIn } from "@clerk/nextjs"
 import { NextSeo } from "next-seo"
 import { FC } from "react"
+import styles from './connection.module.scss'
 
 export const ClerkTheme: NonNullable<React.ComponentProps<typeof SignIn>['appearance']> = {
     elements: {
@@ -39,7 +40,9 @@ const SignInPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
         <Page userCtx={userCtx}>
             <NextSeo title="Sign In" />
 
-            <SignIn appearance={ClerkTheme}/>
+            <div className={styles.connection}>
+                <SignIn appearance={ClerkTheme}/>
+            </div>
         </Page>
     )
 }

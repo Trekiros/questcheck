@@ -8,8 +8,15 @@ import PlaytestCard from '@/components/playtest/card';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import type { GetServerSideProps as ServerSidePropsGetter } from 'next'
 
-export const getServerSideProps = serverPropsGetter;
+// This page is for publisher accounts only!
+export const getServerSideProps: ServerSidePropsGetter<ServerSideProps> = async (ctx) => {
+    const props = await serverPropsGetter(ctx)
+    if (!props.props.userCtx?.user.isPublisher) return { redirect: { destination: '/', permanent: false } }
+
+    return props
+}
 
 const PlaytestListPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
     const [page, setPage] = useState(0)

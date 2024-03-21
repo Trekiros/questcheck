@@ -6,7 +6,8 @@ import { ObjectId, UpdateFilter } from "mongodb";
 import { Writeable, z } from "zod";
 import { clerkClient } from "@clerk/nextjs";
 import { User as ClerkUser } from "@clerk/backend";
-import { ReviewInputSchema, UserReviewSchema } from "@/model/reviews";
+import { ReviewInputSchema } from "@/model/reviews";
+import { ApplicationStatusMap } from "@/model/playtest";
 
 export type Permissions = {
     canCreate: boolean,
@@ -140,15 +141,35 @@ const deleteSelf = protectedProcedure
     .mutation(async ({ ctx }) => {
         const userId = ctx.auth.userId
 
-        const usersDb = await Collections.users()
+        const userCol = await Collections.users()
+        const playtestCol = await Collections.playtests()
 
-        await Promise.all([
+        await Promise.allSettled([
             clerkClient.users.deleteUser(ctx.auth.userId),
-            usersDb.findOneAndUpdate({ userId }, { $set: {
+
+            // Delete all data from the user's profile
+            userCol.findOneAndUpdate({ userId }, { $set: {
                 ...newUser,
                 userId,
                 userName: '[deleted user]',
             } }),
+
+            // Close all playtests created by this user
+            playtestCol.updateMany(
+                { userId, closedManually: { $ne: true } },
+                { $set: { closedManually: true } },
+            ),
+
+            // Reject all pending applications by this user
+            playtestCol.updateMany(
+                { applications: { $elemMatch: {
+                    applicantId: userId,
+                    status: ApplicationStatusMap.pending,
+                }}},
+                { $set: {
+                    "applications.$.status": ApplicationStatusMap.rejected,
+                }},
+            ),
         ])
     })
 

@@ -17,8 +17,15 @@ import Select from '@/components/utils/select'
 import { useUser } from '@clerk/nextjs'
 import Page, { ServerSideProps } from '@/components/utils/page'
 import { serverPropsGetter } from '@/components/utils/pageProps'
+import type { GetServerSideProps as ServerSidePropsGetter } from 'next'
 
-export const getServerSideProps = serverPropsGetter;
+// This page is for publisher accounts only!
+export const getServerSideProps: ServerSidePropsGetter<ServerSideProps> = async (ctx) => {
+    const props = await serverPropsGetter(ctx)
+    if (!props.props.userCtx?.user.isPublisher) return { redirect: { destination: '/', permanent: false } }
+
+    return props
+}
 
 const NewPlaytestPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
     const { setDialog } = useDialog()

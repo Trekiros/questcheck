@@ -1,7 +1,7 @@
 import { PublicUser, User } from "@/model/user"
 import { faChevronDown, faChevronUp, faComment, faStar, faThumbsUp } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { FC, useState } from "react"
+import { FC, useMemo, useState } from "react"
 import styles from './review.module.scss'
 import Expandable from "@/components/utils/expandable"
 import Markdown from "@/components/utils/markdown"
@@ -13,6 +13,15 @@ import Checkbox from "@/components/utils/checkbox"
 
 export const ReviewsDisplay: FC<{ user: PublicUser & { playerReviews: User["playerReviews"] }, reviewerNameById: {[userId: string]: string} }> = ({ user, reviewerNameById}) => {
     const [collapsed, setCollapsed] = useState(true)
+
+    // Sort reviews by creation timestamp descending (= latest first)
+    const sortedReviews = useMemo(() => {
+        function sortReviews(review1: UserReview, review2: UserReview) {
+            return review2.createdTimestamp - review1.createdTimestamp
+        }
+
+        return user.playerReviews.sort(sortReviews)
+    }, [user.playerReviews])
     
     if (!user.playerReviews.length) return null
     
@@ -76,15 +85,32 @@ export const ReviewForm: FC<{ disabled: boolean, playtest: Playtest, onSend: (va
                     <FontAwesomeIcon icon={faThumbsUp} />
             </Checkbox>
             
-            <MarkdownTextArea 
-                disabled={disabled}
-                maxLength={UserReviewSchema.shape.comment.maxLength!}
-                placeholder="Comment (optional)..."
-                value={comment}
-                onChange={e => setComment(e.target.value)} />
+            <div className="tooltipContainer">
+                <MarkdownTextArea 
+                    disabled={disabled}
+                    maxLength={UserReviewSchema.shape.comment.maxLength!}
+                    placeholder="Comment (optional)..."
+                    value={comment}
+                    onChange={e => setComment(e.target.value)} />
+
+                <div className={`tooltip ${styles.tooltip}`}>
+                    <h3>Was this playtester's feedback:</h3>
+
+                    <ul>
+                        <li>Full of good questions?</li>
+                        <li>Generous in quantity?</li>
+                        <li>Frank and honest?</li>
+                        <li>Respectful?</li>
+                    </ul>
+
+                    <p>
+                        Note: A playtester's role is to provide an outsider's perspective, not necessarily to provide constructive feedback.
+                    </p>
+                </div>
+            </div>
             
             <button
-                disabled={disabled || (!endorsed && !comment)}
+                disabled={disabled || (!endorsed && !comment) || (comment.length > UserReviewSchema.shape.comment.maxLength!)}
                 onClick={() => setDialog(
                     "Are you sure you want to send this review? This cannot be undone. You should only send the review after the end of the playtest.",
                     confirm => confirm && onSend({ duringPlaytestId: playtest._id, endorsed, comment })

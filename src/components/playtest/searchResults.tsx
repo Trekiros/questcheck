@@ -16,6 +16,8 @@ const SearchResults: FC<{ search: PlaytestSearchParams }> = ({ search }) => {
     // Only send up to 1 query every 1 seconds
     const [throttledSearch, setSearch] = useState(search)
     useEffect(() => {
+        if (JSON.stringify(search) === JSON.stringify(throttledSearch)) return;
+
         const timeout = setTimeout(() => setSearch(search), 2000)
 
         return () => clearTimeout(timeout)

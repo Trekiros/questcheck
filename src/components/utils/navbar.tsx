@@ -22,7 +22,8 @@ const ActionsSkeleton = <div className={styles.skeleton}>
 const AdminActions: FC<{}> = ({}) => {
 	const banUser = trpcClient.users.banUser.useMutation()
 	const validateUser = trpcClient.users.validateUser.useMutation()
-	const [modalType, setModalType] = useState<null|'ban'|'validate'>(null)
+	const forceCron = trpcClient.cron.force.useMutation()
+	const [modalType, setModalType] = useState<null|'ban'|'validate'|'forceCron'>(null)
 	const [userName, setUserName] = useState("")
 	const [href, setHref] = useState("")
 
@@ -37,6 +38,10 @@ const AdminActions: FC<{}> = ({}) => {
 		setModalType('validate')
 	}
 
+	function showForceCron() {
+		setModalType('forceCron')
+	}
+
 	return (
 		<>
 			<button onClick={showBanModal}>
@@ -45,18 +50,23 @@ const AdminActions: FC<{}> = ({}) => {
 			<button onClick={showValidateUser}>
 				Validate User
 			</button>
+			<button onClick={showForceCron}>
+				Force Cron
+			</button>
 
 			{ !!modalType && (
 				<Modal className={styles.admin} onCancel={() => setModalType(null)}>
 					<h3>{modalType.toLocaleUpperCase()}</h3>
 
-					<div className={styles.row}>
-						<label>Username:</label>
-						<input
-							type="text"
-							value={userName}
-							onChange={e => setUserName(e.target.value)} />
-					</div>
+					{(modalType === 'ban' || modalType === 'validate') && (
+						<div className={styles.row}>
+							<label>Username:</label>
+							<input
+								type="text"
+								value={userName}
+								onChange={e => setUserName(e.target.value)} />
+						</div>
+					)}
 
 					{ modalType === 'ban' ? (
 						<>
@@ -78,6 +88,10 @@ const AdminActions: FC<{}> = ({}) => {
 								Confirm
 							</button>
 						</>
+					) : (modalType === 'forceCron') ? (
+						<button onClick={async () => { await forceCron.mutateAsync(); setModalType(null) }}>
+                            Confirm
+                        </button>
 					) : null}
 				</Modal>
 			)}
@@ -85,10 +99,20 @@ const AdminActions: FC<{}> = ({}) => {
 	)
 }
 
+
 const NavBar: FC<{}> = ({}) => {
 	const router = useRouter()
 	const clerkUser = useUser()
 	const mongoUser = useUserCtx()
+	
+	function linkProps(href: string) {
+		return { 
+			href, 
+			className: (router.route === href)
+				? styles.active
+				: undefined,
+		}
+	}
 
 	return (
         <nav className={styles.topNav}>
@@ -108,15 +132,16 @@ const NavBar: FC<{}> = ({}) => {
 								<AdminActions />
 							</>}
 
-							{ mongoUser.user.isPlayer && (
-								<Link href='/applications'>My Applications</Link>
-							)}
+							{ mongoUser.user.isPlayer && <>
+								<Link {...linkProps('/notifications')}>Notification Settings</Link>
+								<Link {...linkProps('/applications')}>My Applications</Link>
+							</>}
 
 							{ mongoUser.user.isPublisher && (
-								<Link href='/playtest'>My Playtests</Link>
+								<Link {...linkProps('/playtest')}>My Playtests</Link>
 							)}
 
-							<Link href='/settings'>{mongoUser.user.userName} { mongoUser.permissions.admin ? <i>(admin)</i> : null }</Link>
+							<Link {...linkProps('/settings')}>{mongoUser.user.userName} { mongoUser.permissions.admin ? <i>(admin)</i> : null }</Link>
 							<UserButton appearance={ClerkTheme} />
 						</> : <>
 							{ (router.route !== '/settings') && <Link href='/settings' className={styles.warning}>

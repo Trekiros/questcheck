@@ -1,0 +1,77 @@
+@import '../../styles/mixins';
+@import '../../styles/variables';
+
+.notifPage {
+    padding: 1em;
+    width: min(100%, 800px);
+    min-height: calc(100dvh - $topNavHeight);
+    margin: auto auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        @media (width < 800px) {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        a {
+            @include clickable;
+            gap: 1em;
+        }
+
+        a svg { width: 20px; height: 20px }
+    }
+
+    .placeholder {
+        height: 60dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #aaa;
+    }
+
+    .discord {
+        background: #544;
+        padding: 1em;
+        display: grid;
+
+        h2 {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        svg { width: 24px; height: 24px }
+
+        a {
+            @include clickable;
+            gap: 1em;
+        }
+    }
+
+    .targets {
+        display: flex;
+        flex-direction: column;
+        gap: 1em;
+        padding: 0;
+        margin: 0;
+        flex-grow: 1;
+    }
+
+    .saveBtn {
+        width: 100%;
+        align-self: flex-end;
+        justify-self: flex-end;
+    }
+}
