@@ -101,6 +101,7 @@ export const ReviewForm: FC<{ disabled: boolean, playtest: Playtest, onSend: (va
                         <li>Generous in quantity?</li>
                         <li>Frank and honest?</li>
                         <li>Respectful?</li>
+                        <li>Timely?</li>
                     </ul>
 
                     <p>

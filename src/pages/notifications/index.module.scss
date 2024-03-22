@@ -2,7 +2,7 @@
 @import '../../styles/variables';
 
 .notifPage {
-    padding: 1em;
+    padding: 2em 1em;
     width: min(100%, 800px);
     min-height: calc(100dvh - $topNavHeight);
     margin: auto auto;
@@ -28,6 +28,25 @@
         a {
             @include clickable;
             gap: 1em;
+            
+            &.highlight {
+                animation-name: highlight;
+                animation-duration: 3s;
+                animation-timing-function: ease-in-out;
+                animation-fill-mode: forwards;
+                animation-iteration-count: infinite;
+                
+                $color1: #fff2;
+                $color2: #fff1;
+                $color3: #fff2;
+                background: linear-gradient(0deg, #fff1 0%, #fff1 20%, $color1 30%, $color2 40%, $color3 50%, $color2 60%, $color1 70%, #fff1 80%);
+                background-size: 10000% 10000%;
+
+                @keyframes highlight {
+                    0%   { background-position: 0% 0% }
+                    100% { background-position: 100% 100% }
+                }
+            }
         }
 
         a svg { width: 20px; height: 20px }

@@ -1,5 +1,36 @@
 .target {
     display: grid;
+    padding: 1em;
+    background: #fff1;
+
+    h3 { margin: 0 }
+
+    .name {
+        display: grid;
+        grid-template-columns: 120px 1fr auto;
+        align-items: center;
+
+        button {
+            padding: 8px;
+
+            &:not(:hover) {
+                background: none;
+            }
+        }
+    }
+
+    .header, .role {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1em;
+
+        button {
+            padding: 8px;
+
+            &:not(:hover) { background: none }
+        }
+    }
     
     .row {
         display: grid;
@@ -7,4 +38,14 @@
         gap: 1em;
         align-items: center;
     }
+
+    .capitalize {
+        text-transform: capitalize;
+    }
+
+    .invalid {
+        outline: 1px solid #f88;
+    }
+
+    .filter h3 { font-size: 1em }
 }

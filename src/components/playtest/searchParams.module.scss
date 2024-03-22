@@ -15,13 +15,17 @@
     @media (width >= 800px) {
         position: sticky;
         top: $topNavHeight;
-        height: 100%;
-        max-height: calc(100dvh - $topNavHeight);
+        height: calc(100dvh - $topNavHeight);
 
         .collapse { display: none }
+
+        .form {
+            flex-grow: 1;
+            align-items: flex-start;
+        }
     }
 
-    h2 { 
+    h2 {
         border-bottom: 1px solid white;
         padding-bottom: 4px;
         display: flex;
@@ -35,11 +39,21 @@
             gap: 6px
         }
     }
+    
+    section {
+        display: grid;
+    }
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+
     h3 { margin: 0 }
 
     section {
-        display: flex;
-        flex-direction: column;
+        width: 100%;
+        display: grid;
     }
 
     ul {

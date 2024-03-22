@@ -14,6 +14,7 @@ import { NotificationSetting } from "@/model/notifications";
 import { trpcClient } from "@/server/utils";
 import NotificationCard from "@/components/playtest/notifications/notificationcard";
 import { useRouter } from "next/router";
+import { UserSchema } from "@/model/user";
 
 type PageProps = ServerSideProps & {
     discordServers: Awaited<ReturnType<typeof getDiscordServers>>,
@@ -37,14 +38,11 @@ export const getServerSideProps: ServerSidePropsGetter<PageProps> = async (ctx) 
 
 const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
     const router = useRouter()
-    const updateSelf = trpcClient.users.updateSelf.useMutation()
     const clerkUser = useUser()
-    const isDiscord = !!clerkUser.user?.externalAccounts.find(acc => acc.provider === 'discord') // True if the user has a discord account linked
+    const updateSelf = trpcClient.users.updateSelf.useMutation()
     const [notifications, setNotifications] = useState(userCtx!.user.playerProfile.notifications)
     const [pristine, setPristine] = useState(true)
-    
     const disabled = updateSelf.isLoading
-        || !clerkUser.user
 
     function update(notifIndex: number, callback: (clone: NotificationSetting) => void) {
         const clone = structuredClone(notifications)
@@ -56,20 +54,21 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
     return (
         <Page userCtx={userCtx}>
             <div className={styles.notifPage}>
-                { isDiscord ? <>
+                { (discordServers.status === 'Success') ? <>
                     <div className={styles.header}>
                         <h1>Notification Settings</h1>
 
                         <div className={styles.actions}>
                             <button
-                                disabled={disabled}
+                                disabled={disabled || (notifications.length >= UserSchema.shape.playerProfile.shape.notifications._def.maxLength!.value)}
                                 onClick={() => {
                                     setNotifications([
                                         ...notifications,
                                         {
+                                            name: 'New Playtests!',
                                             target: { type: 'channel', serverId: '', channelId: '' },
-                                            frequency: "every 4 hours",
-                                            filters: [ { name: 'New Playtest', filter: {} } ],
+                                            frequency: "Once every 4 hours",
+                                            filter: {},
                                         }
                                     ])
                                     setPristine(false)
@@ -78,10 +77,11 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
                                     <FontAwesomeIcon icon={faPlus} />
                             </button>
 
-                            <Link 
+                            <Link
+                                className={discordServers.servers.length === 0 ? styles.highlight : undefined}
                                 target="_blank"
                                 href="https://discord.com/oauth2/authorize?client_id=1213884594319786074">
-                                    QuestCheck Bot
+                                    Install Bot
                                     <FontAwesomeIcon icon={faDiscord} />
                             </Link>
                         </div>
@@ -97,14 +97,21 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
                                 <NotificationCard
                                     key={i}
                                     value={notification}
-                                    update={callback => update(i, callback)} />
+                                    update={callback => update(i, callback)} 
+                                    disabled={disabled}
+                                    discordServers={discordServers.servers}
+                                    onDelete={() => {
+                                        const cloneArr = [...notifications]
+                                        cloneArr.splice(i, 1)
+                                        setNotifications(cloneArr)
+                                    }} />
                             ))}
                         </ul>
 
                         <button
                             className={styles.saveBtn}
                             disabled={disabled || pristine}
-                            onChange={async () => {
+                            onClick={async () => {
                                 await updateSelf.mutateAsync({
                                     ...userCtx!.user,
                                     playerProfile: {

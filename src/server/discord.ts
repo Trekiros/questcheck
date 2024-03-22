@@ -1,6 +1,6 @@
-import { enumMap } from "@/model/utils";
+import { NotificationSetting } from "@/model/notifications";
 import { clerkClient } from "@clerk/nextjs";
-import { ChannelType, Client as DiscordClient, Events, GatewayIntentBits } from "discord.js"
+import { ChannelType, Collection, Client as DiscordClient, Events, Guild, MessageCreateOptions, MessagePayload, OAuth2Guild } from "discord.js"
 import { z } from "zod";
 
 let client: DiscordClient<true>|null = null
@@ -50,16 +50,50 @@ const DiscordGuildSchema = z.object({
     approximate_presence_count: z.number().optional(),
 })
 
+export type DiscordServer = { 
+    name: string, 
+    id: string, 
+    channels: {name: string, id: string}[], 
+    roles: {name: string, id: string}[]
+}
+
+// Discord's API has a rate limiter of 50 requests per second
+const MAX_QUERIES = 49
+const TIME_INTERVAL = 1000
+const RETRY_INTERVAL = 100
+let recentQueries = 0
+async function throttler<T>(promiseGenerator: () => Promise<T>): Promise<T> {
+    while (recentQueries >= MAX_QUERIES) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL))
+    }
+
+    recentQueries++
+    setTimeout(() => recentQueries--, TIME_INTERVAL)
+    return await promiseGenerator()
+}
+
+// The cache from discordjs' client doesn't actually contain what is needed to fetch channels & roles for some reason, so here's a custom cache instead
+let guildCache: Collection<string, OAuth2Guild>|null = null;
+let ongoingGuildsQuery: Promise<Collection<string, OAuth2Guild>>|null = null;
+async function getGuilds(): Promise<Collection<string, OAuth2Guild>> {
+    if (guildCache) return guildCache
+
+    const discordClient = await getDiscordClient()
+    if (!ongoingGuildsQuery) ongoingGuildsQuery = new Promise(async resolve => {
+        const result = await throttler(() => discordClient.guilds.fetch())
+        ongoingGuildsQuery = null;
+        guildCache = result
+        resolve(result)
+    })
+
+    return await ongoingGuildsQuery
+}
+
 export async function getDiscordServers(userId: string): Promise<
     { status: 'No Discord Provider' }
   | { 
         status: 'Success', 
-            servers: { 
-            name: string, 
-            id: string, 
-            channels: {name: string, id: string}[], 
-            roles: {name: string, id: string}[]
-        }[]
+        servers: DiscordServer[]
     }
 > {
     async function getOwnedServers(userId: string): Promise<
@@ -71,8 +105,7 @@ export async function getDiscordServers(userId: string): Promise<
     
         const accessToken = accessTokens[0].token
     
-        // TODO: handle "you are being rate limited" error
-        const guildsRes = await fetch("https://discord.com/api/users/@me/guilds", { headers: { Authorization: `Bearer ${accessToken}` } })
+        const guildsRes = await throttler(() => fetch("https://discord.com/api/users/@me/guilds", { headers: { Authorization: `Bearer ${accessToken}` } }))
         if (guildsRes.status !== 200) {
             throw new Error('Invalid Discord access token')
         }
@@ -106,40 +139,61 @@ export async function getDiscordServers(userId: string): Promise<
         return ownedServers.value
     }
 
-    const guilds = discordClient.value.guilds.cache
-
-    const installedServers = ownedServers.value.servers.filter(server => guilds.has(server.id))
-    const [channelsLists, rolesList] = await Promise.all([
-        Promise.all(installedServers.map(server => guilds.get(String(server.id))!.channels.fetch())),
-        Promise.all(installedServers.map(server => guilds.get(String(server.id))!.roles.fetch())),
-    ] as const)
-
-    const channelsByServer: { [serverId: string]: { id: string, name: string }[] } = enumMap(
-        installedServers.map(server => server.id),
-        (_, index) => channelsLists[index]
-            .filter(channel => channel!.type === ChannelType.GuildText)
-            .map(channel => ({ name: channel!.name, id: channel!.id })),
-    )
-
-    const rolesByServer: { [serverId: string]: { id: string, name: string }[] } = enumMap(
-        installedServers.map(server => server.id),
-        (_, index) => rolesList[index]
-          .map(role => ({ name: role.name, id: role.id })),
-    )
-
-    const serversWithChannels = installedServers.map(({ id, name }) => ({ 
-        id,
-        name,
-        channels: channelsByServer[id],
-        roles: rolesByServer[id],
-    }))
+    const ownedServerIds = ownedServers.value.servers.map(server => server.id)    
+    const guilds = await getGuilds()
+    const installedServerIds = ownedServerIds.filter(serverId => guilds.has(serverId))
     
-    return { status: 'Success', servers: serversWithChannels }
+    const installedServers = await Promise.all(
+        installedServerIds.map(serverId => throttler(async () => {
+            const guild = await throttler(() => guilds.get(serverId)!.fetch())
+            const channels = await throttler(() => guild.channels.fetch())
+            const roles = await throttler(() => guild.roles.fetch())
+
+            return {
+                name: guild.name,
+                id: guild.id,
+
+                channels: channels
+                    .filter(c => c !== null && c.type === ChannelType.GuildText)
+                    .map(c => ({ name: c!.name, id: c!.id })),
+                
+                roles: roles.map(r => ({ name: r.name, id: r.id })),
+            }
+        }))
+    )
+    
+    return { status: 'Success', servers: installedServers }
 }
 
 
-export async function discordSend(message: string, targets: {[serverId: string]: string /* channelId */}) {
+export async function discordSend(message: string | MessagePayload | MessageCreateOptions, targets: NotificationSetting['target'][]) {
     const discordClient = await getDiscordClient()
 
-    //discordClient.
+    const guilds = await throttler(() => getGuilds())
+
+    await Promise.all(
+        targets.map(target => {
+            if (target.type === 'channel') {
+                return throttler(async () => {
+                    const guild = guilds.get(target.serverId)
+
+                    if (!guild) {
+                        return console.log('Guild not found!')
+                    }
+
+                    const channel = guild.client.channels.cache.get(target.channelId)
+                    
+                    if (!channel) {
+                        return console.log('channel not found!')
+                    }
+
+                    if (channel.type === ChannelType.GuildText) {
+                        await channel.send(message)
+                    }
+                })
+            } else {
+                // TODO
+            }
+        })
+    )
 }

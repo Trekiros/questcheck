@@ -27,6 +27,10 @@ const AdminActions: FC<{}> = ({}) => {
 	const [userName, setUserName] = useState("")
 	const [href, setHref] = useState("")
 
+	const disabled = banUser.isLoading
+		|| validateUser.isLoading
+		|| forceCron.isLoading
+
 	function showBanModal() {
 		setUserName("")
 		setModalType('ban')
@@ -62,6 +66,7 @@ const AdminActions: FC<{}> = ({}) => {
 						<div className={styles.row}>
 							<label>Username:</label>
 							<input
+								disabled={disabled}
 								type="text"
 								value={userName}
 								onChange={e => setUserName(e.target.value)} />
@@ -70,8 +75,10 @@ const AdminActions: FC<{}> = ({}) => {
 
 					{ modalType === 'ban' ? (
 						<>
-							<button onClick={async () => { await banUser.mutateAsync(userName); setModalType(null) }}>
-								Confirm
+							<button 
+								disabled={disabled}
+								onClick={async () => { await banUser.mutateAsync(userName); setModalType(null) }}>
+									Confirm
 							</button>
 						</>
 					) : (modalType === 'validate') ? (
@@ -79,18 +86,23 @@ const AdminActions: FC<{}> = ({}) => {
 							<div className={styles.row}>
 								<label>href:</label>
 								<input
+									disabled={disabled}
 									type="text"
 									value={href}
 									onChange={e => setHref(e.target.value)} />
 							</div>
 
-							<button onClick={async () => { await validateUser.mutateAsync({ userName, href }); setModalType(null) }}>
+							<button 
+								disabled={disabled}
+								onClick={async () => { await validateUser.mutateAsync({ userName, href }); setModalType(null) }}>
 								Confirm
 							</button>
 						</>
 					) : (modalType === 'forceCron') ? (
-						<button onClick={async () => { await forceCron.mutateAsync(); setModalType(null) }}>
-                            Confirm
+						<button 
+							disabled={disabled}
+							onClick={async () => { await forceCron.mutateAsync(); setModalType(null) }}>
+                            	Confirm
                         </button>
 					) : null}
 				</Modal>
