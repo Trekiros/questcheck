@@ -30,12 +30,14 @@ export async function forceCron() {
     console.log('Running Cron Job')
 
     // TODO
+    
+    /*
     const playtests = await Collections.playtests()
     const users = await Collections.users()
     const playtest = (await playtests.find({ _id: new ObjectId("65eead623edb41cde9cb12e8")}).map(({ _id, ...playtest }) => ({ _id: _id.toString(), ...playtest })).toArray())[0]!
     const author = await users.findOne({ userId: "user_2dCd67k9pZb8x6lNNm5sgNhv7UG"}, { projection: { _id: 0 }})! as User
 
-    await findTargets(playtest, author)
+    await findTargets(playtest, author) */
 }
 
 // Expose a second API endpoint for the admin to manually force the cron job to run
