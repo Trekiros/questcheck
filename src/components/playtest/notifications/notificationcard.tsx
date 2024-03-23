@@ -4,22 +4,21 @@ import styles from './notificationCard.module.scss'
 import Select from "@/components/utils/select";
 import { validate } from "@/model/utils";
 import { DiscordServer } from "@/server/discord";
-import { channel } from "diagnostics_channel";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMultiply, faPlus, faX } from "@fortawesome/free-solid-svg-icons";
-import { PlaytestSearchParams } from "@/model/playtest";
-import SearchParams, { SearchParamsForm } from "../searchParams";
+import { faMultiply } from "@fortawesome/free-solid-svg-icons";
+import { SearchParamsForm } from "../searchParams";
 
 type PropType = {
     value: NotificationSetting,
     update: (updateCallback: (clone: NotificationSetting) => void) => void,
     disabled: boolean,
     discordServers: DiscordServer[],
+    discordUserId: string,
     onDelete: () => void,
 }
 
-const NotificationCard: FC<PropType> = ({ value, update, disabled, discordServers, onDelete }) => {
-    const { isValid, errorPaths } = validate(value, NotificationSettingSchema)
+const NotificationCard: FC<PropType> = ({ value, update, disabled, discordServers, discordUserId, onDelete }) => {
+    const { errorPaths } = validate(value, NotificationSettingSchema)
     const { target, filter, frequency, name } = value
 
     return (
@@ -57,7 +56,7 @@ const NotificationCard: FC<PropType> = ({ value, update, disabled, discordServer
                 <Select
                     value={target.type} 
                     onChange={newValue => update(clone => {
-                        if (newValue === "dm") clone.target = { type: "dm", userId: "" }
+                        if (newValue === "dm") clone.target = { type: "dm", userId: discordUserId }
                         if (newValue === "channel") clone.target = { type: "channel", channelId: "", serverId: "" }
                     })}
                     options={NotificationTargetTypeList.map(type => ({ 

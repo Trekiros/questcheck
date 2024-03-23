@@ -93,13 +93,19 @@ export async function getDiscordServers(userId: string): Promise<
     { status: 'No Discord Provider' }
   | { 
         status: 'Success', 
-        servers: DiscordServer[]
+        servers: DiscordServer[],
+        discordUserId: string,
     }
 > {
     async function getOwnedServers(userId: string): Promise<
         { status: 'No Discord Provider' }
-      | { status: 'Success', servers: { name: string, id: string }[] }
+      | { status: 'Success', servers: { name: string, id: string }[], discordUserId: string }
     > {
+        const clerkUser = await clerkClient.users.getUser(userId)
+        const discordAccount = clerkUser.externalAccounts.find(acc => acc.provider === 'oauth_discord')
+        if (!discordAccount) return { status: 'No Discord Provider' }
+        const discordUserId = discordAccount.externalId
+
         const accessTokens = await clerkClient.users.getUserOauthAccessToken(userId, "oauth_discord")
         if (!accessTokens.length) return { status: 'No Discord Provider' }
     
@@ -120,7 +126,7 @@ export async function getDiscordServers(userId: string): Promise<
         const ownedGuilds = guilds.filter(g => g.owner)
             .map(g => ({ name: g.name, id: g.id }))
     
-        return { status: 'Success', servers: ownedGuilds }    
+        return { status: 'Success', servers: ownedGuilds, discordUserId }    
     }
 
     const [ownedServers, discordClient] = await Promise.allSettled([
@@ -162,38 +168,32 @@ export async function getDiscordServers(userId: string): Promise<
         }))
     )
     
-    return { status: 'Success', servers: installedServers }
+    return { status: 'Success', servers: installedServers, discordUserId: ownedServers.value.discordUserId }
 }
 
 
-export async function discordSend(message: string | MessagePayload | MessageCreateOptions, targets: NotificationSetting['target'][]) {
-    const discordClient = await getDiscordClient()
-
+export async function discordSend(message: string | MessagePayload | MessageCreateOptions, target: NotificationSetting['target']) {
     const guilds = await throttler(() => getGuilds())
 
-    await Promise.all(
-        targets.map(target => {
-            if (target.type === 'channel') {
-                return throttler(async () => {
-                    const guild = guilds.get(target.serverId)
+    if (target.type === 'channel') {
+        return throttler(async () => {
+            const guild = guilds.get(target.serverId)
 
-                    if (!guild) {
-                        return console.log('Guild not found!')
-                    }
+            if (!guild) {
+                return console.log('Guild not found!')
+            }
 
-                    const channel = guild.client.channels.cache.get(target.channelId)
-                    
-                    if (!channel) {
-                        return console.log('channel not found!')
-                    }
+            const channel = guild.client.channels.cache.get(target.channelId)
+            
+            if (!channel) {
+                return console.log('channel not found!')
+            }
 
-                    if (channel.type === ChannelType.GuildText) {
-                        await channel.send(message)
-                    }
-                })
-            } else {
-                // TODO
+            if (channel.type === ChannelType.GuildText) {
+                await channel.send(message)
             }
         })
-    )
+    } else {
+        // TODO private message to the specified user
+    }
 }

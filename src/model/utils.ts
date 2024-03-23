@@ -1,3 +1,4 @@
+import { WithId } from "mongodb";
 import { ZodSchema, z } from "zod";
 
 /**
@@ -116,6 +117,11 @@ export const isAlphanumeric = (str: string) => {
     if (typeof str !== "string") return false;
 
     return !str.length || /^[a-zA-Z0-9]+$/.test(str)
+}
+
+export function idToString<T>(obj: WithId<T>) {
+    const { _id, ...rest } = obj
+    return { _id: _id.toString(), ...rest }
 }
 
 // Bypasses the fact that Object.keys and for in aren't typed properly.

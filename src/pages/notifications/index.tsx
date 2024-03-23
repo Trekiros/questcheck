@@ -10,11 +10,13 @@ import { faCheck, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { getAuth } from "@clerk/nextjs/server";
 import { getDiscordServers } from "@/server/discord";
 import { useUser } from "@clerk/nextjs";
-import { NotificationSetting } from "@/model/notifications";
+import { NotificationSetting, NotificationSettingSchema } from "@/model/notifications";
 import { trpcClient } from "@/server/utils";
 import NotificationCard from "@/components/playtest/notifications/notificationcard";
 import { useRouter } from "next/router";
 import { UserSchema } from "@/model/user";
+import { z } from "zod";
+import { validate } from "@/model/utils";
 
 type PageProps = ServerSideProps & {
     discordServers: Awaited<ReturnType<typeof getDiscordServers>>,
@@ -39,10 +41,12 @@ export const getServerSideProps: ServerSidePropsGetter<PageProps> = async (ctx) 
 const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
     const router = useRouter()
     const clerkUser = useUser()
-    const updateSelf = trpcClient.users.updateSelf.useMutation()
+    const updateNotifications = trpcClient.users.updateNotifications.useMutation()
     const [notifications, setNotifications] = useState(userCtx!.user.playerProfile.notifications)
     const [pristine, setPristine] = useState(true)
-    const disabled = updateSelf.isLoading
+    const { isValid, errorPaths } = validate(notifications, z.array(NotificationSettingSchema))
+
+    const disabled = updateNotifications.isLoading || !isValid
 
     function update(notifIndex: number, callback: (clone: NotificationSetting) => void) {
         const clone = structuredClone(notifications)
@@ -100,6 +104,7 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
                                     update={callback => update(i, callback)} 
                                     disabled={disabled}
                                     discordServers={discordServers.servers}
+                                    discordUserId={discordServers.discordUserId}
                                     onDelete={() => {
                                         const cloneArr = [...notifications]
                                         cloneArr.splice(i, 1)
@@ -112,13 +117,7 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
                             className={styles.saveBtn}
                             disabled={disabled || pristine}
                             onClick={async () => {
-                                await updateSelf.mutateAsync({
-                                    ...userCtx!.user,
-                                    playerProfile: {
-                                        systems: userCtx!.user.playerProfile.systems,
-                                        notifications,
-                                    }
-                                })
+                                await updateNotifications.mutateAsync(notifications)
                                 setPristine(true)
                             }}>
                                 Save Changes

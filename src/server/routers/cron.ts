@@ -1,10 +1,10 @@
-import { ActionRowBuilder } from 'discord.js';
-import { discordSend } from '../discord';
 import { Collections } from '../mongodb';
 import { protectedProcedure, router } from '../trpc';
-import { ObjectId } from 'mongodb';
-import { findTargets } from './notifications';
+import { AggregationCursor, Filter, ObjectId, WithId } from 'mongodb';
+import { sendBatchNotifications } from './notifications';
 import { User } from '@/model/user';
+import { Playtest } from '@/model/playtest';
+import { idToString, keys } from '@/model/utils';
 
 // Run the cron task, but only if it's been at least 3 hours since the last job
 // The job is configured to be ran every 4 hours, but it's started from a public, un-authenticated API endpoint
@@ -26,18 +26,28 @@ export async function doCron() {
 export async function forceCron() {
     lastCronTimestamp = Date.now()
     const lastCronCol = await Collections.lastCron()
-    await lastCronCol.replaceOne({}, { timestamp: lastCronTimestamp })
+    const oldCron = await lastCronCol.findOneAndReplace({}, { timestamp: lastCronTimestamp }, { returnDocument: 'before' })
     console.log('Running Cron Job')
 
-    // TODO
-    
-    /*
-    const playtests = await Collections.playtests()
-    const users = await Collections.users()
-    const playtest = (await playtests.find({ _id: new ObjectId("65eead623edb41cde9cb12e8")}).map(({ _id, ...playtest }) => ({ _id: _id.toString(), ...playtest })).toArray())[0]!
-    const author = await users.findOne({ userId: "user_2dCd67k9pZb8x6lNNm5sgNhv7UG"}, { projection: { _id: 0 }})! as User
+    const playtestCol = await Collections.playtests()
+    const userCol = await Collections.users()
+    const playtests = await (playtestCol.aggregate<WithId<Playtest>>()
+        .match({ createdTimestamp: { $gt: oldCron?.timestamp || 0 } } satisfies Filter<WithId<Playtest>>)
+        .lookup({
+            from: userCol.collectionName,
+            localField: "userId",
+            foreignField: "userId",
+            as: "author",
+        }) as AggregationCursor<WithId<Playtest> & { author: WithId<User> }>)
+        .map(({ author, ...playtest }) => {
+            const cleanAuthor = idToString(author)
+            const cleanPlaytest = idToString(playtest)
+            
+            return { ...cleanPlaytest, author: cleanAuthor}
+        })
+        .toArray()
 
-    await findTargets(playtest, author) */
+    await sendBatchNotifications(playtests)
 }
 
 // Expose a second API endpoint for the admin to manually force the cron job to run

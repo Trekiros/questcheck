@@ -8,6 +8,8 @@ import { clerkClient } from "@clerk/nextjs";
 import { User as ClerkUser } from "@clerk/backend";
 import { ReviewInputSchema } from "@/model/reviews";
 import { ApplicationStatusMap } from "@/model/playtest";
+import { getDiscordServers } from "../discord";
+import { NotificationSettingSchema } from "@/model/notifications";
 
 export type Permissions = {
     canCreate: boolean,
@@ -54,7 +56,7 @@ const updateSelf = protectedProcedure
             throw new Error('Username taken')
         }
 
-        const { publisherProfile, ...userClean } = input
+        const { publisherProfile, playerProfile, ...userClean } = input
 
         const clerkUser = await clerkClient.users.getUser(auth.userId)
         const emails = clerkUser.emailAddresses.map(e => e.emailAddress)
@@ -66,6 +68,11 @@ const updateSelf = protectedProcedure
             ...userClean,
             userNameLowercase: input.userName.toLowerCase(),
             emails,
+        }
+
+        // Player notification fields. Updating the notifications uses a different endpoint, so we only update the systems here.
+        if (userClean.isPlayer) {
+            $set['playerProfile.systems'] = playerProfile.systems
         }
 
         // Publisher readonly fields. Flattening the set avoids overwriting the manual verification process
@@ -105,6 +112,13 @@ const updateSelf = protectedProcedure
                 $set,
                 $setOnInsert: {
                     playerReviews: [],
+                    'playerProfile.notifications': [],
+
+                    // Only $setOnInsert playerProfile.systems if the user is not already going to set it, otherwise it causes a path conflict
+                    ...((!input.isPlayer)
+                        ? { 'playerProfile.systems': [] }
+                        : {}
+                    ),
 
                     // Only $setOnInsert publisherProfile if the $set won't already create it, otherwise it causes a path conflict.
                     ...((!input.isPublisher || !keys($set).find(key => key.startsWith('publisherProfile')))
@@ -127,14 +141,44 @@ const updateSelf = protectedProcedure
                 await users.updateOne({ _id: result.upsertedId }, { banned: true })
             }
         }
+    })
 
-        // If the user is a new one, ensure all necessary fields are present
-        if (result.upsertedId) {
-            await users.updateOne({ 
-                _id: result.upsertedId,
-            }, {
-            })
-        }
+const updateNotifications = protectedProcedure
+    .input(z.array(NotificationSettingSchema))
+    .mutation(async ({ input, ctx }) => {
+        const discordServers = await getDiscordServers(ctx.auth.userId)
+        if (discordServers.status === 'No Discord Provider') throw new Error('Unauthorized')
+
+        // The update is allowed if no conflicting notification settings are found
+        const isAllowed = !input.find(notification => {
+            if (notification.target.type === 'channel') {
+                const serverId = notification.target.serverId
+                const matchingServer = discordServers.servers.find(server => server.id === serverId)
+
+                if (!matchingServer) return true
+
+                const channelId = notification.target.channelId
+                const matchingChannel = matchingServer.channels.find(channel => channel.id === channelId)
+
+                if (!matchingChannel) return true
+            } 
+            
+            else if (notification.target.userId !== discordServers.discordUserId) return true;
+
+            return false
+        })
+
+        if (!isAllowed) throw new Error('Unauthorized')
+
+        const userCol = await Collections.users()
+        const result = await userCol.updateOne(
+            { userId: ctx.auth.userId },
+            { $set: {
+                'playerProfile.notifications': input,
+            }},
+        )
+
+        return !!result.modifiedCount
     })
 
 const deleteSelf = protectedProcedure
@@ -253,6 +297,7 @@ const validateUser = protectedProcedure
 
 export const UserRouter = router({
     updateSelf,
+    updateNotifications,
     deleteSelf,
     isUsernameTaken,
     review,
