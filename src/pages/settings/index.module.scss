@@ -156,4 +156,26 @@
             }
         }
     }
+
+    .reviews > * {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        align-items: start;
+
+        @media (max-width: 600px) { grid-template-columns: 1fr; gap: 0 }
+
+        > label {
+            display: grid;
+            svg { display: none }
+        }
+
+        ul {
+            display: grid;
+            gap: 1em;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+
+        }
+    }
 }

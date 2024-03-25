@@ -10,6 +10,10 @@ export default authMiddleware({
         
         // API
         '/api/trpc/:any',
+
+        // Legal
+        "/privacy",
+        "/tos",
     ],
 });
 

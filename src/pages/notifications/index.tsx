@@ -17,6 +17,7 @@ import { useRouter } from "next/router";
 import { UserSchema } from "@/model/user";
 import { z } from "zod";
 import { validate } from "@/model/utils";
+import { toast } from "sonner";
 
 type PageProps = ServerSideProps & {
     discordServers: Awaited<ReturnType<typeof getDiscordServers>>,
@@ -46,7 +47,7 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
     const [pristine, setPristine] = useState(true)
     const { isValid, errorPaths } = validate(notifications, z.array(NotificationSettingSchema))
 
-    const disabled = updateNotifications.isLoading || !isValid
+    const disabled = updateNotifications.isLoading
 
     function update(notifIndex: number, callback: (clone: NotificationSetting) => void) {
         const clone = structuredClone(notifications)
@@ -71,13 +72,13 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
                                         {
                                             name: 'New Playtests!',
                                             target: { type: 'channel', serverId: '', channelId: '' },
-                                            frequency: "Once every 4 hours",
+                                            frequency: "Once per day",
                                             filter: {},
                                         }
                                     ])
                                     setPristine(false)
                                 }}>
-                                    Add Target
+                                    Add Notification
                                     <FontAwesomeIcon icon={faPlus} />
                             </button>
 
@@ -93,7 +94,7 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
 
                     {!notifications.length ? (
                         <div className={styles.placeholder}>
-                            Create a notification target to start...
+                            Create a notification to start...
                         </div>
                     ) : <>
                         <ul className={styles.targets}>
@@ -115,10 +116,11 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
 
                         <button
                             className={styles.saveBtn}
-                            disabled={disabled || pristine}
+                            disabled={disabled || pristine || !isValid}
                             onClick={async () => {
                                 await updateNotifications.mutateAsync(notifications)
                                 setPristine(true)
+                                toast("Notification settings saved successfully!")
                             }}>
                                 Save Changes
                                 <FontAwesomeIcon icon={faCheck} />

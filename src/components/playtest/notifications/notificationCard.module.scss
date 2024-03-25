@@ -10,6 +10,11 @@
         grid-template-columns: 120px 1fr auto;
         align-items: center;
 
+        label {
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+
         button {
             padding: 8px;
 

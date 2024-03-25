@@ -40,7 +40,7 @@ const NewPlaytestPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
 
     const isAllowed = userCtx?.user.isPublisher && (
         userCtx.user.publisherProfile.twitterProof
-     || userCtx.user.publisherProfile.facebookProof
+     || userCtx.user.publisherProfile.youtubeProof
      || userCtx.user.publisherProfile.manualProof
     )
 
@@ -58,7 +58,6 @@ const NewPlaytestPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
         
         for (const tag of mandatoryTemplateTags) {
             if (!playtest.bountyContract.templateValues[tag]) {
-                console.log(mandatoryTemplateTags, playtest.bountyContract.templateValues)
                 setTemplateIsValid(false)
                 return;
             }

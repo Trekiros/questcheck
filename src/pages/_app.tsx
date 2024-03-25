@@ -9,7 +9,7 @@ import { DialogProvider } from '@/components/utils/dialog'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faDiscord, faWordpress, faYoutube } from '@fortawesome/free-brands-svg-icons'
+import { faDiscord, faGithub, faWordpress, faYoutube } from '@fortawesome/free-brands-svg-icons'
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
 
 export { reportWebVitals } from 'next-axiom';
@@ -63,16 +63,19 @@ const App = ({ Component, pageProps: { session, ...pageProps }}: AppProps) => {
 						</label>
 						<div>
 							<Link href="https://discord.com/invite/9AJtv5DJ6f" target="_blank">
-							<FontAwesomeIcon icon={faDiscord as any} title="Join the Discord server!" />
+								<FontAwesomeIcon icon={faDiscord as any} title="Join the Discord server!" />
 							</Link>
 							<Link href="https://www.youtube.com/@trekiros" target="_blank">
-							<FontAwesomeIcon icon={faYoutube as any} title="Follow me on YouTube!" />
+								<FontAwesomeIcon icon={faYoutube as any} title="Follow me on YouTube!" />
 							</Link>
 							<Link href="https://www.trekiros.com" target="_blank">
-							<FontAwesomeIcon icon={faWordpress as any} title="Follow my blog!" />
+								<FontAwesomeIcon icon={faWordpress as any} title="Follow my blog!" />
 							</Link>
 							<Link href="mailto:trekiros.contact@gmail.com" target="_blank">
-							<FontAwesomeIcon icon={faEnvelope} title="Contact through e-mail" />
+								<FontAwesomeIcon icon={faEnvelope} title="Contact through e-mail" />
+							</Link>
+							<Link href="https://github.com/Trekiros/questcheck" target="_blank">
+								<FontAwesomeIcon icon={faGithub} title="Contribute on Github" />
 							</Link>
 						</div>
 					</div>

@@ -10,6 +10,7 @@ import { ReviewInputSchema } from "@/model/reviews";
 import { ApplicationStatusMap } from "@/model/playtest";
 import { getDiscordServers } from "../discord";
 import { NotificationSettingSchema } from "@/model/notifications";
+import { getYoutubeInfo } from "../youtube";
 
 export type Permissions = {
     canCreate: boolean,
@@ -36,7 +37,7 @@ export async function getPermissions(userId: string|null): Promise<{ user: User|
      || userInfo.banned
      || !userInfo.isPublisher
      || (
-            !userInfo.publisherProfile.facebookProof
+            !userInfo.publisherProfile.youtubeProof
          && !userInfo.publisherProfile.twitterProof
          && !userInfo.publisherProfile.manualProof
      )
@@ -77,12 +78,8 @@ const updateSelf = protectedProcedure
 
         // Publisher readonly fields. Flattening the set avoids overwriting the manual verification process
         if (userClean.isPublisher) {
-            let user: ClerkUser|null = null;
-
             if (publisherProfile.twitterProof) {
-                user = await clerkClient.users.getUser(auth.userId)
-                
-                const fromAuth = user.externalAccounts.find(socialConnection => socialConnection.provider === 'oauth_x')?.username
+                const fromAuth = clerkUser.externalAccounts.find(socialConnection => socialConnection.provider === 'oauth_x')?.username
                 if (publisherProfile.twitterProof !== fromAuth) {
                     throw new Error('You must link your twitter account to do this')
                 }
@@ -92,17 +89,16 @@ const updateSelf = protectedProcedure
                 $set["publisherProfile.twitterProof"] = ''
             }
 
-            if (publisherProfile.facebookProof) {
-                if (!user) user = await clerkClient.users.getUser(auth.userId)
+            if (publisherProfile.youtubeProof) {
+                const youtubeInfo = await getYoutubeInfo(auth.userId)
 
-                const fromAuth = auth.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'oauth_facebook')?.username
-                if (publisherProfile.twitterProof!== fromAuth) {
-                    throw new Error('You must link your facebook account to do this')
+                if (youtubeInfo.status !== 'success') {
+                    throw new Error('You must link your youtube account to do this')
                 }
-
-                $set["publisherProfile.facebookProof"] = fromAuth
+                
+                $set["publisherProfile.youtubeProof"] = youtubeInfo.channelId
             } else {
-                $set["publisherProfile.facebookProof"] = ''
+                $set["publisherProfile.youtubeProof"] = ''
             }
         }
 
@@ -249,7 +245,11 @@ const review = protectedProcedure
         const result = await usersCol.updateOne({
             userId: input.playtesterId,
         }, { $push: {
-            playerReviews: { 
+            playerReviews: {
+                // Only the last 100 reviews are saved
+                $slice: -100,
+
+                // We need to use $each, even for a single array insert, because otherwise we can't use $slice
                 $each: [
                     {
                         ...input.review,
@@ -257,13 +257,8 @@ const review = protectedProcedure
                         byUserId: ctx.auth.userId,
                     },
                 ],
-                
-                // Only the last 100 reviews are saved
-                $slice: -100,
             },
         }})
-
-        console.log(result)
     })
 
 const banUser = protectedProcedure

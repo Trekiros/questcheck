@@ -20,9 +20,9 @@ QuestCheck is available at https://www.questcheck.org
 * **Clerk Configuration**
     * Create a free project on Clerk: https://clerk.com/
     * Go to **Users & Authentications** then **Social Connections**
-        * Enable **Discord**, and add "guilds" in the "scopes" field
+        * Enable **Discord** with custom credentials, and add "guilds" in the "scopes" field
+        * Enable **Google** with custom credentials, and add "https://www.googleapis.com/auth/youtube.readonly" in the "scopes" field
         * Enable **X / Twitter v2** 
-        * *(the Facebook connection won't work in dev without manual verification by a Facebook employee, but isn't necessary to contribute to this project)*
     * Go to **API Keys** and copy the public & secret keys into your `.env` file
 
 * **Discord Configuration**
@@ -35,6 +35,20 @@ QuestCheck is available at https://www.questcheck.org
         * Click "Reset Token" and paste the token into your `.env` file
     * Go to **OAuth2**
         * Use the client ID and secret in your Clerk project, as described here: https://clerk.com/docs/authentication/social-connections/discord
+        * Add the redirect URL from your Clerk Project (same link)
+
+* **Youtube Configuration**
+    * Create a new application on Google Cloud Platform: https://console.cloud.google.com/
+    * Go to **APIs**
+        * Enable the Youtube v3 API
+    * Go to **OAuth consent screen**
+        * Set up an app in testing mode
+        * Make sure the app has the "https://www.googleapis.com/auth/youtube.readonly" scope
+    * Go to **Credentials**
+        * Click "+ Create Credentials" => "Oauth Client ID"
+        * Select "web application" in the application type dropdown menu
+        * Add the redirect url from your Clerk project, as described here: https://clerk.com/docs/authentication/social-connections/google
+        * Use the client ID and secret in your Clerk project (same link)
 
 * **Running the project**
     * Run in dev mode: `npm run dev`

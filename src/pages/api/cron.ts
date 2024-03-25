@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         await doCron()
         res.status(200).json({ status: 'ok' })
     } catch (err) {
-        console.log(err)
+        console.error(err)
         res.status(400).json({ status: 'ko' })
     }
 }

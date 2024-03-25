@@ -11,17 +11,37 @@ import MarkdownTextArea from "@/components/utils/markdownTextArea"
 import FreeEntrySelect from "@/components/utils/freeEntrySelect"
 import { useUser } from "@clerk/nextjs"
 import DotSkeleton from "@/components/skeleton/dots"
-import { faFacebook, faTwitter, faXTwitter } from "@fortawesome/free-brands-svg-icons"
+import { faTwitter, faXTwitter, faYoutube } from "@fortawesome/free-brands-svg-icons"
 import { useRouter } from "next/router"
 import Link from "next/link"
 import { toast } from "sonner"
 import { NextSeo } from "next-seo"
 import Page, { ServerSideProps } from "@/components/utils/page"
-import { serverPropsGetter } from "@/components/utils/pageProps"
+import { GetServerSideProps } from "next"
+import { getAuth, buildClerkProps } from "@clerk/nextjs/server";
+import { YoutubeInfo, getYoutubeInfo } from "@/server/youtube"
+import { ReviewsDisplay } from "@/components/playtest/details/review"
+import { getUserCtx } from "@/components/utils/pageProps"
 
-export const getServerSideProps = serverPropsGetter;
+type PageProps = ServerSideProps & {
+    youtube: YoutubeInfo,
+}
 
-const SettingsPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
+
+export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
+    const auth = getAuth(ctx.req)
+    if (!auth.userId) throw new Error('Unauthorized')
+
+    return {
+        props: {
+            ...buildClerkProps(ctx.req),
+            userCtx: await getUserCtx(auth.userId, true),
+            youtube: await getYoutubeInfo(auth.userId),
+        }
+    }
+};
+
+const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
     const router = useRouter()
     const userMutation = trpcClient.users.updateSelf.useMutation()
     const [user, setUser] = useState<MutableUser>(userCtx?.user || newUser)
@@ -33,7 +53,6 @@ const SettingsPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
 
     const clerkUser = useUser()
     const twitterUsername = clerkUser.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'x')?.username
-    const facebookUsername = clerkUser.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'facebook')?.username
 
     const disabled = userMutation.isLoading
 
@@ -229,6 +248,12 @@ const SettingsPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
                             </button>
                         </div>
                     </div>
+
+                    { !!userCtx?.reviews.length && (
+                        <div className={styles.reviews}>
+                            <ReviewsDisplay reviews={userCtx.reviews}/>
+                        </div>
+                    )}
                 </> }
 
 
@@ -283,24 +308,26 @@ const SettingsPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
 
                             <div className={styles.proofType}>
                                 <Checkbox
-                                    disabled={disabled || !facebookUsername}
-                                    value={!!user.publisherProfile.facebookProof}
+                                    disabled={disabled || (youtube.status !== 'success')}
+                                    value={!!user.publisherProfile.youtubeProof}
                                     onToggle={enabled => {
-                                        if (enabled) update(clone => clone.publisherProfile.facebookProof = facebookUsername)
-                                        else update(clone => clone.publisherProfile.facebookProof = '')
+                                        if (enabled) update(clone => {
+                                            if (youtube.status === 'success') clone.publisherProfile.youtubeProof = youtube.channelId
+                                        })
+                                        else update(clone => clone.publisherProfile.youtubeProof = '')
                                     }}>
-                                        Facebook <FontAwesomeIcon icon={faFacebook} />
+                                        Youtube <FontAwesomeIcon icon={faYoutube} />
                                 </Checkbox>
-                                { !facebookUsername && (
+                                { (youtube.status !== 'success') && (
                                     <span className={styles.warning}>
-                                        To use this feature, you must link your Facebook account by clicking
+                                        To use this feature, you must link your Youtube account by clicking
                                         <button disabled={disabled} style={{ padding: "6px", margin: '0 1ch', display: "inline-block" }} onClick={async () => {
                                             // Saving the user's work in progress, just in case
                                             if (isValid) await userMutation.mutateAsync(user)
                                             
                                             // OAuth process
                                             const externalAccount = await clerkUser.user?.createExternalAccount({
-                                                strategy: "oauth_facebook",
+                                                strategy: "oauth_google",
                                                 redirectUrl: '/sso-callback',
                                             })
 
@@ -309,6 +336,10 @@ const SettingsPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
                                         }}>
                                             here
                                         </button>!
+
+                                        { (youtube.status === 'no youtube access') && (
+                                            " (You have already linked a Google account, but haven't granted access to the associated Youtube channel)"
+                                        )}
                                     </span>
                                 )}
                             </div>
@@ -323,10 +354,10 @@ const SettingsPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
 
                                 { !user.publisherProfile.manualProof && (
                                     <span className={styles.warning}>
-                                        If you don't use Twitter nor Facebook, you can ask for a manual verification (this may take multiple days). 
+                                        If you don't use Twitter nor Youtube, you can ask for a manual verification (this may take multiple days). 
                                         To do it, contact Trekiros on <Link href="https://bsky.app/profile/trekiros.bsky.social">Bluesky</Link>, <Link href='https://dice.camp/@trekiros'>Mastodon</Link>, or by <Link href='mailto:trekiros.contact@gmail.com'>email</Link>.
-                                        You must use the account or email address you give to your customers so they can contact you, or your request will be rejected.
-                                        This account or email address will be the one which will be displayed on the playtests you create.
+                                        Please include a link to a website or social media account you own, and proof that you do in fact own it.
+                                        This link will be displayed in the header of any playtest you post on QuestCheck.
                                     </span>
                                 )}
                             </div>

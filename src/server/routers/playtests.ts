@@ -6,13 +6,14 @@ import {  protectedProcedure, router, publicProcedure } from "../trpc";
 import { arrMap, pojoMap } from "@/model/utils";
 import { PublicUser, PublicUserSchema, User } from "@/model/user";
 import { getPermissions } from "./users";
+import { playtestCreatedNotification } from "./notifications";
 
 // Returns the id of the new Playtest
 const create =  protectedProcedure
     .input(CreatablePlaytestSchema)
     .mutation(async ({ input, ctx: { auth: { userId }} }) => {
-        const { permissions } = await getPermissions(userId)
-        if (!permissions.canCreate) throw new Error('Unauthorized')
+        const { permissions, user } = await getPermissions(userId)
+        if (!user || !permissions.canCreate) throw new Error('Unauthorized')
         
         // Create playtest
         const playtests = await Collections.playtests()
@@ -24,8 +25,12 @@ const create =  protectedProcedure
             applications: [],
         }
         const result = await playtests.insertOne(newPlaytest)
-
         if (!result.acknowledged) throw new Error('Internal server error')
+
+        // Not awaited - this shouldn't block the publisher's UI.
+        setTimeout(async () => {
+            await playtestCreatedNotification({...newPlaytest, _id: result.insertedId.toString() }, user)
+        })
 
         return result.insertedId.toString()
     })
@@ -46,7 +51,10 @@ const search = publicProcedure
         if (search.includesMe) {
             if (!ctx.auth.userId) throw new Error('Unauthorized')
 
-            $and.push({ [`applications.${ctx.auth.userId}`]: { $exists: true } })
+            $and.push({ [`applications`]: { $elemMatch: {
+                applicantId: ctx.auth.userId,
+                status: { $ne: 'rejected' }
+            } satisfies Filter<Playtest['applications'][number]> }})
         }
 
         if (!search.includeClosed) { 

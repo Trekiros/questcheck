@@ -11,7 +11,7 @@ import MarkdownTextArea from "@/components/utils/markdownTextArea"
 import { UserReview, UserReviewSchema } from "@/model/reviews"
 import Checkbox from "@/components/utils/checkbox"
 
-export const ReviewsDisplay: FC<{ user: PublicUser & { playerReviews: User["playerReviews"] }, reviewerNameById: {[userId: string]: string} }> = ({ user, reviewerNameById}) => {
+export const ReviewsDisplay: FC<{ reviews: (UserReview & { author: string })[] }> = ({ reviews }) => {
     const [collapsed, setCollapsed] = useState(true)
 
     // Sort reviews by creation timestamp descending (= latest first)
@@ -20,10 +20,12 @@ export const ReviewsDisplay: FC<{ user: PublicUser & { playerReviews: User["play
             return review2.createdTimestamp - review1.createdTimestamp
         }
 
-        return user.playerReviews.sort(sortReviews)
-    }, [user.playerReviews])
+        return reviews.sort(sortReviews)
+    }, [reviews])
     
-    if (!user.playerReviews.length) return null
+    if (!reviews.length) return null
+
+    const percentageEndorsed = 100 * reviews.filter(review => review.endorsed).length / reviews.length
     
     return (
         <section className={styles.reviews}>
@@ -32,11 +34,13 @@ export const ReviewsDisplay: FC<{ user: PublicUser & { playerReviews: User["play
 
                 Recent Reviews
 
-                <span className={styles.percentage}>
-                    ({100 * user.playerReviews.filter(review => review.endorsed).length / user.playerReviews.length}% endorsed)
-                </span>
+                { (percentageEndorsed > 75) && (
+                    <span className={styles.percentage}>
+                        ({percentageEndorsed}% endorsed)
+                    </span>
+                )}
 
-                { (user.playerReviews.length > 3) && (
+                { (reviews.length > 3) && (
                     <button onClick={() => setCollapsed(!collapsed)}>
                         <FontAwesomeIcon icon={collapsed ? faChevronDown : faChevronUp} />
                     </button>
@@ -44,10 +48,10 @@ export const ReviewsDisplay: FC<{ user: PublicUser & { playerReviews: User["play
             </label>
 
             <ul>
-                { (collapsed ? user.playerReviews.slice(0, 3) : user.playerReviews).map((review, i) => (
+                { (collapsed ? reviews.slice(0, 3) : reviews).map((review, i) => (
                     <li key={i} className={styles.review}>
                         <div className={styles.header}>
-                            <label>{reviewerNameById[review.byUserId]}</label>
+                            <label>{review.author}</label>
                             
                             { review.endorsed && (
                                 <FontAwesomeIcon icon={faThumbsUp} />

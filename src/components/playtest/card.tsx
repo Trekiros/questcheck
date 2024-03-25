@@ -5,7 +5,7 @@ import styles from './card.module.scss'
 import { PublicUser } from "@/model/user";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFacebook, faTwitter } from "@fortawesome/free-brands-svg-icons";
+import { faTwitter, faYoutube } from "@fortawesome/free-brands-svg-icons";
 import { faCheck, faClose, faEllipsis, faLock, faQuestionCircle, faShareFromSquare, faUsers } from "@fortawesome/free-solid-svg-icons";
 import Markdown from "../utils/markdown";
 import { tagClassName } from "./searchParams";
@@ -51,7 +51,7 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
                         <Link
                             href={
                                 author.publisherProfile.twitterProof ? `https://twitter.com/${author.publisherProfile.twitterProof}`
-                              : author.publisherProfile.facebookProof ? `https://www.facebook.com/${author.publisherProfile.facebookProof}`
+                              : author.publisherProfile.youtubeProof ? `https://www.youtube.com/channel/${author.publisherProfile.youtubeProof}`
                               : author.publisherProfile.manualProof!
                             } 
                             target="_blank">
@@ -59,7 +59,7 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
 
                                 <FontAwesomeIcon icon={
                                     author.publisherProfile.twitterProof ? faTwitter
-                                    : author.publisherProfile.facebookProof ? faFacebook
+                                    : author.publisherProfile.youtubeProof ? faYoutube
                                     : faShareFromSquare
                                 } />
                         </Link>

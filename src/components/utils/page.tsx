@@ -2,12 +2,14 @@ import { MutableUser } from "@/model/user";
 import { Permissions } from "@/server/routers/users";
 import { FC, ReactNode, createContext, useContext } from "react";
 import NavBar from "./navbar";
+import { UserReview } from "@/model/reviews";
 
 export type ServerSideProps = {
     userCtx: { 
         user: MutableUser, 
         permissions: Permissions,
         userId: string,
+        reviews: (UserReview & { author: string })[]
     } | null,
 }
 

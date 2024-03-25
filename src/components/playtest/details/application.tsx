@@ -63,7 +63,8 @@ export const ApplicationCard: FC<PropType> = ({ playtest, application, applicant
 
                 { (canReview || !!applicant.playerReviews.length) && (
                     <div className={styles.reviews}>
-                        <ReviewsDisplay user={applicant} reviewerNameById={reviewerNameById} />
+                        <ReviewsDisplay
+                            reviews={applicant.playerReviews.map(review => ({ ...review, author: reviewerNameById[review.byUserId] }))} />
 
                         { canReview && <>
                                 <hr />

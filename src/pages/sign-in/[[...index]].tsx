@@ -9,10 +9,11 @@ export const ClerkTheme: NonNullable<React.ComponentProps<typeof SignIn>['appear
     elements: {
       footerActionLink: { color: '#ccc', "&:hover": { color: 'white' } },
       profileSectionPrimaryButton: { color: '#fff' },
+      socialButtonsIconButton: { background: '#fff', "$:hover": { background: "#fff8"} },
       badge: { color: '#fff' },
     },
     layout: {
-      privacyPageUrl: '/privacy-policy',
+      privacyPageUrl: '/privacy',
       shimmer: true,
     },
     variables: {

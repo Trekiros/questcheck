@@ -72,126 +72,140 @@ export const SearchParamsForm: FC<{
     update: (callback: (clone: PlaytestSearchParams) => void) => void,
     disabled?: boolean,
     className?: string,
-}> = ({ value, update, disabled, className }) => {
+    fields?: {
+        tags?: boolean,
+        date?: boolean,
+        task?: boolean,
+        bounty?: boolean,
+    },
+}> = ({ value, update, disabled, className, fields }) => {
     return (
         <div className={`${styles.form} ${className}`}>
-            <section>
-                <h3>Tags:</h3>
+            { (fields?.tags !== false) && (
+                <section>
+                    <h3>Tags:</h3>
 
-                <div>
-                    <label>Must include:</label>
-                    <TagInput
-                        disabled={disabled}
-                        tagClassName={tagClassName}
-                        values={value.includeTags || []}
-                        onChange={newValue => update(clone => {
-                            const actualNewValue = newValue.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag))
-                            if (actualNewValue.length) clone.includeTags = actualNewValue
-                            else delete clone.includeTags;
-                        })}
-                        categories={{
-                            "Game:": SystemsList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
-                            "Material:": MaterialList.filter(tag =>!value.excludeTags ||!value.excludeTags?.includes(tag)),
-                            "Engine:": EnginesList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
-                            "Genre:": GenreList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
-                        }} />
-                </div>
-                <div>
-                    <label>Cannot include:</label>
-                    <TagInput
-                        disabled={disabled}
-                        tagClassName={tagClassName}
-                        values={value.excludeTags || []}
-                        onChange={newValue => update(clone => {
-                            const actualNewValue = newValue.filter(tag => !value.includeTags || !value.includeTags?.includes(tag))
-                            if (actualNewValue.length) clone.excludeTags = actualNewValue
-                            else delete clone.excludeTags;
-                        })}
-                        categories={{
-                            "Game:": SystemsList.filter(tag => !value.includeTags || !value.includeTags?.includes(tag)),
-                            "Material:": MaterialList.filter(tag =>!value.includeTags ||!value.includeTags?.includes(tag)),
-                            "Engine:": EnginesList.filter(tag => !value.includeTags || !value.includeTags?.includes(tag)),
-                            "Genre:": GenreList.filter(tag =>!value.includeTags || !value.includeTags?.includes(tag)),
-                        }} />
-                </div>
-            </section>
-
-            <section>
-                <h3>Publication Date</h3>
-
-                <div className={styles.dates}>
-                    <Select
-                        disabled={disabled}
-                        value={value.after}
-                        onChange={newValue => update(clone => clone.after = newValue)}
-                        options={[
-                            {label: 'No restriction', value: undefined},
-                            {label: 'In the past 24 hours', value: - 24 * 60 * 60 * 1000},
-                            {label: 'In the past 7 days', value: - 7 * 24 * 60 * 60 * 1000},
-                            {label: 'In the past 30 days', value: - 30 * 24 * 60 * 60 * 1000},
-                            {label: 'In the past 6 months', value: - 6 * 30 * 24 * 60 * 60 * 1000},
-                            {label: 'In the past year', value: -365 * 24 * 60 * 60 * 1000},
-                        ]} />
-                </div>
-            </section>
-
-            <section>
-                <h3>Task</h3>
-
-                <ul>
-                    {TaskList.map(task => (
-                        <li key={task}>
-                            <Checkbox 
+                    <div>
+                        <label>Must include:</label>
+                        <TagInput
                             disabled={disabled}
-                                value={!!value.acceptableTasks ? !!value.acceptableTasks[task] : true} 
-                                onToggle={() => update(clone => {
-                                    if (!clone.acceptableTasks) {
-                                        clone.acceptableTasks = {}
-                                        TaskList.forEach(t => clone.acceptableTasks![t] = true)
-                                    }
+                            tagClassName={tagClassName}
+                            values={value.includeTags || []}
+                            onChange={newValue => update(clone => {
+                                const actualNewValue = newValue.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag))
+                                if (actualNewValue.length) clone.includeTags = actualNewValue
+                                else delete clone.includeTags;
+                            })}
+                            categories={{
+                                "Game:": SystemsList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
+                                "Material:": MaterialList.filter(tag =>!value.excludeTags ||!value.excludeTags?.includes(tag)),
+                                "Engine:": EnginesList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
+                                "Genre:": GenreList.filter(tag => !value.excludeTags || !value.excludeTags?.includes(tag)),
+                            }} />
+                    </div>
+                    <div>
+                        <label>Cannot include:</label>
+                        <TagInput
+                            disabled={disabled}
+                            tagClassName={tagClassName}
+                            values={value.excludeTags || []}
+                            onChange={newValue => update(clone => {
+                                const actualNewValue = newValue.filter(tag => !value.includeTags || !value.includeTags?.includes(tag))
+                                if (actualNewValue.length) clone.excludeTags = actualNewValue
+                                else delete clone.excludeTags;
+                            })}
+                            categories={{
+                                "Game:": SystemsList.filter(tag => !value.includeTags || !value.includeTags?.includes(tag)),
+                                "Material:": MaterialList.filter(tag =>!value.includeTags ||!value.includeTags?.includes(tag)),
+                                "Engine:": EnginesList.filter(tag => !value.includeTags || !value.includeTags?.includes(tag)),
+                                "Genre:": GenreList.filter(tag =>!value.includeTags || !value.includeTags?.includes(tag)),
+                            }} />
+                    </div>
+                </section>
+            )}
 
-                                    clone.acceptableTasks[task] = !clone.acceptableTasks[task]
+            { (fields?.date !== false) && (
+                <section>
+                    <h3>Publication Date</h3>
 
-                                    // If all tasks are acceptable, remove the search param for increased perfs.
-                                    if (!keys(clone.acceptableTasks).find(t => !(clone.acceptableTasks![t]))) {
-                                        delete clone.acceptableTasks
-                                    }
-                                })}>
-                                    {task}
-                            </Checkbox>
-                        </li>
-                    ))}
-                </ul>
-            </section>
+                    <div className={styles.dates}>
+                        <Select
+                            disabled={disabled}
+                            value={value.after}
+                            onChange={newValue => update(clone => clone.after = newValue)}
+                            options={[
+                                {label: 'No restriction', value: undefined},
+                                {label: 'In the past 24 hours', value: - 24 * 60 * 60 * 1000},
+                                {label: 'In the past 7 days', value: - 7 * 24 * 60 * 60 * 1000},
+                                {label: 'In the past 30 days', value: - 30 * 24 * 60 * 60 * 1000},
+                                {label: 'In the past 6 months', value: - 6 * 30 * 24 * 60 * 60 * 1000},
+                                {label: 'In the past year', value: -365 * 24 * 60 * 60 * 1000},
+                            ]} />
+                    </div>
+                </section>
+            )}
 
-            <section>
-                <h3>Bounty</h3>
+            { (fields?.task !== false) && (
+                <section>
+                    <h3>Task</h3>
 
-                <ul>
-                    {BountyList.map(bounty => (
-                        <li key={bounty}>
-                            <Checkbox 
+                    <ul>
+                        {TaskList.map(task => (
+                            <li key={task}>
+                                <Checkbox 
                                 disabled={disabled}
-                                value={!!value.acceptableBounties ? !!value.acceptableBounties[bounty] : true} 
-                                onToggle={() => update(clone => {
-                                    if (!clone.acceptableBounties) {
-                                        clone.acceptableBounties = {}
-                                        BountyList.forEach(b => clone.acceptableBounties![b] = true)
-                                    }
+                                    value={!!value.acceptableTasks ? !!value.acceptableTasks[task] : true} 
+                                    onToggle={() => update(clone => {
+                                        if (!clone.acceptableTasks) {
+                                            clone.acceptableTasks = {}
+                                            TaskList.forEach(t => clone.acceptableTasks![t] = true)
+                                        }
 
-                                    clone.acceptableBounties[bounty] = !clone.acceptableBounties[bounty]
+                                        clone.acceptableTasks[task] = !clone.acceptableTasks[task]
 
-                                    // If all bounties are acceptable, remove the search param for increased perfs.
-                                    if (!keys(clone.acceptableBounties).find(b => !(clone.acceptableBounties![b]))) {
-                                        delete clone.acceptableBounties
-                                    }
-                                })}>
-                                    {bounty}
-                            </Checkbox>
-                        </li>
-                    ))}
-                </ul>
-            </section>
+                                        // If all tasks are acceptable, remove the search param for increased perfs.
+                                        if (!keys(clone.acceptableTasks).find(t => !(clone.acceptableTasks![t]))) {
+                                            delete clone.acceptableTasks
+                                        }
+                                    })}>
+                                        {task}
+                                </Checkbox>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+
+            { (fields?.bounty !== false) && (
+                <section>
+                    <h3>Bounty</h3>
+
+                    <ul>
+                        {BountyList.map(bounty => (
+                            <li key={bounty}>
+                                <Checkbox 
+                                    disabled={disabled}
+                                    value={!!value.acceptableBounties ? !!value.acceptableBounties[bounty] : true} 
+                                    onToggle={() => update(clone => {
+                                        if (!clone.acceptableBounties) {
+                                            clone.acceptableBounties = {}
+                                            BountyList.forEach(b => clone.acceptableBounties![b] = true)
+                                        }
+
+                                        clone.acceptableBounties[bounty] = !clone.acceptableBounties[bounty]
+
+                                        // If all bounties are acceptable, remove the search param for increased perfs.
+                                        if (!keys(clone.acceptableBounties).find(b => !(clone.acceptableBounties![b]))) {
+                                            delete clone.acceptableBounties
+                                        }
+                                    })}>
+                                        {bounty}
+                                </Checkbox>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
         </div>
     )
 }

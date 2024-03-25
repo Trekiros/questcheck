@@ -1,12 +1,14 @@
 import { getPermissions } from "@/server/routers/users";
 import { ServerSideProps } from "./page";
-import { MutableUser, MutableUserSchema, newUser } from "@/model/user";
-import { keys } from "@/model/utils";
+import { MutableUser, MutableUserSchema, User, newUser } from "@/model/user";
+import { arrMap, keys } from "@/model/utils";
 import type { GetServerSideProps as ServerSidePropsGetter } from 'next'
 import { getAuth, buildClerkProps } from "@clerk/nextjs/server";
+import { Collections } from "@/server/mongodb";
+import { UserReview } from "@/model/reviews";
 
 // Server side
-async function getUserCtx(userId: string|null): Promise<ServerSideProps['userCtx']> {
+export async function getUserCtx(userId: string|null, withReviews?: boolean): Promise<ServerSideProps['userCtx']> {
     if (!userId) return null;
 
     const { user, permissions } = await getPermissions(userId)
@@ -25,7 +27,21 @@ async function getUserCtx(userId: string|null): Promise<ServerSideProps['userCtx
         if (!user.isPublisher) user.publisherProfile = newUser.publisherProfile
     }
 
-    return { user: result, permissions, userId }
+    // If the user has reviews, fetch them & their author's names
+    let reviews: (UserReview & { author: string })[] = []
+    if (withReviews && user.playerReviews.length) {
+        const reviewerIds = Array.from(new Set(user.playerReviews.map(review => review.byUserId)))
+        const userCol = await Collections.users()
+        const reviewerProjection: {[key in keyof User]?: 1} = { userName: 1, userId: 1 }
+        const reviewers = await userCol.find<Pick<User, 'userId'|'userName'>>({ userId: { $in: reviewerIds } }, { projection: reviewerProjection })
+            .toArray()
+
+        const reviewerNamesById = arrMap(reviewers, (reviewer) => reviewer.userId)
+
+        reviews = user.playerReviews.map(review => ({ ...review, author: reviewerNamesById[review.byUserId].userName }))
+    }
+
+    return { user: result, permissions, userId, reviews }
 }
 
 // Server side (every single page should re-export this function)

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { PlaytestSearchParamSchema } from "./playtest";
 import { enumMap } from "./utils";
 
-export const NotificationFrequencyList = ['Whenever a playtest is created', 'Once every 4 hours'] as const
+export const NotificationFrequencyList = ['Whenever a playtest is created', 'Once per day'] as const
 export const NotificationFrequencySchema = z.enum(NotificationFrequencyList)
 export type NotificationFrequency = z.infer<typeof NotificationFrequencySchema>
 
@@ -17,7 +17,7 @@ export const NotificationTargetTypeMap: {[key in NotificationTargetType]: string
 export const NotificationTargetSchema = z.discriminatedUnion("type", [
     z.object({
         type: z.literal("dm"),
-        userId: z.string(), // TODO: this must be readonly
+        userId: z.string(),
     }),
     z.object({
         type: z.literal("channel"),

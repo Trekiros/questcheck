@@ -5,7 +5,52 @@ import { NotificationFrequency, NotificationSetting } from "@/model/notification
 import { discordSend } from "../discord";
 import { User } from "@/model/user";
 
+// Checks that a playtest matches the filters of a notification setting in memory.
+function memMatch(playtest: Playtest, notification: NotificationSetting) {
+    // Playtest is closed
+    if (playtest.closedManually || playtest.applicationDeadline < Date.now()) return false
+
+    // Tags
+    if (
+        (notification.filter.includeTags !== undefined)
+        && (!notification.filter.includeTags.find(tag => playtest.tags.includes(tag)))
+    ) return false;
+    if (
+        (notification.filter.excludeTags!== undefined)
+        && (notification.filter.excludeTags.find(tag => playtest.tags.includes(tag)))
+    ) return false;
+
+    // Task
+    if (
+        (notification.filter.acceptableTasks !== undefined)
+        && (!notification.filter.acceptableTasks[playtest.task])
+    ) return false;
+
+    // Bounty
+    if (
+        (notification.filter.acceptableBounties !== undefined)
+        && (!notification.filter.acceptableBounties[playtest.bounty])
+    ) return false;
+
+    // Author
+    if (
+        (notification.filter.includeAuthors !== undefined)
+        && (!notification.filter.includeAuthors.includes(playtest.userId))
+    ) return false;
+    if (
+        (notification.filter.excludeAuthors !== undefined)
+        && (notification.filter.excludeAuthors.includes(playtest.userId))
+    ) return false;
+
+    return true;
+}
+
 export async function sendBatchNotifications(playtests: (Playtest & { author: User })[]) {
+    if (!playtests.length) {
+        console.log('Cron job - no notifications to send, skipping.')
+        return;
+    }
+
     type NotifMap = {
         notification: NotificationSetting,
         matchingPlaytests: (Playtest & { author: User })[],
@@ -15,8 +60,8 @@ export async function sendBatchNotifications(playtests: (Playtest & { author: Us
     async function batchUsers(callback: (notifications: NotifMap[]) => Promise<void>) {
         const userCol = await Collections.users()
     
-        const userFilter: Filter<User> = { 
-            "playerProfile.notifications.frequency": 'Once every 4 hours' satisfies NotificationFrequency
+        const userFilter: Filter<User> = {
+            "playerProfile.notifications.frequency": 'Once per day' satisfies NotificationFrequency
         }
     
         const BATCH_SIZE = 100
@@ -27,76 +72,46 @@ export async function sendBatchNotifications(playtests: (Playtest & { author: Us
                 .skip(i * BATCH_SIZE)
                 .toArray())
                 .flatMap(user => user.playerProfile.notifications)
-                .filter(notif => notif.frequency === 'Once every 4 hours')
-                .map(mapPlaytests)
+                .filter(notif => notif.frequency === 'Once per day')
+                .map(notification => {
+                    const matchingPlaytests = playtests.filter(playtest => memMatch(playtest, notification))
+
+                    return { notification, matchingPlaytests }
+                })
+            
+            console.log('Sending ', notifications.length, ' notifications')
     
             await callback(notifications)
         }
     }
 
-    // For each notification setting, find the list of playtests that match the notification's filters, and send the corresponding Discord message.
-    function mapPlaytests(notification: NotificationSetting) {
-        const matchingPlaytests = playtests.filter(playtest => {
-            // Playtest is closed
-            if (playtest.closedManually || playtest.applicationDeadline < Date.now()) return false
-
-            // Tags
-            if (
-                (notification.filter.includeTags !== undefined)
-                && (!notification.filter.includeTags.find(tag => playtest.tags.includes(tag)))
-            ) return false;
-            if (
-                (notification.filter.excludeTags!== undefined)
-                && (notification.filter.excludeTags.find(tag => playtest.tags.includes(tag)))
-            ) return false;
-
-            // Task
-            if (
-                (notification.filter.acceptableTasks !== undefined)
-                && (!notification.filter.acceptableTasks[playtest.task])
-            ) return false;
-
-            // Bounty
-            if (
-                (notification.filter.acceptableBounties !== undefined)
-                && (!notification.filter.acceptableBounties[playtest.bounty])
-            ) return false;
-
-            // Author
-            if (
-                (notification.filter.includeAuthors !== undefined)
-                && (!notification.filter.includeAuthors.includes(playtest.userId))
-            ) return false;
-            if (
-                (notification.filter.excludeAuthors !== undefined)
-                && (notification.filter.excludeAuthors.includes(playtest.userId))
-            ) return false;
-        })
-
-        return { notification, matchingPlaytests }
-    }
-
     async function batchDiscordSend(notifications: NotifMap[]) {
         for (const { notification, matchingPlaytests } of notifications) {
-            await discordSend(
-`# ${notification.name}
-${ 
-    matchingPlaytests.map(playtest => `* "${
-        playtest.name
-    }" by ${
-        playtest.author.userName
-    }: ${
-        process.env.NODE_ENV === "development" ? 'http://localhost:3000' : 'https://www.questcheck.org'
-    }/playtest/${playtest._id}`)
-    .join('\n')
-}
-${
-    ((notification.target.type === 'channel') && (!!notification.target.role)) ? 
-        `<@&${notification.target.role}>` : ''
-}`, notification.target)
+            if (matchingPlaytests.length) {
+                await discordSend(
+                    `# ${notification.name}\n`
+                  + matchingPlaytests.map(playtest => `* "${
+                        playtest.name
+                    }" by ${
+                        playtest.author.userName
+                    } (${
+                        playtest.task
+                    }, ${
+                        playtest.bounty
+                    }): ${
+                        process.env.NODE_ENV === "development" ? 'http://localhost:3000' : 'https://www.questcheck.org'
+                    }/playtest/${playtest._id}`)
+                    .join('\n')
+                  + (
+                        ((notification.target.type === 'channel') && (!!notification.target.role))
+                            ? `\n\n<@&${notification.target.role}>` 
+                            : ''
+                    ),
+                    notification.target
+                )
+            }
         }
     }
-
     
     await batchUsers(batchDiscordSend)
 }
@@ -107,14 +122,16 @@ export async function playtestCreatedNotification(playtest: Playtest, author: Us
     const $and: Filter<NotificationSetting>["$and"] = []
     
     // Tags
-    $and.push({ $or: [
-        { 'filter.includeTags': { $exists: false } },
-        playtest.tags.map(tag => ({ 'filter.includeTags': tag }))
-    ]})
-    $and.push({ $or: [
-        { 'filter.excludeTags': { $exists: false } },
-        playtest.tags.map(tag => ({ 'filter.excludeTags': { $ne: tag } }))
-    ]})
+    if (playtest.tags.length) {
+        $and.push({ $or: [
+            { 'filter.includeTags': { $exists: false } },
+            { 'filter.includeTags': { $in: playtest.tags } },
+        ]})
+        $and.push({ $or: [
+            { 'filter.excludeTags': { $exists: false } },
+            { 'filter.includeTags': { $nin: playtest.tags } },
+        ]})
+    }
     
     // Task
     $and.push({ $or: [
@@ -138,24 +155,31 @@ export async function playtestCreatedNotification(playtest: Playtest, author: Us
         .map(user => user.playerProfile.notifications)
         .toArray())
         .flatMap(list => list)
+        .filter(notif => (notif.frequency === 'Whenever a playtest is created'))
+        .filter(notif => memMatch(playtest, notif))
 
-    console.log(`Found ${notifications.length} notifications`)
+    // Note: a second, in-memory filter is needed, because the only projections we can use are either:
+    // 1) "playerProfile.notifications" => returns all of the user's notifs, including non-matching ones
+    // 2) "playerProfile.notifications.$" => returns the first matching notif only, even though the playtest might match more than one
+
+    console.log('New playtest creates, id:', playtest._id, '\t\tSending notifications to ', notifications.length, ' targets')
 
     await Promise.all(
         notifications.map(notification => discordSend(
-`# ${notification.name}
-${playtest.name}
-By ${author.userName}
+            `# ${notification.name}\n`
+          + `${playtest.name}\n`
+          + `By ${author.userName}\n\n`
+          + `Tags: ${playtest.tags.join(', ')}\n`
+          + `Type: ${playtest.task}\n`
+          + `Bounty: ${playtest.bounty}\n\n`
 
-Tags: ${playtest.tags.join(', ')}
-Type: ${playtest.task}
-Bounty: ${playtest.bounty}
-
-More details: ${process.env.NODE_ENV === "development" ? 'http://localhost:3000' : 'https://www.questcheck.org'}/playtest/${playtest._id}
-${
-    ((notification.target.type === 'channel') && (!!notification.target.role)) ? 
-        `<@&${notification.target.role}>` : ''
-}`,
+          + `More details: ${
+                process.env.NODE_ENV === "development" ? 'http://localhost:3000' : 'https://www.questcheck.org'
+            }/playtest/${playtest._id}`
+          + (
+                ((notification.target.type === 'channel') && (!!notification.target.role)) ? 
+                    `\n<@&${notification.target.role}>` : ''
+            ),
             notification.target
         ))
     )

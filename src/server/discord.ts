@@ -173,27 +173,27 @@ export async function getDiscordServers(userId: string): Promise<
 
 
 export async function discordSend(message: string | MessagePayload | MessageCreateOptions, target: NotificationSetting['target']) {
-    const guilds = await throttler(() => getGuilds())
-
     if (target.type === 'channel') {
-        return throttler(async () => {
-            const guild = guilds.get(target.serverId)
+        const guilds = await throttler(() => getGuilds())
+        const guild = guilds.get(target.serverId)
 
-            if (!guild) {
-                return console.log('Guild not found!')
-            }
+        if (!guild) {
+            return console.log('Guild not found!')
+        }
 
-            const channel = guild.client.channels.cache.get(target.channelId)
-            
-            if (!channel) {
-                return console.log('channel not found!')
-            }
+        const channel = guild.client.channels.cache.get(target.channelId)
+        
+        if (!channel) {
+            return console.log('channel not found!')
+        }
 
-            if (channel.type === ChannelType.GuildText) {
-                await channel.send(message)
-            }
-        })
+        if (channel.type === ChannelType.GuildText) {
+            await throttler(() => channel.send(message))
+        }
     } else {
         // TODO private message to the specified user
+        const discordClient = await getDiscordClient()
+        
+        
     }
 }

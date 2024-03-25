@@ -45,7 +45,7 @@ export const UserSchema = z.object({
     publisherProfile: z.object({
         // WARNING: READONLY. THE USER SHOULD NOT BE ALLOWED TO UPDATE THIS DIRECTLY
         twitterProof: z.string().optional(),
-        facebookProof: z.string().optional(),
+        youtubeProof: z.string().optional(),
         manualProof: z.string().optional(),
     }),
 })
