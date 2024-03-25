@@ -1,61 +1,6 @@
 import { NotificationSetting } from "@/model/notifications";
 import { clerkClient } from "@clerk/nextjs";
-import { ChannelType, Collection, Client as DiscordClient, Events, Guild, MessageCreateOptions, MessagePayload, OAuth2Guild } from "discord.js"
 import { z } from "zod";
-
-let client: DiscordClient<true>|null = null
-
-export async function getDiscordClient() {
-    // In dev mode, reload the existing connection when the server is hot-reloaded
-    if (process.env.NODE_ENV === "development") {
-        if ((global as any).discordClient) {
-            client = (global as any).discordClient
-        }
-    }
-
-    // Try to use the existing client if one is available
-    if (client !== null) return client;
-
-
-    // Otherwise, create a new client
-    if (!process.env.DISCORD_TOKEN) throw new Error('No Discord token available')
-
-    const clientBuilder = new DiscordClient<false>({
-        intents: [],
-    })
-
-    client = await new Promise<DiscordClient<true>>(resolve => {
-        clientBuilder.once(Events.ClientReady, readyClient => resolve(readyClient))
-
-        clientBuilder.login(process.env.DISCORD_TOKEN)
-    })
-
-    // In dev mode, save the existing connection in the global stat so it persists when the server is hot-reloaded
-    if (process.env.NODE_ENV === "development") {
-        (global as any).discordClient = client
-    }
-    
-    return client
-}
-
-
-const DiscordGuildSchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    icon: z.string().or(z.null()),
-    owner: z.boolean(),
-    permissions: z.number(),
-    features: z.array(z.string()),
-    approximate_member_count: z.number().optional(),
-    approximate_presence_count: z.number().optional(),
-})
-
-export type DiscordServer = { 
-    name: string, 
-    id: string, 
-    channels: {name: string, id: string}[], 
-    roles: {name: string, id: string}[]
-}
 
 // Discord's API has a rate limiter of 50 requests per second
 const MAX_QUERIES = 49
@@ -72,21 +17,58 @@ async function throttler<T>(promiseGenerator: () => Promise<T>): Promise<T> {
     return await promiseGenerator()
 }
 
-// The cache from discordjs' client doesn't actually contain what is needed to fetch channels & roles for some reason, so here's a custom cache instead
-let guildCache: Collection<string, OAuth2Guild>|null = null;
-let ongoingGuildsQuery: Promise<Collection<string, OAuth2Guild>>|null = null;
-async function getGuilds(): Promise<Collection<string, OAuth2Guild>> {
-    if (guildCache) return guildCache
+async function get<T>(endpoint: string, schema: z.ZodType<T>, options?: { onError?: Error, auth?: string }): Promise<T> {
+    const res = await throttler(() => fetch(
+        `https://discord.com/api${endpoint}`,
+        { headers: { Authorization: options?.auth || `Bot ${process.env.DISCORD_TOKEN}` } },
+    ))
+    if (!res.ok) { throw options?.onError || new Error('Discord API Error on GET ' + endpoint) }
 
-    const discordClient = await getDiscordClient()
-    if (!ongoingGuildsQuery) ongoingGuildsQuery = new Promise(async resolve => {
-        const result = await throttler(() => discordClient.guilds.fetch())
-        ongoingGuildsQuery = null;
-        guildCache = result
-        resolve(result)
-    })
+    const json = await res.json()
+    const parsed = schema.safeParse(json)
+    if (!parsed.success) throw new Error('Internal Server Error')
 
-    return await ongoingGuildsQuery
+    return parsed.data
+}
+
+async function post(endpoint: string, payload: any, options?: { onError?: Error, auth?: string }) {
+    const res = await throttler(() => fetch(
+        `https://discord.com/api${endpoint}`,
+        {
+            headers: { 
+                Authorization: options?.auth || `Bot ${process.env.DISCORD_TOKEN}`,
+                "Content-Type": "application/json",
+            },
+            method: 'POST',
+            body: JSON.stringify(payload),
+        },
+    ))
+    if (!res.ok) { 
+        throw options?.onError || new Error('Discord API Error on POST ' + endpoint + ": " + res.statusText)
+    }
+
+    return res
+}
+
+// Zod isn't strict, so these schemas aren't exhaustive - they just contain what we're interested in.
+// Zod will cut all fields present in the response that aren't present in the schema
+// TODO: if/when Discord implements a way to only fetch those fields, use that to reduce network load.
+const DiscordGuildSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    owner: z.boolean(),
+})
+const DiscordChannelSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+})
+const DiscordRoleSchema = DiscordChannelSchema;
+
+export type DiscordServer = { 
+    name: string, 
+    id: string, 
+    channels: {name: string, id: string}[], 
+    roles: {name: string, id: string}[]
 }
 
 export async function getDiscordServers(userId: string): Promise<
@@ -97,103 +79,82 @@ export async function getDiscordServers(userId: string): Promise<
         discordUserId: string,
     }
 > {
-    async function getOwnedServers(userId: string): Promise<
-        { status: 'No Discord Provider' }
-      | { status: 'Success', servers: { name: string, id: string }[], discordUserId: string }
-    > {
-        const clerkUser = await clerkClient.users.getUser(userId)
-        const discordAccount = clerkUser.externalAccounts.find(acc => acc.provider === 'oauth_discord')
-        if (!discordAccount) return { status: 'No Discord Provider' }
-        const discordUserId = discordAccount.externalId
-
-        const accessTokens = await clerkClient.users.getUserOauthAccessToken(userId, "oauth_discord")
-        if (!accessTokens.length) return { status: 'No Discord Provider' }
-    
-        const accessToken = accessTokens[0].token
-    
-        const guildsRes = await throttler(() => fetch("https://discord.com/api/users/@me/guilds", { headers: { Authorization: `Bearer ${accessToken}` } }))
-        if (guildsRes.status !== 200) {
-            throw new Error('Invalid Discord access token')
-        }
-    
-        const json = await guildsRes.json()
-        const parsed = z.array(DiscordGuildSchema).safeParse(json)
-        if (!parsed.success) {
-            throw new Error('Internal Server Error')
-        }
-    
-        const guilds = parsed.data
-        const ownedGuilds = guilds.filter(g => g.owner)
-            .map(g => ({ name: g.name, id: g.id }))
-    
-        return { status: 'Success', servers: ownedGuilds, discordUserId }    
-    }
-
-    const [ownedServers, discordClient] = await Promise.allSettled([
-        getOwnedServers(userId),
-        getDiscordClient(),
+    // 1. Fetch installed guilds (= owned guilds with the bot on it)
+    const [clerkUser, accessTokens] = await Promise.all([
+        clerkClient.users.getUser(userId),
+        clerkClient.users.getUserOauthAccessToken(userId, "oauth_discord"),
     ] as const)
-
-    if (ownedServers.status === 'rejected') {
-        throw new Error('Internal Server Error', ownedServers.reason)
-    }
-    if (discordClient.status === 'rejected') {
-        throw new Error('Internal Server Error', discordClient.reason)
-    }
-
-    if (ownedServers.value.status === 'No Discord Provider') {
-        return ownedServers.value
-    }
-
-    const ownedServerIds = ownedServers.value.servers.map(server => server.id)    
-    const guilds = await getGuilds()
-    const installedServerIds = ownedServerIds.filter(serverId => guilds.has(serverId))
     
-    const installedServers = await Promise.all(
-        installedServerIds.map(serverId => throttler(async () => {
-            const guild = await throttler(() => guilds.get(serverId)!.fetch())
-            const channels = await throttler(() => guild.channels.fetch())
-            const roles = await throttler(() => guild.roles.fetch())
+    const discordAccount = clerkUser.externalAccounts.find(acc => acc.provider === 'oauth_discord')
+    if (!discordAccount) return { status: 'No Discord Provider' }
+    const discordUserId = discordAccount.externalId
+    
+    if (!accessTokens.length) return { status: 'No Discord Provider' }
+    const accessToken = accessTokens[0].token
 
-            return {
-                name: guild.name,
-                id: guild.id,
+    const [ownedGuilds, botGuilds] = await Promise.all([
+        (async () => {
+            const userGuilds = await get('/users/@me/guilds', z.array(DiscordGuildSchema), { auth: `Bearer ${accessToken}` })
+    
+            return userGuilds
+                .filter(g => !!g.owner)
+                .map(g => ({ id: g.id, name: g.name }))
+        })(),
+        (async () => {
+            const bottedGuilds = await get('/users/@me/guilds', z.array(DiscordGuildSchema))
+    
+            return bottedGuilds
+                .map(g => ({ id: g.id, name: g.name }))
+        })(),
+    ] as const)
+    
+    const installedGuilds = ownedGuilds.filter(g1 => botGuilds.find(g2 => g1.id === g2.id))
 
-                channels: channels
-                    .filter(c => c !== null && c.type === ChannelType.GuildText)
-                    .map(c => ({ name: c!.name, id: c!.id })),
-                
-                roles: roles.map(r => ({ name: r.name, id: r.id })),
-            }
-        }))
+    if (!installedGuilds.length) return { status: 'Success', servers: [], discordUserId }
+
+    // 2. Fetch channels and roles for each installed guild
+    const result: DiscordServer[] = await Promise.all(
+        installedGuilds.map(async guild => {
+            const [channels, roles] = await Promise.all([
+                (async () => {
+                    const guildChannels = await get(`/guilds/${guild.id}/channels`, z.array(DiscordChannelSchema))
+
+                    return guildChannels.map(c => ({ id: c.id, name: c.name }))
+                })(),
+                (async () => {
+                    const guildRoles = await get(`/guilds/${guild.id}/roles`, z.array(DiscordRoleSchema))
+
+                    return guildRoles.map(r => ({ id: r.id, name: r.name }))
+                })(),
+            ])
+
+            return { ...guild, channels, roles }
+        })
     )
     
-    return { status: 'Success', servers: installedServers, discordUserId: ownedServers.value.discordUserId }
+    return { status: 'Success', servers: result, discordUserId }
 }
 
 
-export async function discordSend(message: string | MessagePayload | MessageCreateOptions, target: NotificationSetting['target']) {
+export async function discordSend(message: string, target: NotificationSetting['target']) {
     if (target.type === 'channel') {
-        const guilds = await throttler(() => getGuilds())
-        const guild = guilds.get(target.serverId)
-
-        if (!guild) {
-            return console.log('Guild not found!')
-        }
-
-        const channel = guild.client.channels.cache.get(target.channelId)
-        
-        if (!channel) {
-            return console.log('channel not found!')
-        }
-
-        if (channel.type === ChannelType.GuildText) {
-            await throttler(() => channel.send(message))
-        }
+        // https://discord.com/developers/docs/resources/channel#create-message
+        const result = await post(`/channels/${target.channelId}/messages`, { 
+            content: message,
+            allowed_mentions: { parse: ["roles", "everyone"] },
+            flags: 2, // This will remove embeds
+        })
     } else {
-        // TODO private message to the specified user
-        const discordClient = await getDiscordClient()
-        
-        
+        // https://discord.com/developers/docs/resources/user#create-dm
+        const dmChannel = await post(`/users/@me/channels`, { recipient_id: target.userId })
+        const json = await dmChannel.json()
+        const parsed = z.object({ id: z.string() }).safeParse(json)
+        if (!parsed.success) throw new Error('Internal Server Error')
+
+        const channelId = parsed.data.id
+        const result = await post(`/channels/${channelId}/messages`, { 
+            content: message,
+            flags: 2, // This will remove embeds
+        })
     }
 }

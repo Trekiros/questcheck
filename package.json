@@ -25,7 +25,6 @@
     "@vercel/analytics": "^1.1.1",
     "@vercel/og": "^0.6.2",
     "@vercel/speed-insights": "^1.0.2",
-    "discord.js": "^14.12.1",
     "eslint": "8.42.0",
     "eslint-config-next": "13.4.4",
     "mongodb": "^6.3.0",
