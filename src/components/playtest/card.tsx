@@ -110,6 +110,14 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
 
             </section>
 
+            {!!playtest && !!author.userBio.length && (
+                <section className={styles.authorBio}>
+                    <h3>About the Publisher</h3>
+
+                    <Markdown text={author.userBio} />
+                </section>
+            )}
+
             { !!playtest && (
                 <section className={styles.bountyDetails}>
                     { !!playtest.bountyDetails && <>
