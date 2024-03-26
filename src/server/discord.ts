@@ -80,17 +80,10 @@ export async function getDiscordServers(userId: string): Promise<
     }
 > {
     // 1. Fetch installed guilds (= owned guilds with the bot on it)
-    // const [clerkUser, accessTokens] = await Promise.all([
-    //     clerkClient.users.getUser(userId),
-    //     clerkClient.users.getUserOauthAccessToken(userId, "oauth_discord"),
-    // ] as const)
-    console.log('test prod - userId:', userId)
-    const clerkUser = await clerkClient.users.getUser(userId)
-    const accessTokens = await clerkClient.users.getUserOauthAccessToken(userId, "oauth_discord")
-        .catch(e => {
-            console.log('test prod - accesstoken error:', e)
-            throw e
-        })
+    const [clerkUser, accessTokens] = await Promise.all([
+        clerkClient.users.getUser(userId),
+        clerkClient.users.getUserOauthAccessToken(userId, "oauth_discord"),
+    ] as const)
     
     const discordAccount = clerkUser.externalAccounts.find(acc => acc.provider === 'oauth_discord')
     if (!discordAccount) return { status: 'No Discord Provider' }
