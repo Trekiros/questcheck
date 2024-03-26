@@ -22,7 +22,7 @@ async function get<T>(endpoint: string, schema: z.ZodType<T>, options?: { onErro
         `https://discord.com/api${endpoint}`,
         { headers: { Authorization: options?.auth || `Bot ${process.env.DISCORD_TOKEN}` } },
     ))
-    if (!res.ok) { throw options?.onError || new Error('Discord API Error on GET ' + endpoint) }
+    if (!res.ok) { throw options?.onError || new Error('Discord API Error on GET ' + endpoint + ": " + JSON.stringify(await res.json())) }
 
     const json = await res.json()
     const parsed = schema.safeParse(json)
@@ -44,7 +44,7 @@ async function post(endpoint: string, payload: any, options?: { onError?: Error,
         },
     ))
     if (!res.ok) { 
-        throw options?.onError || new Error('Discord API Error on POST ' + endpoint + ": " + res.statusText)
+        throw options?.onError || new Error('Discord API Error on POST ' + endpoint + ": " + JSON.stringify(await res.json()))
     }
 
     return res
