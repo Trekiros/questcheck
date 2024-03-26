@@ -56,4 +56,7 @@ export const MaterialList = [
     'Short Adventure',
     'Long Adventure',
     'Player Options',
+    'GM Tools',
+    'Bestiary',
+    'App/Website'
 ]

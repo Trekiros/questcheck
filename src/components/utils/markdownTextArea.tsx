@@ -12,16 +12,6 @@ const MarkdownTextArea: FC<ComponentProps<"textarea"> & { maxLength?: number }> 
 
     return (
         <div className={styles.mdtextarea}>
-            <button onClick={() => setPreview(!preview)} disabled={props.disabled} className={styles.previewToggle}>
-                { preview ? <>
-                    <FontAwesomeIcon icon={faPen} />
-                    Edit
-                </> : <>
-                    <FontAwesomeIcon icon={faEye} />
-                    Preview
-                </>}
-            </button>
-                    
             { preview ? (
                 <div className={styles.preview}>
                     <Markdown text={value} />
@@ -31,11 +21,22 @@ const MarkdownTextArea: FC<ComponentProps<"textarea"> & { maxLength?: number }> 
                     { ...props }
                     className={`${props.className} ${maxLength !== undefined && value.length > maxLength && styles.invalid}`} />
                 
+            </>}
+            
+            <div className={styles.footer}>
+                <button onClick={() => setPreview(!preview)} disabled={props.disabled} className={styles.previewToggle}>
+                    { preview ? <>
+                        <FontAwesomeIcon icon={faPen} />
+                        Edit
+                    </> : <>
+                        <FontAwesomeIcon icon={faEye} />
+                        Preview
+                    </>}
+                </button>
                 { maxLength !== undefined && (
                     <label>{value.length}/{maxLength}</label>
-
                 )}
-            </>}
+            </div>
         </div>
     )
 }

@@ -3,7 +3,7 @@ import styles from './tagInput.module.scss'
 import { createPortal } from "react-dom";
 import { useFrame } from "@/model/hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 
 type PropType = {
     values: string[],
@@ -34,6 +34,37 @@ export const SuggestionNode: FC<{ value: string, search: string }> = ({ value, s
             value.substring(matchIndex + search.length)
         }
     </>
+}
+
+const ExpandingInput: FC<{ placeholder?: string, className?: string, onSubmit: (value: string) => void }> = ({ placeholder, className, onSubmit }) => {
+    const [text, setText] = useState('')
+
+    return (
+        <div className={className}>
+            <input
+                className={className}
+                type="text"
+                value={text}
+                onChange={e => setText(e.target.value)}
+                onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault()
+                        onSubmit(text)
+                        setText('')
+                    }
+                }}
+                placeholder={placeholder}
+                style={{ width: `min(300px, ${Math.max(text.length, (placeholder || '').length)}ch)`}}
+            />
+            <button 
+                onClick={() => {
+                    onSubmit(text)
+                    setText('')
+                }}>
+                    <FontAwesomeIcon icon={faCheck} />
+            </button>
+        </div>
+    )
 }
 
 const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, placeholder, disabled, maxTags, tagStyle, tagClassName }) => {
@@ -216,6 +247,11 @@ const TagInput: FC<PropType> = ({ values, onChange, suggestions, categories, pla
                                                                 <SuggestionNode value={suggestion} search={search} />
                                                         </button>
                                                     ))}
+
+                                                    <ExpandingInput
+                                                        className={styles.customOption}
+                                                        placeholder="Custom..."
+                                                        onSubmit={newTag => addTags(category + ' ' + newTag)} />
                                                 </div>
                                             )}
                                         </div>

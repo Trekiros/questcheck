@@ -27,8 +27,8 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
     const user = useUser()
     const common = playtest || summary
 
-    const participants = !summary ? 0 : keys(summary.applications).filter(applicantId => !!summary.applications[applicantId]).length
-    const applicants = !summary ? 0 : keys(summary.applications).filter(applicantId => (summary.applications[applicantId] === null)).length
+    const participants = !summary ? 0 : summary.applications.filter(({ status }) => status === 'accepted').length
+    const applicants = !summary ? 0 : summary.applications.filter(({ status }) => status === 'pending').length
 
     const userApplication = summary?.applications.find(app => app.applicantId === userCtx?.userId)
 

@@ -3,22 +3,20 @@
 .mdtextarea {
     position: relative;
 
-    .previewToggle {
-        position: absolute;
-        top: 0;
-        right: 0;
-        background: none!important;
-        padding: 1em;
-
-        transition: color 300ms;
-        &:hover { color: #ccc }
-    }
-
-    > label {
-        display: block; 
-        width: 100%;
-        text-align: right;
+    .footer {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: space-between;
+        align-items: center;
         font-size: smaller;
+
+        .previewToggle {
+            background: none!important;
+            padding: 6px;
+    
+            transition: color 300ms;
+            &:hover { color: #ccc }
+        }
     }
 
     .invalid {

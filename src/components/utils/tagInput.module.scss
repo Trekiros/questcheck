@@ -76,6 +76,23 @@
     border-radius: 4px;
 }
 
+.customOption {
+    display: flex;
+    gap: 1px;
+
+    input {
+        padding: 6px;
+        border-radius: 8px 0 0 8px;
+    }
+
+    button {
+        padding: 6px;
+        border-radius: 0 8px 8px 0;
+
+        svg { margin: 0 }
+    }
+}
+
 .highlight {
     background: #fff5;
     color: #fff;

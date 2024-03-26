@@ -17,10 +17,10 @@ body, input, button { font-size: 10pt; }
 
 a {
     color: #fff;
-    font-weight: bold;
+    text-underline-offset: 2px;
 
-    &:not(:hover) {
-        text-decoration: none;
+    &:hover {
+        color: #e7ab62;
     }
 }
 
@@ -304,6 +304,7 @@ html {
     display: flex;
     gap: 8px;
     align-items: center;
+    text-decoration: none;
 
     img {
         height: calc($topNavHeight - 16px);
