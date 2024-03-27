@@ -45,7 +45,7 @@ const PlaytestListPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
                         playtests.map(playtest => (
                             <PlaytestCard
                                 key={playtest._id} 
-                                author={{ userId: userCtx!.userId, ...userCtx!.user! }} 
+                                author={{ userId: userCtx!.userId, ...userCtx!.user!, emails: [] }} 
                                 summary={playtest} />
                         ))
                       )

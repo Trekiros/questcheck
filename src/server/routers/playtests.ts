@@ -131,8 +131,8 @@ export const playtestById = async (playtestId: string, userId: string|null) => {
     const usersCol = await Collections.users()
 
     type ResultType = WithId<Playtest> & {
-        author: PublicUser[], 
-        applicants: (PublicUser & Pick<User, "playerReviews">)[] | null,
+        author: (PublicUser & Pick<User, "emails">)[], 
+        applicants: (PublicUser & Pick<User, "playerReviews"|"emails">)[] | null,
         reviewers: Pick<User, "userId"|"userName">[] | null
     }
     const publicUserProjection = { ...pojoMap(PublicUserSchema.shape, () => 1 as const), _id: 0 }
@@ -143,7 +143,7 @@ export const playtestById = async (playtestId: string, userId: string|null) => {
             localField: "userId",
             foreignField: "userId",
             pipeline: [
-                { $project: publicUserProjection },
+                { $project: { ...publicUserProjection, emails: 1 } },
             ],
             as: "author",
         }) as AggregationCursor<Omit<ResultType, "applicants"|"reviewers">>) // This should say "satisfies" instead of "as", but mongo's library gave up typing lookups
@@ -152,7 +152,7 @@ export const playtestById = async (playtestId: string, userId: string|null) => {
             localField: "applications.applicantId",
             foreignField: "userId",
             pipeline: [
-                { $project: { ...publicUserProjection, playerReviews: 1 } },
+                { $project: { ...publicUserProjection, emails: 1, playerReviews: 1 } },
             ],
             as: "applicants",
         }) as AggregationCursor<Omit<ResultType, "reviewers">>) // Same as above
@@ -184,6 +184,7 @@ export const playtestById = async (playtestId: string, userId: string|null) => {
         if (applicants) {
             for (const applicant of applicants) {
                 applicant.playerReviews = []
+                applicant.emails = []
             }
         }
     }

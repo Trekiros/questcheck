@@ -24,11 +24,19 @@ const PDFViewer = dynamic(
     Any text surrounded by {{double curls}} must be filled in by the publisher
     Any text surrounded by {solo curls} must be filled in by server once a playtester is selected
 */
-export function generateContract(playtest: CreatablePlaytest, publisher: MutableUser, playtester?: MutableUser): string {
-    if (playtest.bountyContract.type === "custom") return playtest.bountyContract.text;
+export function generateContract(playtest: CreatablePlaytest, publisher: MutableUser & { emails: string[] }, playtester?: MutableUser & { emails: string[] }): string {
+    if (playtest.bountyContract.type === "custom") {
+        let text = playtest.bountyContract.text
+
+        if (!!playtester) {
+            text = text.replaceAll('{playtester}', `${playtester.userName} (${playtester.emails[0]})`)
+        }
+
+        return text
+    }
 
     let result = contractTemplate
-        .replaceAll('{{{publisher}}}', publisher.userName)
+        .replaceAll('{{{publisher}}}', `${publisher.userName} (${publisher.emails[0]})`)
         .replace('{{{task}}}', 
             (playtest.task ==='Read-through + Feedback') ? (
                 "The Publisher will provide the Playtester with playtest material once this agreement has been signed by both parties. "
@@ -65,7 +73,7 @@ export function generateContract(playtest: CreatablePlaytest, publisher: Mutable
             (playtest.bounty === "Name credits only") ? (
                 ''
             ) : (
-                "### Compensation\n"
+                `### {{{i}}}. Compensation\n`
               + (
                 (playtest.bounty === "Discount Code") ? (
                       "Once the Playtester has accomplished the task outlined in the preceding section, the Publisher agrees to give them a discount code by {{Distribution Method}}, within 14 days after the completion of the task. "
@@ -93,15 +101,22 @@ export function generateContract(playtest: CreatablePlaytest, publisher: Mutable
             )
         )
         .replace("{{{NDA}}}", !playtest.bountyContract.useNDA ? "" : (
-            "### Non-Disclosure Agreement\n"
+            `### {{{i}}}. Non-Disclosure Agreement\n`
           + "Information related to this playtest is considered confidential unless (a) the Publisher specifies otherwise, or (b) it was already publicly known before this agreement came into effect. "
           + "The Playtester agrees not to publicly disclose this confidential information, until at least 3 months after the publication of the playtest material. "
-          + "\n\nNote: This clause does not prevent the Playtester from reporting unlawful behavior from the Publisher to the relevant authorities. "
+          + "\n\n> Note: This clause does not prevent the Playtester from reporting unlawful behavior from the Publisher to the relevant authorities. "
         ))
         .replaceAll('{playtestId}', playtest.name)
 
+
+    let i = 1
+    while (result.includes('{{{i}}}')) {
+        result = result.replace('{{{i}}}', i.toString())
+        i++
+    }
+
     if (!!playtester) {
-        result = result.replaceAll('{playtester}', playtester?.userName || '{playtester}')
+        result = result.replaceAll('{playtester}', `${playtester.userName} (${playtester.emails[0]})`)
     }
 
     return result
@@ -277,7 +292,7 @@ const TemplateInput: FC<{ name: string, playtest: CreatablePlaytest, onChange: (
     return (
         <input
             type="text" 
-            className={(!optional && !internalValue) ? styles.invalid : undefined}
+            className={((!optional && !internalValue) || (internalValue.length > 600)) ? styles.invalid : undefined}
             placeholder={name} 
             style={{ width: 'min(100%, ' + (2 + (internalValue.length || name.length)) + 'ch)' }}
             value={internalValue}
@@ -286,12 +301,12 @@ const TemplateInput: FC<{ name: string, playtest: CreatablePlaytest, onChange: (
     )
 }
 
-export const ContractTemplateEditor: FC<{ user: MutableUser, playtest: CreatablePlaytest, onChange: (newTemplate: {[key: string]: string}) => void }> = ({ user, playtest, onChange }) => {
+export const ContractTemplateEditor: FC<{ user: MutableUser, emails: string[], playtest: CreatablePlaytest, onChange: (newTemplate: {[key: string]: string}) => void }> = ({ user, emails, playtest, onChange }) => {
     let i = 0
 
     return (
         <div className={styles.ContractTemplateEditor}>
-            {parse(generateContract(playtest, user), (content, type, href) => {
+            {parse(generateContract(playtest, { ...user, emails }), (content, type, href) => {
                 switch (type) {
                     case 'h1': return <h1 key={i++}>{content}</h1>
                     case 'h2': return <h2 key={i++}>{content}</h2>
@@ -334,7 +349,7 @@ export const ContractPDF: FC<{ user: MutableUser, playtest: CreatablePlaytest, t
                                         case 'h2': return <PDF.Text style={{ fontSize: '18pt' }}>{content}</PDF.Text>
                                         case 'h3': return <PDF.Text style={{ fontSize: '14pt' }}>{content}</PDF.Text>
                                         case 'list': return <PDF.Text style={{ paddingLeft: '8px'}}>- {content}</PDF.Text>
-                                        case 'blockquote': <PDF.Text style={{ backgroundColor: '#ddd', padding: '4px' }}>{content}</PDF.Text>
+                                        case 'blockquote': return <PDF.Text style={{ color: "#555" }}>{content}</PDF.Text>
                                         case 'link': return <PDF.Link href={href}>{content}</PDF.Link>
                                         case 'bold-italic': return <PDF.Text style={{ fontFamily: 'Helvetica-BoldOblique' }}>{content}</PDF.Text>
                                         case 'bold': return <PDF.Text style={{ fontFamily: 'Helvetica-Bold' }}>{content}</PDF.Text>

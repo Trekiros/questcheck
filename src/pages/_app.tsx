@@ -49,6 +49,7 @@ const App = ({ Component, pageProps: { session, ...pageProps }}: AppProps) => {
 							Quest Check
 						</div>
 						<ul>
+							<li><Link href="/about">About</Link></li>
 							<li><Link href="/settings">User Profile</Link></li>
 							<li><Link href="/privacy">Privacy Policy</Link></li>
 							<li><Link href="/tos">Terms of Use</Link></li>

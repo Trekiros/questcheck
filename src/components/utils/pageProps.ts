@@ -8,7 +8,10 @@ import { Collections } from "@/server/mongodb";
 import { UserReview } from "@/model/reviews";
 
 // Server side
-export async function getUserCtx(userId: string|null, withReviews?: boolean): Promise<ServerSideProps['userCtx']> {
+export async function getUserCtx(userId: string|null, opts?: {
+    withReviews?: boolean,
+    userCallback?: (user: User) => (void | Promise<void>),
+}): Promise<ServerSideProps['userCtx']> {
     if (!userId) return null;
 
     const { user, permissions } = await getPermissions(userId)
@@ -29,7 +32,7 @@ export async function getUserCtx(userId: string|null, withReviews?: boolean): Pr
 
     // If the user has reviews, fetch them & their author's names
     let reviews: (UserReview & { author: string })[] = []
-    if (withReviews && user.playerReviews.length) {
+    if (opts?.withReviews && user.playerReviews.length) {
         const reviewerIds = Array.from(new Set(user.playerReviews.map(review => review.byUserId)))
         const userCol = await Collections.users()
         const reviewerProjection: {[key in keyof User]?: 1} = { userName: 1, userId: 1 }
@@ -39,6 +42,11 @@ export async function getUserCtx(userId: string|null, withReviews?: boolean): Pr
         const reviewerNamesById = arrMap(reviewers, (reviewer) => reviewer.userId)
 
         reviews = user.playerReviews.map(review => ({ ...review, author: reviewerNamesById[review.byUserId].userName }))
+    }
+
+    // If the user has a callback, call it.
+    if (opts?.userCallback) {
+        await opts.userCallback(user)
     }
 
     return { user: result, permissions, userId, reviews }

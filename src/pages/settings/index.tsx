@@ -35,26 +35,32 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
     return {
         props: {
             ...buildClerkProps(ctx.req),
-            userCtx: await getUserCtx(auth.userId, true),
+            userCtx: await getUserCtx(auth.userId, { withReviews: true }),
             youtube: await getYoutubeInfo(auth.userId),
         }
     }
-};
+}
 
 const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
     const router = useRouter()
-    const userMutation = trpcClient.users.updateSelf.useMutation()
+    const clerkUser = useUser()
+    
     const [user, setUser] = useState<MutableUser>(userCtx?.user || newUser)
     const { isValid, errorPaths } = validate(user, MutableUserSchema)
-
-    const usernameTakenQuery = trpcClient.users.isUsernameTaken.useMutation()
     const [checkingUserName, setCheckingUserName] = useState(false)
     const [userNameTaken, setUsernameTaken] = useState(false)
 
-    const clerkUser = useUser()
     const twitterUsername = clerkUser.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'x')?.username
 
+    const usernameTakenQuery = trpcClient.users.isUsernameTaken.useMutation()
+    const userMutation = trpcClient.users.updateSelf.useMutation()
     const disabled = userMutation.isLoading
+
+    if (!userCtx) {
+        useEffect(() => {
+
+        }, [clerkUser])
+    }
 
     // On username changed: wait 2s then check if it's taken
     useEffect(() => {
@@ -340,6 +346,10 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                                         { (youtube.status === 'no youtube access') && (
                                             " (You have already linked a Google account, but haven't granted access to the associated Youtube channel)"
                                         )}
+
+                                        { (youtube.status === 'no youtube account') && (
+                                            " (You have already linked a Google account, but this account isn't linked to a Youtube channel)"
+                                        )}
                                     </span>
                                 )}
                             </div>
@@ -355,7 +365,7 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                                 { !user.publisherProfile.manualProof && (
                                     <span className={styles.warning}>
                                         If you don't use Twitter nor Youtube, you can ask for a manual verification (this may take multiple days). 
-                                        To do it, contact Trekiros on <Link href="https://bsky.app/profile/trekiros.bsky.social">Bluesky</Link>, <Link href='https://dice.camp/@trekiros'>Mastodon</Link>, or by <Link href='mailto:trekiros.contact@gmail.com'>email</Link>.
+                                        To do it, contact Trekiros on <Link href="https://discord.com/invite/9AJtv5DJ6f" target="_blank">Discord</Link>, <Link href="https://bsky.app/profile/trekiros.bsky.social" target="_blank">Bluesky</Link>, <Link href='https://dice.camp/@trekiros' target="_blank">Mastodon</Link>, or by <Link href='mailto:trekiros.contact@gmail.com'>email</Link>.
                                         Please include a link to a website or social media account you own, and proof that you do in fact own it.
                                         This link will be displayed in the header of any playtest you post on QuestCheck.
                                     </span>

@@ -9,11 +9,12 @@ import { EditorPropType } from "./edit"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faEye, faPen } from "@fortawesome/free-solid-svg-icons"
 import { useUserCtx } from "@/components/utils/page"
+import { keys } from "@/model/utils"
 
 type ContractTemplateParams = {[key: string]: string}
 const defaultContractParams: ContractTemplateParams = {}
 
-const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange, disabled, errorPaths }) => {
+const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange, disabled, errorPaths, emails }) => {
     const userCtx = useUserCtx()
     const [preview, setPreview] = useState(false)
     
@@ -96,9 +97,17 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
                                 onClick={() => {
                                     if (value.bountyContract.type === 'custom') return;
 
+                                    let template = generateContract(value, { ...userCtx.user!, emails })
+                                    for (const templateKey of keys(value.bountyContract.templateValues)) {
+                                        template = template.replaceAll(
+                                            `{{${templateKey}}}`, 
+                                            value.bountyContract.templateValues[templateKey]!
+                                        )
+                                    }
+
                                     setPreview(false)
                                     setTemplateParams(value.bountyContract.templateValues)
-                                    onChange({ ...value, bountyContract: { type: 'custom', text: generateContract(value, userCtx.user!)}})
+                                    onChange({ ...value, bountyContract: { type: 'custom', text: template}})
                                 }}>
                                     Customize Contract
                             </button>
@@ -121,7 +130,7 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
                             <ContractPDF 
                             user={userCtx.user!} 
                             playtest={value} 
-                            text={generateContract(value, userCtx.user!)} />
+                            text={generateContract(value, { ...userCtx.user!, emails })} />
                         ) : (
                             value.bountyContract.type === 'template' ? <>
                                 <div className={styles.templateOptions}>
@@ -135,6 +144,7 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
                                 </div>
                                 <ContractTemplateEditor
                                     playtest={value}
+                                    emails={emails}
                                     user={userCtx.user}
                                     onChange={newTemplate => onChange({ 
                                         ...value,

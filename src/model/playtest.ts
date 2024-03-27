@@ -35,7 +35,7 @@ export const PlaytestSchema = z.object({
     bounty: BountySchema,
     bountyDetails: z.string().max(300),
     bountyContract: z.discriminatedUnion('type', [
-        z.object({ type: z.literal('template'), templateValues: z.record(z.string().max(64), z.string().max(200)), useNDA: z.boolean() }),
+        z.object({ type: z.literal('template'), templateValues: z.record(z.string().max(64), z.string().max(600)), useNDA: z.boolean() }),
         z.object({ type: z.literal('custom'), text: z.string().max(5000) })
     ]),
 

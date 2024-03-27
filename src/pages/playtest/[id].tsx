@@ -2,9 +2,9 @@ import { NextSeo } from 'next-seo'
 import styles from './[id].module.scss'
 import { FC, useMemo, useState } from 'react'
 import Page, { ServerSideProps } from '@/components/utils/page'
-import { serverPropsGetter } from '@/components/utils/pageProps';
+import { getUserCtx } from '@/components/utils/pageProps'
+import { getAuth, buildClerkProps } from "@clerk/nextjs/server"
 import type { GetServerSideProps as ServerSidePropsGetter } from 'next'
-import { getAuth } from "@clerk/nextjs/server";
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClose } from '@fortawesome/free-solid-svg-icons';
@@ -18,23 +18,30 @@ import { playtestById } from '@/server/routers/playtests';
 import { ApplicationCard } from '@/components/playtest/details/application';
 
 type DataType = Awaited<ReturnType<typeof playtestById>>
-type PageProps = ServerSideProps & { initialData: DataType }
+type PageProps = ServerSideProps & { 
+    initialData: DataType,
+    emails: string[]
+}
 
 export const getServerSideProps: ServerSidePropsGetter<PageProps> = async (ctx) => {
     const playtestId = ctx.params?.id as string
     if (!playtestId) throw new Error('Internal Server Error')
-
     const userId = getAuth(ctx.req).userId;
+
+    let emails: string[] = []
+    const userCtx = await getUserCtx(userId, { userCallback: (user) => { emails = user.emails } })
 
     return {
         props: {
-            ...(await serverPropsGetter(ctx)).props,
+            ...buildClerkProps(ctx.req),
+            userCtx,
             initialData: await playtestById(playtestId, userId),
+            emails,
         }
     }
 };
 
-const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData }) => {
+const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) => {
     const router = useRouter()
 
     // We use the data from getServerSideProps until a mutation is invoked, then we switch to the trpc query (by calling refetch)
@@ -82,7 +89,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData }) => {
             <NextSeo title={croppedName} />
 
             <div className={styles.playtestDetails}>
-                <PlaytestCard playtest={playtest} author={author} />
+                <PlaytestCard playtest={playtest} author={author} emails={emails} />
 
                 {/* SECRET INFO ONLY VISIBLE TO THE CREATOR & PLAYTESTERS */ }
                 { (isCreator || isAccepted) && (
@@ -106,7 +113,10 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData }) => {
                     <section className={styles.applicationForm}>
                         <h3>Send Application</h3>
 
-                        <p>If You send an application, the publisher will be shown your public player profile.</p>
+                        <p>
+                            If You send an application, the publisher will be shown your public player profile. This includes: 
+                            your username, email address, user bio, known systems, and recent reviews from other publishers.
+                        </p>
 
                         <Checkbox 
                             className={styles.agreeBtn}
@@ -152,6 +162,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData }) => {
                                         applicant={applicant}
                                         application={application}
                                         isCreator={isCreator}
+                                        emails={emails}
                                         disabled={disabled || applicationDisabled}
                                         
                                         onAccept={async () => {                

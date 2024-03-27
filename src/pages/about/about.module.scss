@@ -1,0 +1,14 @@
+.about {
+    width: min(100%, 800px);
+    margin: auto auto;
+    display: grid;
+    padding: 1em;
+
+    ul {
+        column-count: 2;
+
+        @media (width < 600px) {
+            column-count: 1;
+        }
+    }
+}

@@ -6,7 +6,7 @@ import Image from "next/image";
 import { ClerkTheme } from "@/pages/sign-in/[[...index]]";
 import TextSkeleton from "../skeleton/text";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faWarning } from "@fortawesome/free-solid-svg-icons";
+import { faBars, faTimes, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { useRouter } from "next/router";
 import CircleSkeleton from "../skeleton/circle";
 import { useUserCtx } from "./page";
@@ -111,12 +111,9 @@ const AdminActions: FC<{}> = ({}) => {
 	)
 }
 
-
-const NavBar: FC<{}> = ({}) => {
+const NavbarLinks: FC<{ user: NonNullable<ReturnType<typeof useUserCtx>> }> = ({ user }) => {
 	const router = useRouter()
-	const clerkUser = useUser()
-	const mongoUser = useUserCtx()
-	
+
 	function linkProps(href: string) {
 		return { 
 			href, 
@@ -125,6 +122,35 @@ const NavBar: FC<{}> = ({}) => {
 				: undefined,
 		}
 	}
+
+	return (
+		<div className={styles.links}>
+			{ user.permissions.admin && <>
+				<AdminActions />
+			</>}
+
+			<Link {...linkProps('/about')}>About</Link>
+
+			{ user.user.isPlayer && <>
+				<Link {...linkProps('/notifications')}>Notification Settings</Link>
+				<Link {...linkProps('/applications')}>My Applications</Link>
+			</>}
+
+			{ user.user.isPublisher && (
+				<Link {...linkProps('/playtest')}>My Playtests</Link>
+			)}
+
+			<Link {...linkProps('/settings')}>{user.user.userName} { user.permissions.admin ? <i>(admin)</i> : null }</Link>
+			<UserButton appearance={ClerkTheme} />
+		</div>
+	)
+}
+
+const NavBar: FC<{}> = ({}) => {
+	const router = useRouter()
+	const clerkUser = useUser()
+	const mongoUser = useUserCtx()
+	const [sidebar, setSidebar] = useState(false)
 
 	return (
         <nav className={styles.topNav}>
@@ -140,21 +166,11 @@ const NavBar: FC<{}> = ({}) => {
 						<Link href="/sign-up">Sign Up</Link>
 					</> : (
 						!!mongoUser?.user ? <>
-							{ mongoUser.permissions.admin && <>
-								<AdminActions />
-							</>}
-
-							{ mongoUser.user.isPlayer && <>
-								<Link {...linkProps('/notifications')}>Notification Settings</Link>
-								<Link {...linkProps('/applications')}>My Applications</Link>
-							</>}
-
-							{ mongoUser.user.isPublisher && (
-								<Link {...linkProps('/playtest')}>My Playtests</Link>
-							)}
-
-							<Link {...linkProps('/settings')}>{mongoUser.user.userName} { mongoUser.permissions.admin ? <i>(admin)</i> : null }</Link>
-							<UserButton appearance={ClerkTheme} />
+							<NavbarLinks user={mongoUser} />
+							
+							<button className={styles.burger} onClick={() => setSidebar(true)}>
+								<FontAwesomeIcon icon={faBars} />
+							</button>
 						</> : <>
 							{ (router.route !== '/settings') && <Link href='/settings' className={styles.warning}>
 								<FontAwesomeIcon icon={faWarning} />
@@ -165,6 +181,18 @@ const NavBar: FC<{}> = ({}) => {
 					)
 				)}
 			</div>
+
+			{ mongoUser && sidebar && (
+				<div className={styles.sideMenuBackdrop} onClick={() => setSidebar(false)}>
+					<div className={styles.sideMenu} onClick={e => e.stopPropagation()}>
+						<NavbarLinks user={mongoUser} />
+
+						<button className={styles.close} onClick={() => setSidebar(false)}>
+							<FontAwesomeIcon icon={faTimes} />
+						</button>
+					</div>
+				</div>
+			)}
         </nav>
     )
 }

@@ -16,8 +16,9 @@ import { useUserCtx } from "@/components/utils/page";
 type PropType = {
     playtest: Playtest,
     application: Playtest['applications'][number],
-    applicant: PublicUser & { playerReviews: User["playerReviews"] },
+    applicant: PublicUser & { playerReviews: User["playerReviews"], emails: User["emails"] },
     isCreator: boolean,
+    emails: User["emails"],
     disabled: boolean,
     onAccept: () => any,
     onReject: () => any,
@@ -25,7 +26,7 @@ type PropType = {
     reviewerNameById: {[key: string]: string},
 }
 
-export const ApplicationCard: FC<PropType> = ({ playtest, application, applicant, isCreator, disabled, onAccept, onReject, onReview, reviewerNameById }) => {
+export const ApplicationCard: FC<PropType> = ({ playtest, application, applicant, isCreator, emails, disabled, onAccept, onReject, onReview, reviewerNameById }) => {
     const { setDialog } = useDialog()
     const userCtx = useUserCtx()
 
@@ -86,7 +87,7 @@ export const ApplicationCard: FC<PropType> = ({ playtest, application, applicant
                             <ContractPDF
                                 playtest={playtest}
                                 user={userCtx!.user}
-                                text={generateContract(playtest, userCtx!.user, applicant)}/>
+                                text={generateContract(playtest, { ...userCtx!.user, emails }, applicant)}/>
                         </div>, () => {})}>
                             Download Agreement
                             <FontAwesomeIcon icon={faFile} />
@@ -103,7 +104,7 @@ export const ApplicationCard: FC<PropType> = ({ playtest, application, applicant
                             <ContractPDF
                                 playtest={playtest}
                                 user={userCtx!.user}
-                                text={generateContract(playtest, userCtx!.user, applicant)}/>
+                                text={generateContract(playtest, { ...userCtx!.user, emails }, applicant)}/>
                         </div>, async confirm => confirm && onAccept())}>
                                 Accept
                         </button>

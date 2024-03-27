@@ -19,16 +19,37 @@
         display: flex;
         align-items: center;
 
-        > button {
-            padding: 8px;
+        .burger {
+            border-radius: 0;
+            position: absolute;
+            top: 0; 
+            right: 0;
+            height: 100%;
+
+            svg { margin: 0}
+
+            @media (min-width: 1100px) { display: none }
         }
 
+        .links {
+            display: flex;
+            align-items: center;
+            
+            > button {
+                padding: 8px;
+            }
+
+            @media (width < 1100px) { display: none }
+        }
+        
         a.active {
             padding-top: 1em;
             padding-bottom: 1em;    
             border-bottom: 1px solid white;
             pointer-events: none;
         }
+
+        a { text-decoration: none }
     }
 
     .warning {
@@ -54,4 +75,69 @@
     display: grid;
     grid-template-columns: 100px 400px;
     align-items: center;
+}
+
+
+.sideMenuBackdrop {
+    z-index: 3;
+    position: fixed;
+    top: 0;
+    right: 0;
+
+    background: #0003;
+    height: 100dvh;
+    width: 100dvw;
+    display: flex;
+    justify-content: flex-end;
+    cursor: pointer;
+
+    .sideMenu {
+        cursor: initial;
+        $width: 200px;
+
+        top: 0;
+        right: 0;
+        background: #544;
+        width: $width;
+        height: 100%;
+
+        .links {
+            padding: 1em 0;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+
+            a {
+                width: 100%;
+                text-align: center;
+                box-sizing: border-box;
+                padding: 1em;
+                text-decoration: none;
+
+                &:not(:hover) {
+                }
+
+
+                &.active {
+                    border-left: 2px solid white;
+                    background: #fff1;
+                }
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        .close {
+            border-radius: 0;
+            position: absolute;
+            bottom: 0;
+            width: $width;
+
+            svg {
+                transform: scale(4, 2)
+            }
+        }
+    }
 }

@@ -7,6 +7,7 @@ import BasicInfoEditor from "./basicInfo"
 import BountyEditor from "./bounty"
 
 export type EditorPropType = {
+    emails: string[],
     value: CreatablePlaytest, 
     onChange: (newValue: CreatablePlaytest) => void,
     disabled?: boolean,
@@ -16,7 +17,7 @@ export type EditorPropType = {
 
 const StepsList = ['1. Basic Info', '2. Bounty'] as const
 
-const PlaytestEditor: FC<EditorPropType> = ({ value, onChange, disabled, errorPaths, confirmBtn }) => {
+const PlaytestEditor: FC<EditorPropType> = ({ value, onChange, disabled, errorPaths, confirmBtn, emails }) => {
     const [step, setStep] = useState(0)
     const [maxStep, setMaxStep] = useState(0)
 
@@ -37,8 +38,8 @@ const PlaytestEditor: FC<EditorPropType> = ({ value, onChange, disabled, errorPa
                 </>)}
             </div>
 
-            { (step === 0) && <BasicInfoEditor value={value} onChange={onChange} disabled={disabled} errorPaths={errorPaths} /> }
-            { (step === 1) && <BountyEditor value={value} onChange={onChange} disabled={disabled} errorPaths={errorPaths} /> }
+            { (step === 0) && <BasicInfoEditor emails={emails} value={value} onChange={onChange} disabled={disabled} errorPaths={errorPaths} /> }
+            { (step === 1) && <BountyEditor emails={emails} value={value} onChange={onChange} disabled={disabled} errorPaths={errorPaths} /> }
 
             <div className={styles.actions}>
                 <button

@@ -12,17 +12,17 @@ import { tagClassName } from "./searchParams";
 import { ContractPDF, generateContract } from "./edit/contract";
 import { useUserCtx } from "../utils/page";
 import { useUser } from "@clerk/nextjs";
-import { keys } from "@/model/utils";
 import Expandable from "../utils/expandable";
 
 type PropType = {
-    author: PublicUser,
+    author: PublicUser & { emails: string[] },
+    emails?: string[],
 } & (
     { playtest: Playtest, summary?: undefined }
   | { summary: PlaytestSummary, playtest?: undefined }
 )
 
-const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
+const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
     const userCtx = useUserCtx()
     const user = useUser()
     const common = playtest || summary
@@ -110,14 +110,6 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
 
             </section>
 
-            {!!playtest && !!author.userBio.length && (
-                <section className={styles.authorBio}>
-                    <h3>About the Publisher</h3>
-
-                    <Markdown text={author.userBio} />
-                </section>
-            )}
-
             { !!playtest && (
                 <section className={styles.bountyDetails}>
                     { !!playtest.bountyDetails && <>
@@ -145,8 +137,16 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary }) => {
                         <ContractPDF 
                             playtest={playtest} 
                             user={author} 
-                            text={generateContract(playtest, author, userCtx?.user)} />
+                            text={generateContract(playtest, author, (!!userCtx && emails) ? { ...userCtx.user, emails } : undefined)} />
                     </>}
+                </section>
+            )}
+
+            {!!playtest && !!author.userBio.length && (
+                <section className={styles.authorBio}>
+                    <h3>About the Publisher</h3>
+
+                    <Markdown text={author.userBio} />
                 </section>
             )}
 

@@ -55,7 +55,7 @@ const SearchResults: FC<{ search: PlaytestSearchParams }> = ({ search }) => {
                             const { author, ...summary } = result
 
                             return (
-                                <PlaytestCard key={summary._id} summary={summary} author={author!} />
+                                <PlaytestCard key={summary._id} summary={summary} author={{ ...author!, emails: [] }} />
                             )
                         })}
                     </ul>

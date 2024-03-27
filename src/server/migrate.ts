@@ -1,6 +1,6 @@
 import { Playtest } from "@/model/playtest"
 import { User } from "@/model/user"
-import { BSONType, Db, UpdateResult } from "mongodb"
+import { Db, UpdateResult } from "mongodb"
 
 /**
  * Runs migration scripts if necessary.

@@ -16,18 +16,33 @@ import { generateContract } from '@/components/playtest/edit/contract'
 import Select from '@/components/utils/select'
 import { useUser } from '@clerk/nextjs'
 import Page, { ServerSideProps } from '@/components/utils/page'
-import { serverPropsGetter } from '@/components/utils/pageProps'
+import { getUserCtx } from '@/components/utils/pageProps'
 import type { GetServerSideProps as ServerSidePropsGetter } from 'next'
+import { getAuth, buildClerkProps } from "@clerk/nextjs/server";
 
-// This page is for publisher accounts only!
-export const getServerSideProps: ServerSidePropsGetter<ServerSideProps> = async (ctx) => {
-    const props = await serverPropsGetter(ctx)
-    if (!props.props.userCtx?.user.isPublisher) return { redirect: { destination: '/', permanent: false } }
-
-    return props
+type PageProps = ServerSideProps & {
+    emails: string[],
 }
 
-const NewPlaytestPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
+// This page is for publisher accounts only!
+export const getServerSideProps: ServerSidePropsGetter<PageProps> = async (ctx) => {
+    const { userId } = getAuth(ctx.req)
+    if (!userId) return { redirect: { destination: '/', permanent: false } }
+
+    let emails: string[] = []
+    const userCtx = await getUserCtx(userId, { userCallback: (user) => { emails = user.emails }})
+    if (!userCtx?.user.isPublisher) return { redirect: { destination: '/', permanent: false } }
+
+    return {
+        props: {
+            ...buildClerkProps(ctx.req),
+            userCtx,
+            emails,
+        }
+    }
+}
+
+const NewPlaytestPage: FC<PageProps> = ({ userCtx, emails }) => {
     const { setDialog } = useDialog()
     const user = useUser()
     const recentPlaytests = trpcClient.playtests.search.useQuery({ search: { includeClosed: true, includeAuthors: [user.user?.id!] }, page: 0, perPage: 10 })
@@ -52,7 +67,7 @@ const NewPlaytestPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
             return;
         }
 
-        const mandatoryTemplateTags = Array.from(generateContract(playtest, userCtx?.user).matchAll(/\{\{(.*?)\}\}/g))
+        const mandatoryTemplateTags = Array.from(generateContract(playtest, { ...userCtx!.user, emails }).matchAll(/\{\{(.*?)\}\}/g))
             .map(match => match[1])
             .filter(tag => !tag.endsWith('(optional)'))
         
@@ -89,6 +104,7 @@ const NewPlaytestPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
                     onChange={setPlaytest}
                     disabled={disabled}
                     errorPaths={errorPaths} 
+                    emails={emails}
                     confirmBtn={
                         <button
                             disabled={disabled || !isValid || !templateIsValid}
