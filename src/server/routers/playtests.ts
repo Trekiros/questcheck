@@ -136,6 +136,7 @@ export const playtestById = async (playtestId: string, userId: string|null) => {
         reviewers: Pick<User, "userId"|"userName">[] | null
     }
     const publicUserProjection = { ...pojoMap(PublicUserSchema.shape, () => 1 as const), _id: 0 }
+    const { playerProfile, ...authorProjection } = publicUserProjection
     const cursor = (((playtestCol.aggregate<WithId<Playtest>>()
         .match({ _id: new ObjectId(playtestId) })
         .lookup({
@@ -143,7 +144,7 @@ export const playtestById = async (playtestId: string, userId: string|null) => {
             localField: "userId",
             foreignField: "userId",
             pipeline: [
-                { $project: { ...publicUserProjection, emails: 1, playerProfile: 0 } },
+                { $project: { ...authorProjection, emails: 1 } },
             ],
             as: "author",
         }) as AggregationCursor<Omit<ResultType, "applicants"|"reviewers">>) // This should say "satisfies" instead of "as", but mongo's library gave up typing lookups
