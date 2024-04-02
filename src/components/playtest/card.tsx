@@ -2,7 +2,7 @@
 import { Playtest, PlaytestSummary } from "@/model/playtest";
 import { FC } from "react";
 import styles from './card.module.scss'
-import { PublicUser } from "@/model/user";
+import { PublicUser, User } from "@/model/user";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTwitter, faYoutube } from "@fortawesome/free-brands-svg-icons";
@@ -13,9 +13,10 @@ import { ContractPDF, generateContract } from "./edit/contract";
 import { useUserCtx } from "../utils/page";
 import { useUser } from "@clerk/nextjs";
 import Expandable from "../utils/expandable";
+import { Prettify } from "@/model/utils";
 
 type PropType = {
-    author: PublicUser & { emails: string[] },
+    author: Prettify<Omit<PublicUser, "playerProfile"> & Pick<User, "emails">>,
     emails?: string[],
 } & (
     { playtest: Playtest, summary?: undefined }

@@ -5,7 +5,6 @@ import { Prettify, keys } from "@/model/utils";
 import { ObjectId, UpdateFilter } from "mongodb";
 import { Writeable, z } from "zod";
 import { clerkClient } from "@clerk/nextjs";
-import { User as ClerkUser } from "@clerk/backend";
 import { ReviewInputSchema } from "@/model/reviews";
 import { ApplicationStatusMap } from "@/model/playtest";
 import { getDiscordServers } from "../discord";
@@ -140,13 +139,17 @@ const updateSelf = protectedProcedure
     })
 
 const updateNotifications = protectedProcedure
-    .input(z.array(NotificationSettingSchema))
-    .mutation(async ({ input, ctx }) => {
+    .input(z.object({
+        notifications: z.array(NotificationSettingSchema),
+        dmOnAccept: z.string(),
+        dmOnApply: z.string(),
+    }))
+    .mutation(async ({ input: { notifications, dmOnAccept, dmOnApply }, ctx }) => {
         const discordServers = await getDiscordServers(ctx.auth.userId)
         if (discordServers.status === 'No Discord Provider') throw new Error('Unauthorized')
 
         // The update is allowed if no conflicting notification settings are found
-        const isAllowed = !input.find(notification => {
+        const isAllowed = !notifications.find(notification => {
             if (notification.target.type === 'channel') {
                 const serverId = notification.target.serverId
                 const matchingServer = discordServers.servers.find(server => server.id === serverId)
@@ -170,7 +173,9 @@ const updateNotifications = protectedProcedure
         const result = await userCol.updateOne(
             { userId: ctx.auth.userId },
             { $set: {
-                'playerProfile.notifications': input,
+                'playerProfile.notifications': notifications,
+                'playerProfile.dmOnAccept': !!dmOnAccept ? discordServers.discordUserId : '',
+                'playerProfile.dmOnApply': !!dmOnApply ? discordServers.discordUserId : '',
             }},
         )
 

@@ -6,7 +6,7 @@ import {  protectedProcedure, router, publicProcedure } from "../trpc";
 import { arrMap, pojoMap } from "@/model/utils";
 import { PublicUser, PublicUserSchema, User } from "@/model/user";
 import { getPermissions } from "./users";
-import { playtestCreatedNotification } from "./notifications";
+import { applicationAcceptedNotification, applicationCreatedNotification, playtestCreatedNotification } from "./notifications";
 
 // Returns the id of the new Playtest
 const create =  protectedProcedure
@@ -107,8 +107,8 @@ const search = publicProcedure
         // Fetch users who created the playtests
         const userIds = new Set(playtests.map(playtest => playtest.userId))
         const userCol = await Collections.users()
-        const userProjection = pojoMap(PublicUserSchema.shape, () => 1 as const)
-        const users: PublicUser[] = !userIds.size ? []
+        const { playerProfile, ...userProjection } = pojoMap(PublicUserSchema.shape, () => 1 as const)
+        const users: Omit<PublicUser, "playerProfile">[] = !userIds.size ? []
             : await userCol.find({ userId: { $in: Array.from(userIds) } }, { projection: userProjection })
                 .map(user => ({ ...user, _id: user._id.toString() }))    
                 .toArray()
@@ -116,7 +116,7 @@ const search = publicProcedure
 
 
         // Map playtests to their authors
-        const result: (PlaytestSummary & { author?: PublicUser })[] = playtests.map(playtest => ({ 
+        const result: (PlaytestSummary & { author?: Omit<PublicUser, "playerProfile"> })[] = playtests.map(playtest => ({ 
             ...playtest,
             author: usersById[playtest.userId]!,
         }))
@@ -131,7 +131,7 @@ export const playtestById = async (playtestId: string, userId: string|null) => {
     const usersCol = await Collections.users()
 
     type ResultType = WithId<Playtest> & {
-        author: (PublicUser & Pick<User, "emails">)[], 
+        author: (Omit<PublicUser, "playerProfile"> & Pick<User, "emails">)[], 
         applicants: (PublicUser & Pick<User, "playerReviews"|"emails">)[] | null,
         reviewers: Pick<User, "userId"|"userName">[] | null
     }
@@ -143,7 +143,7 @@ export const playtestById = async (playtestId: string, userId: string|null) => {
             localField: "userId",
             foreignField: "userId",
             pipeline: [
-                { $project: { ...publicUserProjection, emails: 1 } },
+                { $project: { ...publicUserProjection, emails: 1, playerProfile: 0 } },
             ],
             as: "author",
         }) as AggregationCursor<Omit<ResultType, "applicants"|"reviewers">>) // This should say "satisfies" instead of "as", but mongo's library gave up typing lookups
@@ -188,6 +188,14 @@ export const playtestById = async (playtestId: string, userId: string|null) => {
             }
         }
     }
+    if (applicants) {
+        for (const applicant of applicants) {
+            delete applicant.playerProfile.dmOnAccept;
+            delete applicant.playerProfile.dmOnApply;
+            
+            applicant.playerProfile.notifications = []
+        }
+    }
 
     // Map reviewers
     const reviewerNameById: {[key: string]: string} = {}
@@ -217,7 +225,7 @@ const apply = protectedProcedure
     .input(z.string().max(30))
     .mutation(async ({ input, ctx: { auth: { userId } } }) => {
         const playtestCol = await Collections.playtests()
-        const result = await playtestCol.updateOne(
+        const result = await playtestCol.findOneAndUpdate(
             { 
                 _id: new ObjectId(input), 
 
@@ -237,7 +245,14 @@ const apply = protectedProcedure
             } },
         )
 
-        return !!result.modifiedCount
+        // Notify the publisher, without blocking the response for the applicant
+        if (!!result) {
+            const { _id, ...playtest } = result
+
+            setTimeout(async () => await applicationCreatedNotification({ _id: _id.toString(), ...playtest }, userId))
+        }
+
+        return !!result
     })
 
 const accept = protectedProcedure
@@ -254,8 +269,16 @@ const accept = protectedProcedure
                 "applications.$.status": ApplicationStatusMap.accepted,
             } },
         )
+        
 
-        return !!result
+        // Notify the applicant, without blocking the response for the publisher
+        if (!!result) {
+            const { _id, ...playtest } = result
+
+            setTimeout(async () => await applicationAcceptedNotification({ _id: _id.toString(), ...playtest }, applicantId))
+        }
+
+        return (!!result)
     })
     
 

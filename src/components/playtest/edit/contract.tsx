@@ -1,10 +1,11 @@
-import { MutableUser } from "@/model/user";
+import { MutableUser, User } from "@/model/user";
 import { CreatablePlaytest } from "@/model/playtest";
 import React, { FC, ReactNode, useEffect, useState } from "react";
 import PDF from "@react-pdf/renderer";
 import contractTemplate from './contractTemplate.md'
 import styles from './edit.module.scss'
 import dynamic from "next/dynamic";
+import { Prettify } from "@/model/utils";
 
 // react-pdf can't be run server-side (and even if it could, it's probably a bad idea to)
 // This ensures it is only ever imported & ran client-side
@@ -24,7 +25,7 @@ const PDFViewer = dynamic(
     Any text surrounded by {{double curls}} must be filled in by the publisher
     Any text surrounded by {solo curls} must be filled in by server once a playtester is selected
 */
-export function generateContract(playtest: CreatablePlaytest, publisher: MutableUser & { emails: string[] }, playtester?: MutableUser & { emails: string[] }): string {
+export function generateContract(playtest: CreatablePlaytest, publisher: Prettify<Omit<MutableUser, "playerProfile"> & Pick<User, "emails">>, playtester?: MutableUser & { emails: string[] }): string {
     if (playtest.bountyContract.type === "custom") {
         let text = playtest.bountyContract.text
 
@@ -332,7 +333,7 @@ export const ContractTemplateEditor: FC<{ user: MutableUser, emails: string[], p
     )
 }
 
-export const ContractPDF: FC<{ user: MutableUser, playtest: CreatablePlaytest, text: string }> = ({ user, playtest, text }) => {
+export const ContractPDF: FC<{ user: Omit<MutableUser, "playerProfile">, playtest: CreatablePlaytest, text: string }> = ({ user, playtest, text }) => {
     return (
         <PDFViewer showToolbar={true} width='100%' height='600px'>
             <PDF.Document

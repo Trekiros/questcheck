@@ -37,6 +37,8 @@ export const UserSchema = z.object({
             details: z.string().max(300),
         })).max(10),
         notifications: z.array(NotificationSettingSchema).max(20),
+        dmOnAccept: z.string().optional(),
+        dmOnApply: z.string().optional(),
     }),
 
     // Readonly

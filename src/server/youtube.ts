@@ -22,7 +22,7 @@ const YoutubeResponseSchema = z.object({
 })
 
 export async function getYoutubeInfo(userId: string): Promise<YoutubeInfo> {
-    const googleToken = (await clerkClient.users.getUserOauthAccessToken(userId, "oauth_google"))[0]
+    const googleToken = (await clerkClient.users.getUserOauthAccessToken(userId, "oauth_google").catch(() => []))[0]
     if (!googleToken) return { status: "no google provider" }
     if (!googleToken.scopes?.includes("https://www.googleapis.com/auth/youtube.readonly")) return { status: "no youtube access" }
     

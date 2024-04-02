@@ -10,6 +10,8 @@
     flex-direction: column;
     gap: 1em;
 
+    h3 { margin: 0 }
+
     .header {
         display: flex;
         justify-content: space-between;
@@ -53,7 +55,7 @@
     }
 
     .placeholder {
-        height: 60dvh;
+        height: 40dvh;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -92,5 +94,17 @@
         width: 100%;
         align-self: flex-end;
         justify-self: flex-end;
+    }
+
+    .dmSettings {
+        display: grid;
+        gap: 1em;
+        margin-bottom: 1em;
+        
+        > button {
+            justify-content: flex-start;
+        }
+
+        > label { font-style: italic }
     }
 }

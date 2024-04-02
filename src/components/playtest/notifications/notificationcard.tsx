@@ -68,7 +68,7 @@ const NotificationCard: FC<PropType> = ({ value, update, disabled, discordServer
 
             {target.type === 'channel' ? (
                 !discordServers.length ? (
-                    <div>
+                    <div className={styles.invalidText}>
                         To use this feature, you must install the discord bot on a server you own by clicking the button in the top right corner!
                     </div>
                 ) : <>

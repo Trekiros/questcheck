@@ -80,6 +80,7 @@ export async function sendBatchNotifications(playtests: (Playtest & { author: Us
                 })
             
             console.log('Sending ', notifications.length, ' notifications')
+            if (!notifications.length) return;
     
             await callback(notifications)
         }
@@ -183,4 +184,50 @@ export async function playtestCreatedNotification(playtest: Playtest, author: Us
             notification.target
         ))
     )
+}
+
+export async function applicationCreatedNotification(playtest: Playtest, applicantId: string) {
+    const userCol = await Collections.users()
+
+    const [author, applicant] = await Promise.all([
+        userCol.findOne({ userId: playtest.userId }),
+        userCol.findOne({ userId: applicantId }),
+    ])
+
+    if (!author) throw new Error('ApplicationCreatedNotification: playtest author not found')
+    if (!applicant) throw new Error('ApplicationCreatedNotification: applicant not found')
+
+    if (author.isPlayer && author.playerProfile.dmOnApply) {
+        await discordSend(
+            `## New Application for "${playtest.name}"\n`
+          + `By ${applicant.userName}\n\n`
+          + (process.env.NODE_ENV === "development" ? 'http://localhost:3000' : 'https://www.questcheck.org')
+                + `/playtest/${playtest._id}`,
+            {
+                type: 'dm',
+                userId: author.playerProfile.dmOnApply,
+            }
+        )
+    }
+}
+
+export async function applicationAcceptedNotification(playtest: Playtest, applicantId: string) {
+    const userCol = await Collections.users()
+
+    const applicant = await userCol.findOne({ userId: applicantId })
+
+    if (!applicant) throw new Error('ApplicationAcceptedNotification: applicant not found')
+
+    if (applicant.isPlayer && applicant.playerProfile.dmOnAccept) {
+        await discordSend(
+            `## Application Accepted for "${playtest.name}"\n`
+          + `You now have access to the playtest survey link and other instructions from the publisher.\n\n`
+          + (process.env.NODE_ENV === "development" ? 'http://localhost:3000' : 'https://www.questcheck.org')
+                + `/playtest/${playtest._id}`,
+            {
+                type: 'dm',
+                userId: applicant.playerProfile.dmOnAccept,
+            }
+        )
+    }
 }

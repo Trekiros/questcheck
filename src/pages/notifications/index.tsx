@@ -18,6 +18,7 @@ import { UserSchema } from "@/model/user";
 import { z } from "zod";
 import { validate } from "@/model/utils";
 import { toast } from "sonner";
+import Checkbox from "@/components/utils/checkbox";
 
 type PageProps = ServerSideProps & {
     discordServers: Awaited<ReturnType<typeof getDiscordServers>>,
@@ -45,9 +46,11 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
     const updateNotifications = trpcClient.users.updateNotifications.useMutation()
     const [notifications, setNotifications] = useState(userCtx!.user.playerProfile.notifications)
     const [pristine, setPristine] = useState(true)
+    const [dmOnApply, setDmOnApply] = useState(userCtx?.user.playerProfile.dmOnApply || '')
+    const [dmOnAccept, setDmOnAccept] = useState(userCtx?.user.playerProfile.dmOnAccept || '')
     const { isValid, errorPaths } = validate(notifications, z.array(NotificationSettingSchema))
 
-    const disabled = updateNotifications.isLoading
+    const disabled = !clerkUser.user || updateNotifications.isLoading
 
     function update(notifIndex: number, callback: (clone: NotificationSetting) => void) {
         const clone = structuredClone(notifications)
@@ -92,6 +95,40 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
                         </div>
                     </div>
 
+                    <div className={styles.dmSettings}>
+                        <h3>
+                            Application Notifications:
+                        </h3>
+
+                        <div>
+                            Note: to receive private messages from the QuestCheck Discord bot, you need to be present in a server where the bot is installed.
+                        </div>
+
+                        <Checkbox 
+                            value={!!dmOnAccept} 
+                            onToggle={on => {
+                                setDmOnAccept(on ? discordServers.discordUserId : '')
+                                setPristine(false)
+                            }}>
+                                Send me a private message when I am accepted in a playtest
+                        </Checkbox>
+
+                        { !!userCtx?.user.isPublisher && (
+                            <Checkbox 
+                                value={!!dmOnApply}
+                                onToggle={on => {
+                                    setDmOnApply(on ? discordServers.discordUserId : '')
+                                    setPristine(false)
+                                }}>
+                                    Send me a private message when someone applies to a playtest I have created
+                            </Checkbox>
+                        )}
+                    </div>
+
+                    <h3>
+                        New Playtest Notifications:
+                    </h3>
+
                     {!notifications.length ? (
                         <div className={styles.placeholder}>
                             Create a notification to start...
@@ -113,19 +150,19 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
                                     }} />
                             ))}
                         </ul>
-
-                        <button
-                            className={styles.saveBtn}
-                            disabled={disabled || pristine || !isValid}
-                            onClick={async () => {
-                                await updateNotifications.mutateAsync(notifications)
-                                setPristine(true)
-                                toast("Notification settings saved successfully!")
-                            }}>
-                                Save Changes
-                                <FontAwesomeIcon icon={faCheck} />
-                        </button>
                     </>}
+                    
+                    <button
+                        className={styles.saveBtn}
+                        disabled={disabled || pristine || !isValid}
+                        onClick={async () => {
+                            await updateNotifications.mutateAsync({ notifications, dmOnApply, dmOnAccept })
+                            setPristine(true)
+                            toast("Notification settings saved successfully!")
+                        }}>
+                            Save Changes
+                            <FontAwesomeIcon icon={faCheck} />
+                    </button>
                 </> : <>
                     <div className={styles.discord}>
                         <h2><FontAwesomeIcon icon={faDiscord} /> Discord Connection</h2>
