@@ -26,7 +26,7 @@ export async function getPermissions(userId: string|null): Promise<{ user: User|
     
     const [ userInfo, recentPlaytests ] = await Promise.all([
         users.findOne({ userId }),
-        playtests.countDocuments({ createdTimestamp: { $lte: Date.now() - 24 * 60 * 60 * 1000 } }),
+        playtests.countDocuments({ userId, createdTimestamp: { $gte: Date.now() - 24 * 60 * 60 * 1000 } }),
     ])
 
     if (userId === process.env[adminConfKey]) return  { user: userInfo, permissions: { canCreate: true, admin: true }}
