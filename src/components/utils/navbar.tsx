@@ -141,7 +141,7 @@ const NavbarLinks: FC<{ user: NonNullable<ReturnType<typeof useUserCtx>> }> = ({
 			)}
 
 			<Link {...linkProps('/settings')}>{user.user.userName} { user.permissions.admin ? <i>(admin)</i> : null }</Link>
-			<UserButton appearance={ClerkTheme} />
+			<UserButton appearance={ClerkTheme} afterSignOutUrl="/"  />
 		</div>
 	)
 }
@@ -176,7 +176,7 @@ const NavBar: FC<{}> = ({}) => {
 								<FontAwesomeIcon icon={faWarning} />
 								Update User Info
 							</Link> }
-							<UserButton appearance={ClerkTheme} />
+							<UserButton appearance={ClerkTheme} afterSignOutUrl="/" />
 						</>
 					)
 				)}
