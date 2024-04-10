@@ -58,7 +58,7 @@ export async function generateContract(playtest: CreatablePlaytest, publisher: P
     result = result.replaceAll('{{{publisher}}}', `${publisher.userName} (${publisher.emails[0]})`)
 
     for (const Task of TaskList) {
-        const regex = new RegExp(`{{{task = "${escapeRegex(Task)}" =>\r\n((.|\n|\r)*?)\r\n}}}\r`, 'g')
+        const regex = new RegExp(`{{{task = "${escapeRegex(Task)}" =>\r?\n?((.|\n|\r)*?)\r?\n?}}}\r?`, 'g')
         
         if (Task === playtest.task) {
             result = result.replaceAll(regex, "$1")
@@ -68,7 +68,7 @@ export async function generateContract(playtest: CreatablePlaytest, publisher: P
     }
 
     for (const Bounty of BountyList) {
-        const regex = new RegExp(`{{{bounty = "${escapeRegex(Bounty)}" =>\r\n((.|\n|\r)*?)\r\n}}}\r`, 'g')
+        const regex = new RegExp(`{{{bounty = "${escapeRegex(Bounty)}" =>\r?\n?((.|\n|\r)*?)\r?\n?}}}\r?`, 'g')
         
         if (Bounty === playtest.bounty) {
             result = result.replaceAll(regex, "$1")
@@ -77,7 +77,7 @@ export async function generateContract(playtest: CreatablePlaytest, publisher: P
         }
     }
 
-    const ndaRegex = /{{{NDA =>\r\n((.|\n|\r)*?)\r\n}}}\r/g
+    const ndaRegex = /{{{NDA =>\r?\n?((.|\n|\r)*?)\r?\n?}}}\r?/g
     if (playtest.bountyContract.useNDA) {
         result = result.replaceAll(ndaRegex, "$1")
     } else {
