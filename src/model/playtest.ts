@@ -9,7 +9,7 @@ export const BountyList = ['Name credits only', 'Discount Code', 'Gift Card', 'F
 export const BountySchema = z.enum(BountyList)
 export type Bounty = z.infer<typeof BountySchema>
 
-export const ApplicationStatusList = ['pending', 'accepted', 'rejected'] as const
+export const ApplicationStatusList = ['pending', 'accepted', 'rejected', 'cancelled'] as const
 export const ApplicationStatusSchema = z.enum(ApplicationStatusList)
 export type ApplicationStatus = z.infer<typeof ApplicationStatusSchema>
 export const ApplicationStatusMap: {[key in ApplicationStatus]: key} = enumMap(ApplicationStatusList, status => status as any)
@@ -35,7 +35,12 @@ export const PlaytestSchema = z.object({
     bounty: BountySchema,
     bountyDetails: z.string().max(300),
     bountyContract: z.discriminatedUnion('type', [
-        z.object({ type: z.literal('template'), templateValues: z.record(z.string().max(64), z.string().max(600)), useNDA: z.boolean() }),
+        z.object({ 
+            type: z.literal('template'), 
+            templateValues: z.record(z.string().max(64), z.string().max(600)), 
+            useNDA: z.boolean(),
+            templateVersion: z.string().optional(),
+        }),
         z.object({ type: z.literal('custom'), text: z.string().max(5000) })
     ]),
 
@@ -65,6 +70,8 @@ export const CreatablePlaytestSchema = PlaytestSchema.omit({
 })
 export type CreatablePlaytest = Prettify<z.infer<typeof CreatablePlaytestSchema>>
 
+export const CurrentTemplateVersion = "v2.md"
+
 export const newPlaytest = {
     name: '',
     description: '',
@@ -74,7 +81,7 @@ export const newPlaytest = {
     applicationDeadline: 0,
     bounty: 'Name credits only',
     bountyDetails: '',
-    bountyContract: { type: 'template', templateValues: {}, useNDA: false },
+    bountyContract: { type: 'template', templateValues: {}, useNDA: false, templateVersion: CurrentTemplateVersion },
     task: 'Read-through + Feedback',
 } satisfies CreatablePlaytest
 

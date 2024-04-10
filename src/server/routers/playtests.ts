@@ -4,7 +4,7 @@ import { z } from "zod";
 import { AggregationCursor, Filter, FindCursor, ObjectId, WithId } from "mongodb";
 import {  protectedProcedure, router, publicProcedure } from "../trpc";
 import { arrMap, pojoMap } from "@/model/utils";
-import { PublicUser, PublicUserSchema, User } from "@/model/user";
+import { PublicUser, PublicUserSchema, User, newUser } from "@/model/user";
 import { getPermissions } from "./users";
 import { applicationAcceptedNotification, applicationCreatedNotification, playtestCreatedNotification } from "./notifications";
 
@@ -110,7 +110,7 @@ const search = publicProcedure
         const { playerProfile, ...userProjection } = pojoMap(PublicUserSchema.shape, () => 1 as const)
         const users: Omit<PublicUser, "playerProfile">[] = !userIds.size ? []
             : await userCol.find({ userId: { $in: Array.from(userIds) } }, { projection: userProjection })
-                .map(user => ({ ...user, _id: user._id.toString() }))    
+                .map(({ playerProfile, ...user }) => ({ ...user, _id: user._id.toString() }))
                 .toArray()
         const usersById = arrMap(users, user => user.userId)
 
@@ -186,6 +186,10 @@ export const playtestById = async (playtestId: string, userId: string|null) => {
             for (const applicant of applicants) {
                 applicant.playerReviews = []
                 applicant.emails = []
+
+                if (userId != applicant.userId) {
+                    applicant.playerProfile.creditName = ""
+                }
             }
         }
     }
@@ -256,6 +260,28 @@ const apply = protectedProcedure
         return !!result
     })
 
+const cancelApplication = protectedProcedure
+    .input(z.string())
+    .mutation(async ({ ctx, input }) => {
+        const playtestCol = await Collections.playtests()
+        const result = await playtestCol.findOneAndUpdate(
+            { 
+                _id: new ObjectId(input),
+                applications: {
+                    $elemMatch: {
+                        applicantId: ctx.auth.userId,
+                        status: ApplicationStatusMap.pending,
+                    }
+                },
+            },
+            { $set: {
+                "applications.$.status": ApplicationStatusMap.cancelled,
+            } },
+        )
+
+        console.log(result)
+    })
+
 const accept = protectedProcedure
     .input(z.object({ playtestId: z.string(), applicantId: z.string() }))
     .mutation(async ({ input: { playtestId, applicantId }, ctx: { auth: { userId }}}) => {
@@ -324,6 +350,7 @@ export const PlaytestRouter = router({
     search,
     find,
     apply,
+    cancelApplication,
     accept,
     reject,
     close,

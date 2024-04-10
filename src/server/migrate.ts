@@ -8,13 +8,14 @@ import { Db, UpdateResult } from "mongodb"
  * Don't forget to remove migrations which have already been executed in prod
  */
 export default async function migration(db: Db) {
-    // await performMigration('player profile now has notifications', async () => {
-    //     return await db.collection<User>('users').updateMany({
-    //         "playerProfile.notifications": { $exists: false },
-    //     }, {
-    //         $set: { "playerProfile.notifications": [] },
-    //     })
-    // })
+    await performMigration('player profile now has a credit name', async () => {
+        return await db.collection<User>('users').updateMany({
+            "playerProfile.creditName": { $exists: false },
+        },
+        [{
+            $set: { "playerProfile.creditName": "$userName" },
+        }])
+    })
 
 
 

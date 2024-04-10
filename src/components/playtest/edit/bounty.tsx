@@ -4,12 +4,13 @@ import { ContractPDF, ContractTemplateEditor, generateContract } from "./contrac
 import Checkbox from "../../utils/checkbox"
 import styles from './edit.module.scss'
 import { FC, useEffect, useState } from "react"
-import { BountyList, CreatablePlaytestSchema } from "@/model/playtest"
+import { BountyList, CreatablePlaytestSchema, CurrentTemplateVersion } from "@/model/playtest"
 import { EditorPropType } from "./edit"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faEye, faPen } from "@fortawesome/free-solid-svg-icons"
 import { useUserCtx } from "@/components/utils/page"
 import { keys } from "@/model/utils"
+import { usePromisedMemo } from "@/model/hooks"
 
 type ContractTemplateParams = {[key: string]: string}
 const defaultContractParams: ContractTemplateParams = {}
@@ -19,14 +20,22 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
     const [preview, setPreview] = useState(false)
     
     // This state allows the UI to save the user's template params if they temporarily switch to the manual contract mode
+    const [templateVersion, setTemplateVersion] = useState<string|undefined>(CurrentTemplateVersion)
     const [templateParams, setTemplateParams] = useState<ContractTemplateParams>(value.bountyContract.type === 'template' ? value.bountyContract.templateValues : defaultContractParams)
     const [useNDA, setUseNDA] = useState(value.bountyContract.type === 'template' ? value.bountyContract.useNDA : false)
     useEffect(() => {
         if (value.bountyContract.type === 'template') {
             setTemplateParams(value.bountyContract.templateValues)
             setUseNDA(value.bountyContract.useNDA)
+            setTemplateVersion(value.bountyContract.templateVersion)
         }
     }, [value.bountyContract])
+
+
+    const contract = usePromisedMemo(
+        async () => !userCtx ? null : await generateContract(value, { ...userCtx.user!, emails }),
+        [value, userCtx, emails]
+    )
 
     return (
         <div className={styles.vstack}>
@@ -86,7 +95,7 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
                                     if (value.bountyContract.type === 'template') return;
 
                                     setPreview(false)
-                                    onChange({ ...value, bountyContract: { type: 'template', templateValues: templateParams, useNDA }})
+                                    onChange({ ...value, bountyContract: { type: 'template', templateValues: templateParams, useNDA, templateVersion }})
                                 }}>
                                     Use Template
                             </button>
@@ -94,13 +103,13 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
                             <button
                                 disabled={disabled}
                                 className={value.bountyContract.type === 'custom' ? styles.active : undefined}
-                                onClick={() => {
+                                onClick={async () => {
                                     if (value.bountyContract.type === 'custom') return;
 
-                                    let template = generateContract(value, { ...userCtx.user!, emails })
+                                    let template = (await generateContract(value, { ...userCtx.user!, emails })) || ""
                                     for (const templateKey of keys(value.bountyContract.templateValues)) {
                                         template = template.replaceAll(
-                                            `{{${templateKey}}}`, 
+                                            `{{${templateKey}}}`,
                                             value.bountyContract.templateValues[templateKey]!
                                         )
                                     }
@@ -130,7 +139,7 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
                             <ContractPDF 
                             user={userCtx.user!} 
                             playtest={value} 
-                            text={generateContract(value, { ...userCtx.user!, emails })} />
+                            text={contract || ""} />
                         ) : (
                             value.bountyContract.type === 'template' ? <>
                                 <div className={styles.templateOptions}>
@@ -152,6 +161,7 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
                                             type: 'template',
                                             useNDA: useNDA,
                                             templateValues: newTemplate,
+                                            templateVersion: templateVersion,
                                         }
                                     })} />
                             </> : (

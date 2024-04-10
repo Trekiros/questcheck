@@ -12,6 +12,8 @@ import { faCheck, faFile } from "@fortawesome/free-solid-svg-icons";
 import { ContractPDF, generateContract } from "../edit/contract";
 import { useDialog } from "@/components/utils/dialog";
 import { useUserCtx } from "@/components/utils/page";
+import { usePromisedMemo } from "@/model/hooks";
+import { trpcClient } from "@/server/utils";
 
 type PropType = {
     playtest: Playtest,
@@ -22,11 +24,12 @@ type PropType = {
     disabled: boolean,
     onAccept: () => any,
     onReject: () => any,
+    onCancel: () => any,
     onReview: (review: Omit<UserReview, 'byUserId'|'createdTimestamp'>) => any,
     reviewerNameById: {[key: string]: string},
 }
 
-export const ApplicationCard: FC<PropType> = ({ playtest, application, applicant, isCreator, emails, disabled, onAccept, onReject, onReview, reviewerNameById }) => {
+export const ApplicationCard: FC<PropType> = ({ playtest, application, applicant, isCreator, emails, disabled, onAccept, onReject, onCancel, onReview, reviewerNameById }) => {
     const { setDialog } = useDialog()
     const userCtx = useUserCtx()
 
@@ -35,6 +38,13 @@ export const ApplicationCard: FC<PropType> = ({ playtest, application, applicant
         && !applicant.playerReviews.find(review => 
             (review.byUserId === userCtx?.userId)
             && (review.duringPlaytestId === playtest._id))
+
+    const isApplicant = (userCtx?.userId === application.applicantId) && (application.status === 'pending')
+
+    const contract = usePromisedMemo(
+        async () => !userCtx ? null : await generateContract(playtest, { ...userCtx.user, emails }, applicant),
+        [playtest, userCtx, emails, applicant],
+    )
 
     return (
         <li className={styles.application}>
@@ -87,7 +97,7 @@ export const ApplicationCard: FC<PropType> = ({ playtest, application, applicant
                             <ContractPDF
                                 playtest={playtest}
                                 user={userCtx!.user}
-                                text={generateContract(playtest, { ...userCtx!.user, emails }, applicant)}/>
+                                text={contract || ""}/>
                         </div>, () => {})}>
                             Download Agreement
                             <FontAwesomeIcon icon={faFile} />
@@ -104,17 +114,28 @@ export const ApplicationCard: FC<PropType> = ({ playtest, application, applicant
                             <ContractPDF
                                 playtest={playtest}
                                 user={userCtx!.user}
-                                text={generateContract(playtest, { ...userCtx!.user, emails }, applicant)}/>
-                        </div>, async confirm => confirm && onAccept())}>
+                                text={contract || ""}/>
+                        </div>, confirm => confirm && onAccept())}>
                                 Accept
                         </button>
-                        <button onClick={() => setDialog(
+                        <button disabled={disabled} onClick={() => setDialog(
                             "Are you sure you want to reject this application? This cannot be undone.",
-                            async confirm => confirm && onReject())}>
+                            confirm => confirm && onReject())}>
                                 Reject
                         </button>
                     </section>
                 )
+            )}
+
+            { isApplicant && (
+                <section className={styles.actions}>
+                    <button onClick={() => setDialog(
+                        "Are you sure you want to cancel your application? You will not be able to apply to this playtest again.",
+                        confirm => confirm && onCancel()
+                    )}>
+                        Cancel my application
+                    </button>
+                </section>
             )}
         </li>
     )

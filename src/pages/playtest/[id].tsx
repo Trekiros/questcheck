@@ -54,6 +54,13 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
         setState(data!)
     }
 
+    const applicationList = useMemo(
+        () => playtest.applications
+            .filter(app => app.status !== "cancelled")
+            .map(application => ({ application, applicant: applicants.find(applicant => applicant.userId === application.applicantId)!})),
+        [playtest, applicants]
+    )
+
     const croppedName = useMemo(() => playtest.name.length > 20 ? (playtest.name.substring(0, 20) + "...") : playtest.name, [playtest.name])
     
     const userApplication = userCtx && playtest.applications.find(app => app.applicantId === userCtx.userId)
@@ -63,6 +70,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
     
     const [agreed, setAgreed] = useState(isApplicant)
     const applyMutation = trpcClient.playtests.apply.useMutation()
+    const cancelMutation = trpcClient.playtests.cancelApplication.useMutation()
     const acceptMutation = trpcClient.playtests.accept.useMutation()
     const rejectMutation = trpcClient.playtests.reject.useMutation()
     const closeMutation = trpcClient.playtests.close.useMutation()
@@ -77,6 +85,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
         || rejectMutation.isLoading
         || closeMutation.isLoading
         || reviewMutation.isLoading
+        || cancelMutation.isLoading
 
     // If true, new applications cannot be added
     const applicationDisabled = 
@@ -145,46 +154,47 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
                 <section className={styles.applications}>
                     <h3>Applications</h3>
 
-                    { !applicants.length ? (
+                    { !applicationList.length ? (
                         <div className={styles.placeholder}>
                             No applications yet...
                         </div>
                     ) : (
                         <ul>
-                            { applicants.map(applicant => {
-                                const application = playtest.applications.find(app => app.applicantId === applicant.userId)!
+                            { applicationList.map(({ applicant, application }) => (
+                                <ApplicationCard
+                                    key={applicant.userId}
 
-                                return (
-                                    <ApplicationCard
-                                        key={applicant.userId}
-
-                                        playtest={playtest}
-                                        applicant={applicant}
-                                        application={application}
-                                        isCreator={isCreator}
-                                        emails={emails}
-                                        disabled={disabled || applicationDisabled}
-                                        
-                                        onAccept={async () => {                
-                                            await acceptMutation.mutateAsync({ playtestId: playtest._id, applicantId: applicant.userId })
-                                            await refetch()
-                                        }}
-                                        onReject={async () => {
-                                            await rejectMutation.mutateAsync({ playtestId: playtest._id, applicantId: applicant.userId })
-                                            await refetch()
-                                        }}
-                                        onReview={async review => {
-                                            await reviewMutation.mutateAsync({
-                                                playtesterId: applicant.userId,
-                                                review,
-                                            })
-                                            await refetch()
-                                        }}
-                                        
-                                        reviewerNameById={reviewerNameById}
-                                    />
-                                )
-                            })}
+                                    playtest={playtest}
+                                    applicant={applicant}
+                                    application={application}
+                                    isCreator={isCreator}
+                                    emails={emails}
+                                    disabled={disabled || applicationDisabled}
+                                    
+                                    onAccept={async () => {                
+                                        await acceptMutation.mutateAsync({ playtestId: playtest._id, applicantId: applicant.userId })
+                                        await refetch()
+                                    }}
+                                    onReject={async () => {
+                                        await rejectMutation.mutateAsync({ playtestId: playtest._id, applicantId: applicant.userId })
+                                        await refetch()
+                                    }}
+                                    onCancel={async () => {
+                                        console.log("test trek")
+                                        await cancelMutation.mutateAsync(playtest._id)
+                                        await refetch()
+                                    }}
+                                    onReview={async review => {
+                                        await reviewMutation.mutateAsync({
+                                            playtesterId: applicant.userId,
+                                            review,
+                                        })
+                                        await refetch()
+                                    }}
+                                    
+                                    reviewerNameById={reviewerNameById}
+                                />
+                            ))}
                         </ul>
                     )}
                 </section>

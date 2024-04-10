@@ -14,6 +14,7 @@ import { useUserCtx } from "../utils/page";
 import { useUser } from "@clerk/nextjs";
 import Expandable from "../utils/expandable";
 import { Prettify } from "@/model/utils";
+import { usePromisedMemo } from "@/model/hooks";
 
 type PropType = {
     author: Prettify<Omit<PublicUser, "playerProfile"> & Pick<User, "emails">>,
@@ -32,6 +33,11 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
     const applicants = !summary ? 0 : summary.applications.filter(({ status }) => status === 'pending').length
 
     const userApplication = summary?.applications.find(app => app.applicantId === userCtx?.userId)
+
+    const contract = usePromisedMemo(
+        async () => !playtest ? null : await generateContract(playtest, author, (!!userCtx && emails) ? { ...userCtx.user, emails } : undefined),
+        [playtest, author, userCtx, emails],
+    )
 
     return (
         <li className={`${styles.playtest} ${!playtest && styles.summary}`}>
@@ -135,10 +141,10 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
                             and will not be held accountable for any legal dispute between you and the publisher related to this playtest.
                         </p>
 
-                        <ContractPDF 
+                        <ContractPDF
                             playtest={playtest} 
                             user={author} 
-                            text={generateContract(playtest, author, (!!userCtx && emails) ? { ...userCtx.user, emails } : undefined)} />
+                            text={contract || ""} />
                     </>}
                 </section>
             )}
@@ -170,8 +176,10 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
                             <div><FontAwesomeIcon icon={faEllipsis} /> You have applied!</div>
                         ) : (userApplication.status === 'accepted') ? (
                             <div><FontAwesomeIcon icon={faCheck} /> You are a participant!</div>
-                        ):(
+                        ) : (userApplication.status === 'rejected') ? (
                             <div><FontAwesomeIcon icon={faClose} /> Application Rejected</div>
+                        ) : (
+                            <div><FontAwesomeIcon icon={faClose} /> Application Cancelled</div>
                         )
                     )}
                 </section>

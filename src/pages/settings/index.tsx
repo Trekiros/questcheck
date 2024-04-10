@@ -1,7 +1,7 @@
 import { FC, useEffect, useState } from "react"
 import styles from './index.module.scss'
 import { trpcClient } from "@/server/utils"
-import { MutableUser, MutableUserSchema, SystemFamiliarityList, SystemNameSchema, newUser } from "@/model/user"
+import { MutableUser, MutableUserSchema, SystemFamiliarityList, SystemNameSchema, UserSchema, newUser } from "@/model/user"
 import { isAlphanumeric, validate } from "@/model/utils"
 import Checkbox from "@/components/utils/checkbox"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
@@ -22,6 +22,7 @@ import { getAuth, buildClerkProps } from "@clerk/nextjs/server";
 import { YoutubeInfo, getYoutubeInfo } from "@/server/youtube"
 import { ReviewsDisplay } from "@/components/playtest/details/review"
 import { getUserCtx } from "@/components/utils/pageProps"
+import { useDialog } from "@/components/utils/dialog"
 
 type PageProps = ServerSideProps & {
     youtube: YoutubeInfo,
@@ -44,6 +45,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
 const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
     const router = useRouter()
     const clerkUser = useUser()
+    const { setDialog } = useDialog()
     
     const [user, setUser] = useState<MutableUser>(userCtx?.user || newUser)
     const { isValid, errorPaths } = validate(user, MutableUserSchema)
@@ -190,6 +192,24 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
 
                     <h3>Player Profile</h3>
 
+                    
+                    <div className={styles.row}>
+                        <label>Credit me as:</label>
+
+                        <input
+                            disabled={disabled}
+                            className={(UserSchema.shape.playerProfile.shape.creditName.maxLength! < user.playerProfile.creditName.length) ? styles.invalid : undefined}
+                            type='text'
+                            value={user.playerProfile.creditName}
+                            onChange={e => {
+                                update(clone => {
+                                    if (UserSchema.shape.playerProfile.shape.creditName.maxLength! < e.target.value.length) return;
+
+                                    clone.playerProfile.creditName = e.target.value
+                                })
+                            }}/>
+                    </div>
+
                     <div className={styles.row}>
                         <label>TTRPG Familiarity:</label>
 
@@ -293,19 +313,21 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                                 { !twitterUsername && (
                                     <span className={styles.warning}>
                                         To use this feature, you must link your Twitter/X account by clicking
-                                        <button disabled={disabled} style={{ padding: "6px", margin: '0 1ch', display: "inline-block" }} onClick={async () => {
-                                            // Saving the user's work in progress, just in case
-                                            if (isValid) await userMutation.mutateAsync(user)
-                                            
-                                            // OAuth process
-                                            const externalAccount = await clerkUser.user?.createExternalAccount({
-                                                strategy: "oauth_x",
-                                                redirectUrl: '/sso-callback',
-                                            })
+                                        <button disabled={disabled} style={{ padding: "6px", margin: '0 1ch', display: "inline-block" }} onClick={() => setDialog(
+                                            "You are about to leave this page. Any change you have not saved will be lost. Are you sure you wish to proceed?",
+                                            async (confirm) => {
+                                                if (!confirm) return;
+                                                
+                                                // OAuth process
+                                                const externalAccount = await clerkUser.user?.createExternalAccount({
+                                                    strategy: "oauth_x",
+                                                    redirectUrl: '/sso-callback',
+                                                })
 
-                                            const url = externalAccount?.verification!.externalVerificationRedirectURL
-                                            if (url) router.push(url)
-                                        }}>
+                                                const url = externalAccount?.verification!.externalVerificationRedirectURL
+                                                if (url) router.push(url)
+                                            }
+                                        )}>
                                             here
                                         </button>!
                                     </span>
@@ -327,19 +349,21 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                                 { (youtube.status !== 'success') && (
                                     <span className={styles.warning}>
                                         To use this feature, you must link your Youtube account by clicking
-                                        <button disabled={disabled} style={{ padding: "6px", margin: '0 1ch', display: "inline-block" }} onClick={async () => {
-                                            // Saving the user's work in progress, just in case
-                                            if (isValid) await userMutation.mutateAsync(user)
-                                            
-                                            // OAuth process
-                                            const externalAccount = await clerkUser.user?.createExternalAccount({
-                                                strategy: "oauth_google",
-                                                redirectUrl: '/sso-callback',
-                                            })
+                                        <button disabled={disabled} style={{ padding: "6px", margin: '0 1ch', display: "inline-block" }} onClick={() => setDialog(
+                                            "You are about to leave this page. Any change you have not saved will be lost. Are you sure you wish to proceed?",
+                                            async (confirm) => {
+                                                if (!confirm) return;
+                                                
+                                                // OAuth process
+                                                const externalAccount = await clerkUser.user?.createExternalAccount({
+                                                    strategy: "oauth_google",
+                                                    redirectUrl: '/sso-callback',
+                                                })
 
-                                            const url = externalAccount?.verification!.externalVerificationRedirectURL
-                                            if (url) router.push(url)
-                                        }}>
+                                                const url = externalAccount?.verification!.externalVerificationRedirectURL
+                                                if (url) router.push(url)
+                                            }
+                                        )}>
                                             here
                                         </button>!
 

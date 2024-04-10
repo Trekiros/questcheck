@@ -19,6 +19,7 @@ import Page, { ServerSideProps } from '@/components/utils/page'
 import { getUserCtx } from '@/components/utils/pageProps'
 import type { GetServerSideProps as ServerSidePropsGetter } from 'next'
 import { getAuth, buildClerkProps } from "@clerk/nextjs/server";
+import { usePromisedMemo } from '@/model/hooks'
 
 type PageProps = ServerSideProps & {
     emails: string[],
@@ -60,26 +61,34 @@ const NewPlaytestPage: FC<PageProps> = ({ userCtx, emails }) => {
     )
 
     const [templateIsValid, setTemplateIsValid] = useState(false)
-    useEffect(() => {
-        if (!userCtx?.user) return;
-        if (playtest.bountyContract.type !== 'template') {
-            setTemplateIsValid(true);
-            return;
-        }
 
-        const mandatoryTemplateTags = Array.from(generateContract(playtest, { ...userCtx!.user, emails }).matchAll(/\{\{(.*?)\}\}/g))
-            .map(match => match[1])
-            .filter(tag => !tag.endsWith('(optional)'))
-        
-        for (const tag of mandatoryTemplateTags) {
-            if (!playtest.bountyContract.templateValues[tag]) {
-                setTemplateIsValid(false)
+    const contract = usePromisedMemo(
+        async () => !userCtx ? null : await generateContract(playtest, { ...userCtx.user, emails }),
+        [playtest, userCtx, emails],
+    )
+
+    console.log(playtest)
+
+    useEffect(() => {
+            if (!contract) return;
+            if (playtest.bountyContract.type !== 'template') {
+                setTemplateIsValid(true)
                 return;
             }
-        }
-
-        setTemplateIsValid(true)
-    }, [playtest.bountyContract, userCtx?.user])
+    
+            const mandatoryTemplateTags = Array.from(contract.matchAll(/\{\{(.*?)\}\}/g))
+                .map(match => match[1])
+                .filter(tag => !tag.endsWith('(optional)'))
+            
+            for (const tag of mandatoryTemplateTags) {
+                if (!playtest.bountyContract.templateValues[tag]) {
+                    setTemplateIsValid(false)
+                    return;
+                }
+            }
+    
+            setTemplateIsValid(true)
+    }, [playtest.bountyContract, contract])
 
     return (
         <Page userCtx={userCtx}>

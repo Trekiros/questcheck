@@ -2,17 +2,15 @@
 @import '../../styles/variables';
 
 .searchParams {
-    height: min-content;
-    @include scrollable;
-    &::-webkit-scrollbar { width: 6px; }
-
-    background: linear-gradient(270deg, #fff3 0%, #0003 4px);
-    
     display: flex;
     flex-direction: column;
     padding: 1em;
 
     @media (width >= 800px) {
+        background: linear-gradient(270deg, #fff3 0%, #0003 4px);
+        height: min-content;
+        @include scrollable;
+        &::-webkit-scrollbar { width: 6px; }
         position: sticky;
         top: $topNavHeight;
         height: calc(100dvh - $topNavHeight);
@@ -23,6 +21,19 @@
             flex-grow: 1;
             align-items: flex-start;
         }
+    }
+
+    @media (width < 800px) {
+        padding: 1em;
+        padding-bottom: 0;
+
+        &.collapsed {
+            > :not(:first-child) {
+                display: none;
+            }
+        }
+
+        h2 { display: none!important }
     }
 
     h2 {
@@ -36,7 +47,7 @@
             font-size: 1rem;
             font-weight: normal;
             padding: 8px;
-            gap: 6px
+            gap: 6px;
         }
     }
     

@@ -67,12 +67,12 @@ const updateSelf = protectedProcedure
         const $set: UserSet = {
             ...userClean,
             userNameLowercase: input.userName.toLowerCase(),
-            emails,
         }
 
         // Player notification fields. Updating the notifications uses a different endpoint, so we only update the systems here.
         if (userClean.isPlayer) {
             $set['playerProfile.systems'] = playerProfile.systems
+            $set['playerProfile.creditName'] = playerProfile.creditName
         }
 
         // Publisher readonly fields. Flattening the set avoids overwriting the manual verification process
@@ -105,6 +105,7 @@ const updateSelf = protectedProcedure
             { userId: auth.userId },
             {
                 $set,
+                $addToSet: { emails: { $each: emails } },
                 $setOnInsert: {
                     playerReviews: [],
                     'playerProfile.notifications': [],

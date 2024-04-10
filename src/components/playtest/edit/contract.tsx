@@ -1,11 +1,11 @@
 import { MutableUser, User } from "@/model/user";
-import { CreatablePlaytest } from "@/model/playtest";
-import React, { FC, ReactNode, useEffect, useState } from "react";
+import { BountyList, CreatablePlaytest, TaskList } from "@/model/playtest";
+import React, { FC, ReactNode, useEffect, useMemo, useState } from "react";
 import PDF from "@react-pdf/renderer";
-import contractTemplate from './contractTemplate.md'
 import styles from './edit.module.scss'
 import dynamic from "next/dynamic";
 import { Prettify } from "@/model/utils";
+import { usePromisedMemo } from "@/model/hooks";
 
 // react-pdf can't be run server-side (and even if it could, it's probably a bad idea to)
 // This ensures it is only ever imported & ran client-side
@@ -17,7 +17,23 @@ const PDFViewer = dynamic(
   },
 );
 
+function escapeRegex(str: string) {
+    const specials = ["-", "[", "]", "/", "{", "}", "(", ")", "*", "+", "?", ".", "\\", "^", "$", "|"]
+  
+    const regex = RegExp('[' + specials.join('\\') + ']', 'g')
+  
+    return str.replace(regex, "\\$&");
+}
 
+const templateCache: {[key: string]: string} = {}
+async function getTemplate(name: string) {
+    if (templateCache[name]) return templateCache[name]
+
+    const response = await fetch('/templates/' + name)
+    const text = await response.text()
+    templateCache[name] = text
+    return text
+}
 
 /*
     The template is a markdown document, but with the following extra properties:
@@ -25,90 +41,48 @@ const PDFViewer = dynamic(
     Any text surrounded by {{double curls}} must be filled in by the publisher
     Any text surrounded by {solo curls} must be filled in by server once a playtester is selected
 */
-export function generateContract(playtest: CreatablePlaytest, publisher: Prettify<Omit<MutableUser, "playerProfile"> & Pick<User, "emails">>, playtester?: MutableUser & { emails: string[] }): string {
+export async function generateContract(playtest: CreatablePlaytest, publisher: Prettify<Omit<MutableUser, "playerProfile"> & Pick<User, "emails">>, playtester?: MutableUser & { emails: string[] }): Promise<string> {
     if (playtest.bountyContract.type === "custom") {
         let text = playtest.bountyContract.text
 
         if (!!playtester) {
             text = text.replaceAll('{playtester}', `${playtester.userName} (${playtester.emails[0]})`)
+                .replaceAll('{playtesterName}', `${playtester.playerProfile.creditName}`)
         }
 
         return text
     }
 
-    let result = contractTemplate
-        .replaceAll('{{{publisher}}}', `${publisher.userName} (${publisher.emails[0]})`)
-        .replace('{{{task}}}', 
-            (playtest.task ==='Read-through + Feedback') ? (
-                "The Publisher will provide the Playtester with playtest material once this agreement has been signed by both parties. "
-              + "The playtest material is around {{Page Count}} pages long. "
-              + "The details for how to access this playtest material, as well as a survey link to collect feedback, will be communicated to the Playtester through the Quest Check website when this agreement comes into effect. "
-              + "The Playtester agrees to read through the playtest material, and fill in the survey, before {{Deadline}}. "
-              + "\n\n{{Additional Details (optional)}}"
-            ) : (playtest.task === 'One Shot ran by the Publisher') ? (
-                "The Publisher will run a game session on {{Date}} from {{Start Time}} to {{End Time}} (GMT + {{Time Zone}}), at {{Address or VTT}}. "
-              + "The Playtester agrees to take part in the game session, and fill a survey about it before {{Deadline}}. "
-              + "The Playtester agrees that the Publisher might record the game session, and use it in promotional material related to the playtest. "
-              + "\n\n{{Additional Details (optional)}}"
-            ) : (playtest.task === "One Shot ran by the Playtester") ? (
-                "The Publisher will provide the Playtester with playtest material once this agreement has been signed by both parties. "
-              + "The details for how to access this playtest material, as well as a survey link to collect feedback, will be communicated to the Playtester through the Quest Check website when this agreement comes into effect. "
-              + "The Playtester agrees to run a game session using the playtest material provided, record it, and upload it to Youtube as a {{Unlisted or Public}} video, and fill in the survey, before {{Deadline}}. "
-              + "The Playtester must ensure that all players participating in the game session agree to share the recording with the Publisher, and that they give the Publisher permission to use the recording in promotional material related to the playtest material. "
-              + "\n\n{{Additional Details (optional)}}"
-            ) : (playtest.task === "Campaign ran by the Publisher") ? (
-                "The Publisher will run {{Minimum Games}} to {{Maximum Games}} game sessions, every {{Period}} from {{Start Time}} to {{End Time}} (GMT + {{Time Zone}}), starting on {{Start Date}}, at {{Address or VTT}}. "
-              + "The Playtester agrees to take part in the game sessions, and fill a survey about it before {{Deadline}}. "
-              + "The Playtester may still receive their compensation if they miss less than {{Maximum Missed Games}} of these game sessions. "
-              + "The Playtester agrees that the Publisher might record the game session, and use it in promotional material related to the playtest. "
-              + "\n\n{{Additional Details (optional)}}"
-            ) : ( // Campaign ran by the Playtester
-                "The Publisher will provide the Playtester with playtest material once this agreement has been signed by both parties. "
-              + "The details for how to access this playtest material, as well as a survey link to collect feedback, will be communicated to the Playtester through the Quest Check website when this agreement comes into effect. "
-              + "The Playtester agrees to run at least {{Minimum Games}} game sessions using the playtest material provided, record it, and upload each game session to Youtube as a {{Unlisted or Public}} video, and fill in the survey, before {{Deadline}}. "
-              + "The Playtester must ensure that all players participating in the game session agree to share the recording with the Publisher, and that they give the Publisher permission to use the recording in promotional material related to the playtest material. "
-              + "\n\n{{Additional Task Details (optional)}}"
-            )
-        )
-        .replace('{{{bounty}}}', 
-            (playtest.bounty === "Name credits only") ? (
-                ''
-            ) : (
-                `### {{{i}}}. Compensation\n`
-              + (
-                (playtest.bounty === "Discount Code") ? (
-                      "Once the Playtester has accomplished the task outlined in the preceding section, the Publisher agrees to give them a discount code by {{Distribution Method}}, within 14 days after the completion of the task. "
-                    + "The discount code should allow the Playtester to purchase {{Product}} on {{Website}} for {{Discounted Price}} instead of the listed price of {{Listed Price}}. "
-                    + "The discount code should be valid for a duration of at least 1 year, and will be usable {{Only once/At will}}. "
-                ) : (playtest.bounty === "Gift Card") ? (
-                      "Once the Playtester has accomplished the task outlined in the preceding section, the Publisher agrees to give them a gift card by {{Distribution Method}}, within 14 days after the completion of the task. "
-                    + "The gift card must allow the Playtester to receive {{Value}} worth of free products in {{Applicable Stores}}. "
-                    + "The gift card should be valid for a duration of at least 1 year. "
-                ) : (playtest.bounty === "Free PDF") ? (
-                      "Once the Playtester has accomplished the task outlined in the preceding section, the Publisher agrees to gift them a free PDF copy of {{Product}} by {{Distribution Method}}. "
-                    + "The Publisher must provide the free PDF, at the latest, 14 days after the publication of the playtest material. "
-                    + "The Publisher certifies that they have the right to distribute this free PDF copy."
-                ) : (playtest.bounty === "Free Hardcover Copy") ? (
-                     "Once the Playtester has accomplished the task outlined in the preceding section, the Publisher agrees to gift them a free hardcover copy of {{Product}}, and send it by mail at an address the Playtester must communicate to the Publisher in writing at {{Your Email Address}}. "
-                    + "The Publisher must provide the free hardcover copy within 6 months of the publication of the playtest material (barring Force Majeure such as paper shortages, as described below). "
-                    + "The Publisher certifies that they have the right to distribute this free hardcover copy. "
-                ) : (// Payment
-                    "Once the Playtester has accomplished the task outlined in the preceding section, the Publisher agrees to pay the Playtester {{Payment Amount}} through {{Payment Mehod (e.g. Paypal)}}. "
-                  + "The Playtester must communicate to the Publisher the information necessary for the payment (e.g. Paypal address, invoice, etc...) in writing. at {{Your Email Address}}. "
-                  + "The payment must be initiated within 14 days after the completion of the task outlined above. "
-                )
-              )
-              + "\n\n{{Additional Bounty Details (optional)}}"
-            )
-        )
-        .replace("{{{NDA}}}", !playtest.bountyContract.useNDA ? "" : (
-            `### {{{i}}}. Non-Disclosure Agreement\n`
-          + "Information related to this playtest is considered confidential unless (a) the Publisher specifies otherwise, or (b) it was already publicly known before this agreement came into effect. "
-          + "The Playtester agrees not to publicly disclose this confidential information, until at least 3 months after the publication of the playtest material. "
-          + "\n\n> Note: This clause does not prevent the Playtester from reporting unlawful behavior from the Publisher to the relevant authorities. "
-        ))
-        .replaceAll('{playtestId}', playtest.name)
+    let result = await getTemplate(playtest.bountyContract.templateVersion || 'v1.md')
 
+    result = result.replaceAll('{{{publisher}}}', `${publisher.userName} (${publisher.emails[0]})`)
+
+    for (const Task of TaskList) {
+        const regex = new RegExp(`{{{task = "${escapeRegex(Task)}" =>\r\n((.|\n|\r)*?)\r\n}}}\r`, 'g')
+        
+        if (Task === playtest.task) {
+            result = result.replaceAll(regex, "$1")
+        } else {
+            result = result.replaceAll(regex, "")
+        }
+    }
+
+    for (const Bounty of BountyList) {
+        const regex = new RegExp(`{{{bounty = "${escapeRegex(Bounty)}" =>\r\n((.|\n|\r)*?)\r\n}}}\r`, 'g')
+        
+        if (Bounty === playtest.bounty) {
+            result = result.replaceAll(regex, "$1")
+        } else {
+            result = result.replaceAll(regex, "")
+        }
+    }
+
+    const ndaRegex = /{{{NDA =>\r\n((.|\n|\r)*?)\r\n}}}\r/g
+    if (playtest.bountyContract.useNDA) {
+        result = result.replaceAll(ndaRegex, "$1")
+    } else {
+        result = result.replaceAll(ndaRegex, "")
+    }
 
     let i = 1
     while (result.includes('{{{i}}}')) {
@@ -118,6 +92,7 @@ export function generateContract(playtest: CreatablePlaytest, publisher: Prettif
 
     if (!!playtester) {
         result = result.replaceAll('{playtester}', `${playtester.userName} (${playtester.emails[0]})`)
+            .replaceAll('{playtesterName}', `${playtester.playerProfile.creditName}`)
     }
 
     return result
@@ -305,9 +280,14 @@ const TemplateInput: FC<{ name: string, playtest: CreatablePlaytest, onChange: (
 export const ContractTemplateEditor: FC<{ user: MutableUser, emails: string[], playtest: CreatablePlaytest, onChange: (newTemplate: {[key: string]: string}) => void }> = ({ user, emails, playtest, onChange }) => {
     let i = 0
 
+    const contract = usePromisedMemo(
+        async () => await generateContract(playtest, { ...user, emails }),
+        [playtest, user, emails],
+    )
+
     return (
         <div className={styles.ContractTemplateEditor}>
-            {parse(generateContract(playtest, { ...user, emails }), (content, type, href) => {
+            {parse(contract || "", (content, type, href) => {
                 switch (type) {
                     case 'h1': return <h1 key={i++}>{content}</h1>
                     case 'h2': return <h2 key={i++}>{content}</h2>

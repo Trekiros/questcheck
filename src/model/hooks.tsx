@@ -69,3 +69,20 @@ export function useLocalStorageState<TSchema extends z.ZodType, T extends z.infe
 
     return [state, update]
 }
+
+
+export function usePromisedMemo<T>(generator: () => Promise<T>, dependencies: DependencyList) {
+    const [state, setState] = useState<T|null>(null)
+
+    useEffect(() => {
+        let destroyed = false
+
+        generator().then(value => {
+            if (!destroyed) setState(value)
+        })
+
+        return () => { destroyed = true }
+    }, dependencies)
+
+    return state
+}

@@ -1,4 +1,4 @@
-import { BountyList, DefaultSearchParams, PlaytestSearchParams, Task, TaskList } from "@/model/playtest";
+import { BountyList, DefaultSearchParams, PlaytestSearchParams, TaskList } from "@/model/playtest";
 import { FC, useState } from "react";
 import styles from './searchParams.module.scss'
 import { EnginesList, GenreList, MaterialList, SystemsList } from "@/model/tags";
@@ -7,7 +7,7 @@ import Checkbox from "../utils/checkbox";
 import Select from "../utils/select";
 import { keys } from "@/model/utils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronDown, faChevronUp, faExpand, faRotate } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faRotate } from "@fortawesome/free-solid-svg-icons";
 import { useDialog } from "../utils/dialog";
 
 export function tagClassName(tag: string, category?: string) {
@@ -29,7 +29,7 @@ type PropType = {
 }
 
 const SearchParams: FC<PropType> = ({ value, onChange }) => {
-    const [collapsed, setCollapsed] = useState(false)
+    const [collapsed, setCollapsed] = useState(true)
     const { setDialog } = useDialog()
 
     function update(callback: (clone: PlaytestSearchParams) => void) {
@@ -39,30 +39,31 @@ const SearchParams: FC<PropType> = ({ value, onChange }) => {
     }
 
     return (
-        <div className={styles.searchParams}>
+        <div className={`${styles.searchParams} ${collapsed && styles.collapsed}`}>
+            <button 
+                className={styles.collapse}
+                onClick={() => setCollapsed(!collapsed)}>
+                    <FontAwesomeIcon icon={collapsed ? faChevronUp : faChevronDown} />
+
+                    Advanced Search
+            </button>
+            
             <h2>
                 Advanced Search
-
-                <button
-                    onClick={() => setCollapsed(!collapsed)}
-                    className={styles.collapse}>
-                        <FontAwesomeIcon icon={collapsed ? faChevronUp : faChevronDown} />
-                </button>
             </h2>
-            { !collapsed && <>
-                <SearchParamsForm
-                    value={value}
-                    update={update} />
 
-                <section>
-                    <button 
-                        disabled={JSON.stringify(value) === JSON.stringify(DefaultSearchParams)}
-                        onClick={() => setDialog("Do you wish to reset your search parameters?", confirm => confirm && onChange(DefaultSearchParams))}>
-                            <FontAwesomeIcon icon={faRotate} />
-                            Reset Search Params
-                    </button>
-                </section>
-            </>}
+            <SearchParamsForm
+                value={value}
+                update={update} />
+
+            <section>
+                <button 
+                    disabled={JSON.stringify(value) === JSON.stringify(DefaultSearchParams)}
+                    onClick={() => setDialog("Do you wish to reset your search parameters?", confirm => confirm && onChange(DefaultSearchParams))}>
+                        <FontAwesomeIcon icon={faRotate} />
+                        Reset Search Params
+                </button>
+            </section>
         </div>
     )
 }

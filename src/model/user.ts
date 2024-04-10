@@ -31,11 +31,12 @@ export const UserSchema = z.object({
     isPublisher: z.boolean(),
 
     playerProfile: z.object({
+        creditName: z.string().max(50),
         systems: z.array(z.object({
             system: SystemNameSchema, 
             familiarity: z.number().min(1).max(5),
             details: z.string().max(300),
-        })).max(10),
+        })).max(20),
         notifications: z.array(NotificationSettingSchema).max(20),
         dmOnAccept: z.string().optional(),
         dmOnApply: z.string().optional(),
@@ -67,6 +68,7 @@ export const newUser = {
     isPublisher: false,
 
     playerProfile: {
+        creditName: '',
         systems: [],
         notifications: [],
     },
