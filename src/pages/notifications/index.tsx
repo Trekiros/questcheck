@@ -30,7 +30,6 @@ export const getServerSideProps: ServerSidePropsGetter<PageProps> = async (ctx) 
 
     // This page is for player accounts only!
     const baseProps = (await serverPropsGetter(ctx)).props
-    if (!baseProps.userCtx?.user.isPlayer) return { redirect: { destination: '/', permanent: false } }
 
     return {
         props: {
@@ -95,35 +94,40 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
                         </div>
                     </div>
 
-                    <div className={styles.dmSettings}>
-                        <h3>
-                            Application Notifications:
-                        </h3>
 
-                        <div>
-                            Note: to receive private messages from the QuestCheck Discord bot, you need to be present in a server where the bot is installed.
+                    { (!!userCtx?.user.isPublisher || !!userCtx?.user.isPlayer) && (
+                        <div className={styles.dmSettings}>
+                            <h3>
+                                Application Notifications:
+                            </h3>
+
+                            <div>
+                                Note: to receive private messages from the QuestCheck Discord bot, you need to be present in a server where the bot is installed.
+                            </div>
+
+                            { !!userCtx?.user.isPlayer && (
+                                <Checkbox 
+                                    value={!!dmOnAccept} 
+                                    onToggle={on => {
+                                        setDmOnAccept(on ? discordServers.discordUserId : '')
+                                        setPristine(false)
+                                    }}>
+                                        Send me a private message when I am accepted in a playtest
+                                </Checkbox>
+                            )}
+
+                            { !!userCtx?.user.isPublisher && (
+                                <Checkbox 
+                                    value={!!dmOnApply}
+                                    onToggle={on => {
+                                        setDmOnApply(on ? discordServers.discordUserId : '')
+                                        setPristine(false)
+                                    }}>
+                                        Send me a private message when someone applies to a playtest I have created
+                                </Checkbox>
+                            )}
                         </div>
-
-                        <Checkbox 
-                            value={!!dmOnAccept} 
-                            onToggle={on => {
-                                setDmOnAccept(on ? discordServers.discordUserId : '')
-                                setPristine(false)
-                            }}>
-                                Send me a private message when I am accepted in a playtest
-                        </Checkbox>
-
-                        { !!userCtx?.user.isPublisher && (
-                            <Checkbox 
-                                value={!!dmOnApply}
-                                onToggle={on => {
-                                    setDmOnApply(on ? discordServers.discordUserId : '')
-                                    setPristine(false)
-                                }}>
-                                    Send me a private message when someone applies to a playtest I have created
-                            </Checkbox>
-                        )}
-                    </div>
+                    )}
 
                     <h3>
                         New Playtest Notifications:

@@ -130,11 +130,12 @@ const NavbarLinks: FC<{ user: NonNullable<ReturnType<typeof useUserCtx>> }> = ({
 			</>}
 
 			<Link {...linkProps('/about')}>About</Link>
+			<Link {...linkProps('/notifications')}>Notification Settings</Link>
 
-			{ user.user.isPlayer && <>
-				<Link {...linkProps('/notifications')}>Notification Settings</Link>
+
+			{ user.user.isPlayer && (
 				<Link {...linkProps('/applications')}>My Applications</Link>
-			</>}
+			)}
 
 			{ user.user.isPublisher && (
 				<Link {...linkProps('/playtest')}>My Playtests</Link>
