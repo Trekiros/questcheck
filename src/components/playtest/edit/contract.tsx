@@ -17,31 +17,33 @@ const PDFViewer = dynamic(
   },
 );
 
+// This function escapes special characters in a string, so that exact string can be matched within a regex
+// e.g. "Read-Through + Feedback" becomes "Read\-Through \+ Feedback"
 function escapeRegex(str: string) {
     const specials = ["-", "[", "]", "/", "{", "}", "(", ")", "*", "+", "?", ".", "\\", "^", "$", "|"]
   
     const regex = RegExp('[' + specials.join('\\') + ']', 'g')
   
-    return str.replace(regex, "\\$&");
+    return str.replace(regex, "\\$&")
 }
 
-const templateCache: {[key: string]: string} = {}
+// This cache ensures that only a single query is sent to the server, even if the template is imported multiple times (including before the first query resolves)
+const templateCache: {[key: string]: Promise<string>} = {}
 async function getTemplate(name: string) {
-    if (templateCache[name]) return templateCache[name]
+    if (name in templateCache) return await templateCache[name]
 
-    const response = await fetch('/templates/' + name)
-    const text = await response.text()
-    templateCache[name] = text
-    return text
+    templateCache[name] = new Promise(async (resolve) => resolve((await fetch('/templates/' + name)).text()))
+    return await templateCache[name]
 }
 
 /*
     The template is a markdown document, but with the following extra properties:
-    Any text surrounded by {{{triple curls}}} will be filled in by the software
+    Any text surrounded by {{{triple curls}}} or [[double brackets]] will be filled in by the software before it is seen by any user
     Any text surrounded by {{double curls}} must be filled in by the publisher
-    Any text surrounded by {solo curls} must be filled in by server once a playtester is selected
+    Any text surrounded by {solo curls} will be filled by the server when a playtester can be assigned to this contract
 */
 export async function generateContract(playtest: CreatablePlaytest, publisher: Prettify<Omit<MutableUser, "playerProfile"> & Pick<User, "emails">>, playtester?: MutableUser & { emails: string[] }): Promise<string> {
+    // No template => simply fill the playtester tags
     if (playtest.bountyContract.type === "custom") {
         let text = playtest.bountyContract.text
 
@@ -53,13 +55,16 @@ export async function generateContract(playtest: CreatablePlaytest, publisher: P
         return text
     }
 
+    // Template processing
     let result = await getTemplate(playtest.bountyContract.templateVersion || 'v1.md')
 
+    // 1. Publisher
     result = result.replaceAll('{{{publisher}}}', `${publisher.userName} (${publisher.emails[0]})`)
 
+    // 2. Task
     for (const Task of TaskList) {
-        const regex = new RegExp(`{{{task = "${escapeRegex(Task)}" =>\r?\n?((.|\n|\r)*?)\r?\n?}}}\r?`, 'g')
-        
+        const regex = new RegExp(`\\\[\\\[task = "${escapeRegex(Task)}" =>\r?\n((.|\n|\r)*?)\r?\n\\\]\\\]\r?\n`, 'g')
+
         if (Task === playtest.task) {
             result = result.replaceAll(regex, "$1")
         } else {
@@ -67,8 +72,9 @@ export async function generateContract(playtest: CreatablePlaytest, publisher: P
         }
     }
 
+    // 3. Bounty
     for (const Bounty of BountyList) {
-        const regex = new RegExp(`{{{bounty = "${escapeRegex(Bounty)}" =>\r?\n?((.|\n|\r)*?)\r?\n?}}}\r?`, 'g')
+        const regex = new RegExp(`\\\[\\\[bounty = "${escapeRegex(Bounty)}" =>\r?\n((.|\n|\r)*?)\r?\n\\\]\\\]\r?\n`, 'g')
         
         if (Bounty === playtest.bounty) {
             result = result.replaceAll(regex, "$1")
@@ -77,19 +83,22 @@ export async function generateContract(playtest: CreatablePlaytest, publisher: P
         }
     }
 
-    const ndaRegex = /{{{NDA =>\r?\n?((.|\n|\r)*?)\r?\n?}}}\r?/g
+    // 4. NDA
+    const ndaRegex = /\[\[NDA =>\r?\n((.|\n|\r)*?)\r?\n\]\]\r?\n/g
     if (playtest.bountyContract.useNDA) {
         result = result.replaceAll(ndaRegex, "$1")
     } else {
         result = result.replaceAll(ndaRegex, "")
     }
 
+    // 5. Section number
     let i = 1
     while (result.includes('{{{i}}}')) {
         result = result.replace('{{{i}}}', i.toString())
         i++
     }
 
+    // 6. Playtester
     if (!!playtester) {
         result = result.replaceAll('{playtester}', `${playtester.userName} (${playtester.emails[0]})`)
             .replaceAll('{playtesterName}', `${playtester.playerProfile.creditName}`)

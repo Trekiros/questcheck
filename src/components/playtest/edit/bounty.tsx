@@ -31,7 +31,6 @@ const BountyEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChange,
         }
     }, [value.bountyContract])
 
-
     const contract = usePromisedMemo(
         async () => !userCtx ? null : await generateContract(value, { ...userCtx.user!, emails }),
         [value, userCtx, emails]
