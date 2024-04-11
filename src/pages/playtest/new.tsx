@@ -67,8 +67,6 @@ const NewPlaytestPage: FC<PageProps> = ({ userCtx, emails }) => {
         [playtest, userCtx, emails],
     )
 
-    console.log(playtest)
-
     useEffect(() => {
             if (!contract) return;
             if (playtest.bountyContract.type !== 'template') {
