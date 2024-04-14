@@ -21,7 +21,7 @@ export const SystemNameSchema = z.string().min(2).max(64)
 export const UserSchema = z.object({
     userId: z.string(), // Clerk user id
     banned: z.boolean().optional(), // Just in case.
-    emails: z.array(z.string().email()), // Set based on the clerk user account email on creation
+    emails: z.array(z.string().email().min(1)).min(1), // Set based on the clerk user account email on creation
 
     userName: z.string().min(4).max(50).refine(isAlphanumeric, { message: "Username should be alphanumeric" }),
     userNameLowercase: z.string(), // Readonly index to check if user name is taken
@@ -58,7 +58,7 @@ export type User = z.infer<typeof UserSchema>
 
 
 // These are the fields a user is allowed to update
-export const MutableUserSchema = UserSchema.omit({ userId: true, userNameLowercase: true, banned: true, emails: true, playerReviews: true })
+export const MutableUserSchema = UserSchema.omit({ userId: true, userNameLowercase: true, banned: true, playerReviews: true })
 export type MutableUser = Prettify<z.infer<typeof MutableUserSchema>>
 
 export const newUser = {
@@ -66,6 +66,7 @@ export const newUser = {
     userBio: '',
     isPlayer: false,
     isPublisher: false,
+    emails: [],
 
     playerProfile: {
         creditName: '',

@@ -23,6 +23,9 @@ import { YoutubeInfo, getYoutubeInfo } from "@/server/youtube"
 import { ReviewsDisplay } from "@/components/playtest/details/review"
 import { getUserCtx } from "@/components/utils/pageProps"
 import { useDialog } from "@/components/utils/dialog"
+import Select from "@/components/utils/select"
+import Modal from "@/components/utils/modal"
+import { z } from "zod"
 
 type PageProps = ServerSideProps & {
     youtube: YoutubeInfo,
@@ -42,6 +45,115 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
     }
 }
 
+type EmailResource = Awaited<ReturnType<NonNullable<ReturnType<typeof useUser>['user']>['createEmailAddress']>>
+
+const EmailVerificationModal: FC<{ onVerified: (email: string) => void, onCancel: () => void }> = ({ onVerified, onCancel }) => {
+    const [email, setEmail] = useState('')
+    const [emailResource, setEmailResource] = useState<null | EmailResource>(null)
+    const [code, setCode] = useState('')
+    const [status, setStatus] = useState<'email'|'code'>('email')
+    const [loading, setLoading] = useState(false)
+    const { isValid } = validate(email, z.string().email())
+    const { user } = useUser()
+    const [errorMessage, setErrorMessage] = useState('')
+
+    async function sendVerificationCode() {
+        if (!user) return;
+
+        setLoading(true)
+
+        const unverifiedEmailResource = await new Promise<EmailResource|null>(async (resolve) => {
+            const existingAddress = user.emailAddresses.find(address => address.emailAddress === email)
+
+            if (existingAddress) return resolve(existingAddress)
+
+            try {
+                const newAddress = await user.createEmailAddress({ email })
+    
+                resolve(newAddress)
+            } catch (error) {
+                resolve(null)
+            }
+        })
+
+        setLoading(false)
+
+        if (!unverifiedEmailResource) {
+            setErrorMessage("Cannot use this email address")
+            return;
+        }
+        
+        const emailVerificationResource = await unverifiedEmailResource.prepareVerification({ strategy: 'email_code' })
+
+        setEmailResource(emailVerificationResource)
+        setStatus('code')
+    }
+
+    async function verifyCode() {
+        if (!user) return;
+        if (!emailResource) return;
+
+        setLoading(true)
+
+        try {
+            const result = await emailResource.attemptVerification({ code })
+    
+            onVerified(email)
+        } catch (error) {
+            setErrorMessage("Invalid code")
+        }
+        
+        setLoading(false)
+    }
+
+    return (
+        <Modal onCancel={onCancel} className={styles.emailVerification}>
+            { status === "email" ? <>
+                <h3>Email Address</h3>
+
+                <div className={styles.row}>
+                    <label>New Email Address:</label>
+                    <input 
+                        disabled={loading}
+                        type="text"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="email..."
+                        className={isValid ? undefined : styles.invalid} />
+                </div>
+
+                <button onClick={sendVerificationCode}>
+                    {loading? <DotSkeleton /> : <FontAwesomeIcon icon={faCheck} />}
+                    Send Verification Code
+                </button>
+            </> : <>
+                <h3>Verification Code</h3>
+
+                <p>You should have received a code by mail. Please paste it below:</p>
+
+                <div className={styles.row}>
+                    <label>Code:</label>
+
+                    <input
+                        disabled={loading}
+                        type="text"
+                        value={code}
+                        onChange={e => setCode(e.target.value)}
+                        placeholder="Code..."
+                        className={code.length !== 6 ? styles.invalid : undefined} />
+                </div>
+
+                <button onClick={verifyCode}>
+                    {loading? <DotSkeleton /> : <FontAwesomeIcon icon={faCheck} />}
+                    Ok
+                </button>
+            </>}
+            
+            { !!errorMessage ? <p className={styles.errorMessage}>{errorMessage}</p> : null}
+        </Modal>
+    )
+}
+
 const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
     const router = useRouter()
     const clerkUser = useUser()
@@ -51,18 +163,15 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
     const { isValid, errorPaths } = validate(user, MutableUserSchema)
     const [checkingUserName, setCheckingUserName] = useState(false)
     const [userNameTaken, setUsernameTaken] = useState(false)
+    const [emailVerifModal, setEmailVerifModal] = useState(false)
 
     const twitterUsername = clerkUser.user?.externalAccounts.find(socialConnection => socialConnection.provider === 'x')?.username
 
     const usernameTakenQuery = trpcClient.users.isUsernameTaken.useMutation()
     const userMutation = trpcClient.users.updateSelf.useMutation()
-    const disabled = userMutation.isLoading
+    const disabled = userMutation.isLoading || emailVerifModal
 
-    if (!userCtx) {
-        useEffect(() => {
-
-        }, [clerkUser])
-    }
+    console.log(user.emails)
 
     // On username changed: wait 2s then check if it's taken
     useEffect(() => {
@@ -143,6 +252,45 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                 </div>
 
                 <div className={styles.row}>
+                    <label>Primary email</label>
+
+                    <div className={`tooltipContainer ${styles.emails}`}>
+                        <Select
+                            disabled={disabled}
+                            className={errorPaths['emails'] ? styles.invalid : undefined}
+                            value={user.emails[0]}
+                            options={clerkUser.user?.emailAddresses
+                                .filter(address => address.verification.status === 'verified')
+                                .map(address => ({ label: address.emailAddress, value: address.emailAddress })) || []}
+                            onChange={newValue => update(clone => clone.emails = [newValue])}/>
+
+                        <button
+                            onClick={() => setEmailVerifModal(true)}>
+                                <FontAwesomeIcon icon={faPlus} />
+                        </button>
+
+                        { (user.isPlayer || user.isPublisher) && (
+                            <div className="tooltip">
+                                This email will be shown to { 
+                                    (user.isPlayer && user.isPublisher) ? "any playtester or publisher you work with"
+                                  : (user.isPlayer) ? "publishers whose playtest you apply to"
+                                  : /*(user.isPublisher) ?*/ "any user who sees a playtest you create"
+                                }
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                { emailVerifModal && (
+                    <EmailVerificationModal 
+                        onVerified={email => {
+                            update(clone => clone.emails = [email])
+                            setEmailVerifModal(false)
+                        }}
+                        onCancel={() => setEmailVerifModal(false)} />
+                )}
+
+                <div className={styles.row}>
                     <label>Bio (optional):</label>
 
                     <MarkdownTextArea
@@ -197,6 +345,7 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                         <label>Credit me as:</label>
 
                         <input
+                            placeholder="Name or username..."
                             disabled={disabled}
                             className={(UserSchema.shape.playerProfile.shape.creditName.maxLength! < user.playerProfile.creditName.length) ? styles.invalid : undefined}
                             type='text'

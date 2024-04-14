@@ -49,7 +49,7 @@ export async function generateContract(playtest: CreatablePlaytest, publisher: P
 
         if (!!playtester) {
             text = text.replaceAll('{playtester}', `${playtester.userName} (${playtester.emails[0]})`)
-                .replaceAll('{playtesterName}', `${playtester.playerProfile.creditName}`)
+                .replaceAll('{playtesterName}', `${playtester.playerProfile.creditName || playtester.userName}`)
         }
 
         return text
@@ -101,7 +101,7 @@ export async function generateContract(playtest: CreatablePlaytest, publisher: P
     // 6. Playtester
     if (!!playtester) {
         result = result.replaceAll('{playtester}', `${playtester.userName} (${playtester.emails[0]})`)
-            .replaceAll('{playtesterName}', `${playtester.playerProfile.creditName}`)
+            .replaceAll('{playtesterName}', `${playtester.playerProfile.creditName || playtester.userName}`)
     }
 
     return result

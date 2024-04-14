@@ -147,10 +147,15 @@ export async function playtestCreatedNotification(playtest: Playtest, author: Us
     ]})
 
     const notifications = (await userCol.find(
-        { "playerProfile.notifications": { $elemMatch: { 
-            frequency: 'Whenever a playtest is created' satisfies NotificationFrequency,
-            $and,
-        } } },
+        { 
+            "isPlayer": true,
+            "playerProfile.notifications": {
+                $elemMatch: {
+                    frequency: 'Whenever a playtest is created' satisfies NotificationFrequency,
+                    $and,
+                }
+            }, 
+        },
         { projection: { "playerProfile.notifications": 1 } },
     )
         .map(user => user.playerProfile.notifications)
