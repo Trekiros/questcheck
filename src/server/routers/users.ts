@@ -56,10 +56,16 @@ const updateSelf = protectedProcedure
             throw new Error('Username taken')
         }
 
-        const { publisherProfile, playerProfile, ...userClean } = input
+        const { publisherProfile, playerProfile, emails, ...userClean } = input
 
         const clerkUser = await clerkClient.users.getUser(auth.userId)
-        const emails = clerkUser.emailAddresses.map(e => e.emailAddress)
+        const validEmails = clerkUser.emailAddresses
+            .filter(e => e.verification?.status === "verified")
+            .map(e => e.emailAddress)
+            
+        if (emails.find(email => !validEmails.includes(email))) {
+            throw new Error('Unverified email address')
+        }
 
         type UserWithoutId = Prettify<Omit<User, "userId">>
         type UserUpdate = UpdateFilter<UserWithoutId>
@@ -67,6 +73,7 @@ const updateSelf = protectedProcedure
         const $set: UserSet = {
             ...userClean,
             userNameLowercase: input.userName.toLowerCase(),
+            emails,
         }
 
         // Player notification fields. Updating the notifications uses a different endpoint, so we only update the systems here.
@@ -105,7 +112,6 @@ const updateSelf = protectedProcedure
             { userId: auth.userId },
             {
                 $set,
-                $addToSet: { emails: { $each: emails } },
                 $setOnInsert: {
                     playerReviews: [],
                     'playerProfile.notifications': [],
@@ -130,7 +136,7 @@ const updateSelf = protectedProcedure
         if (result.upsertedId) {
             const bannedUsers = await Collections.bannedUsers()
             const isBanned = await bannedUsers.countDocuments({ email: {
-                $in: emails
+                $in: validEmails
             }})
 
             if (!!isBanned) {

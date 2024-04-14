@@ -1,5 +1,13 @@
 @import '../../styles/mixins';
 
+.emailVerification {
+    display: grid;
+
+    h3 { margin: 0 }
+
+    .errorMessage { color: #f88 }
+}
+
 .settings {
     padding: 1em;
     display: flex;
@@ -29,13 +37,18 @@
         outline: 1px solid #f88;
     }
 
-    .username {
+    .username, .emails {
         display: grid;
         grid-template-columns: 1fr 50px;
         align-items: center;
+        gap: 8px;
 
-        .free { display: flex; color: #8f8 }
-        .taken { display: flex; color: #f88 }
+        .free { display: flex; gap: 8px; color: #8f8 }
+        .taken { display: flex; gap: 8px; color: #f88 }
+
+        > button {
+            padding: 10px;
+        }
     }
 
     .accountType {
