@@ -103,7 +103,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
 
     function csvExport() {
         function format(...args: string[]) {
-            return args.map(arg => `"${arg.replace(/"/g, '""')}"`).join(",")
+            return args.map(arg => `"${(arg || '').replace(/"/g, '""')}"`).join(",")
         }
 
         const header = format("Username", "Email", "Credit as") + '\r\n'
