@@ -99,7 +99,7 @@ const search = publicProcedure
             .sort({ createdTimestamp: -1 })
             .map(playtest => ({ ...playtest, _id: playtest._id.toString() }))
 
-        if (page !== 0) { cursor = cursor.skip((page - 1) * perPage) }
+        if (page !== 0) { cursor = cursor.skip((page) * perPage) }
 
         const playtests: PlaytestSummary[] = await cursor.toArray()
         const count = await playtestCol.countDocuments(filter)
@@ -313,8 +313,8 @@ const reject = protectedProcedure
     .input(z.object({ playtestId: z.string(), applicantId: z.string() }))
     .mutation(async ({ input: { playtestId, applicantId }, ctx: { auth: { userId }}}) => {
         const playtestCol = await Collections.playtests()
-        const result = await playtestCol.updateOne(
-            { 
+        const result = await playtestCol.findOneAndUpdate(
+            {
                 _id: new ObjectId(playtestId),
                 userId,
                 "applications.applicantId": applicantId,
@@ -324,7 +324,7 @@ const reject = protectedProcedure
             } },
         )
 
-        return !!result.modifiedCount
+        return !!result
     })
 
 const close = protectedProcedure

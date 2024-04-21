@@ -2,7 +2,7 @@ import { NextSeo } from 'next-seo'
 import styles from './index.module.scss'
 import Page, { ServerSideProps } from '@/components/utils/page'
 import { serverPropsGetter } from '@/components/utils/pageProps';
-import { FC, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { trpcClient } from '@/server/utils';
 import PlaytestCard from '@/components/playtest/card';
 import Link from 'next/link';

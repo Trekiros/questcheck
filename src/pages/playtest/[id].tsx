@@ -59,7 +59,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
 
     const applicationList = useMemo(
         () => playtest.applications
-            .filter(app => app.status !== "cancelled")
+            .filter(app => (app.status !== "cancelled") && (app.status !== "rejected"))
             .map(application => ({ application, applicant: applicants.find(applicant => applicant.userId === application.applicantId)!})),
         [playtest, applicants]
     )
