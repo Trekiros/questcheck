@@ -93,7 +93,7 @@ export const ApplicationCard: FC<PropType> = ({ playtest, application, applicant
                 (application.status === "accepted") ? (
                     <div className={styles.downloadBtn}>
                         <h3>You have accepted this application</h3>
-                        <button disabled={disabled} onClick={() => setDialog(<div style={{ width: '600px' }}>
+                        <button onClick={() => setDialog(<div style={{ width: '600px' }}>
                             <ContractPDF
                                 playtest={playtest}
                                 user={userCtx!.user}
