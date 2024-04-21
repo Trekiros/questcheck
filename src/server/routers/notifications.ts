@@ -105,7 +105,7 @@ export async function sendBatchNotifications(playtests: (Playtest & { author: Us
                     .join('\n')
                   + (
                         ((notification.target.type === 'channel') && (!!notification.target.role))
-                            ? `\n\n<@&${notification.target.role}>` 
+                            ? `\n\n<${notification.target.role === "@everyone" ? "@everyone" : `@&${notification.target.role}`}>` 
                             : ''
                     ),
                     notification.target
@@ -184,7 +184,8 @@ export async function playtestCreatedNotification(playtest: Playtest, author: Us
             }/playtest/${playtest._id}`
           + (
                 ((notification.target.type === 'channel') && (!!notification.target.role)) ? 
-                    `\n<@&${notification.target.role}>` : ''
+                    `\n<${notification.target.role === "@everyone" ? "@everyone" : `@&${notification.target.role}`}>` : ''
+
             ),
             notification.target
         ))

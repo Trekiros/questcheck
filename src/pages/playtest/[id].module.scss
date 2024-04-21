@@ -28,6 +28,16 @@
     }
 
     .applications {
+        > h3 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            button {
+                font-size: 10pt;
+            }
+        }
+
         ul {
             list-style: none;
             padding: 0;
@@ -40,3 +50,22 @@
     }
 }
 
+.timeModal {
+    width: min(100%, 600px);
+    display: grid;
+
+    h3, p { margin: 0 }
+
+    label { font-weight: bold }
+
+    .row {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+    }
+
+    .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+}
