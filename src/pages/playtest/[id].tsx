@@ -7,7 +7,7 @@ import { getAuth, buildClerkProps } from "@clerk/nextjs/server"
 import type { GetServerSideProps as ServerSidePropsGetter } from 'next'
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClose } from '@fortawesome/free-solid-svg-icons';
+import { faArrowRotateLeft, faCheck, faClose, faFile } from '@fortawesome/free-solid-svg-icons';
 import Markdown from '@/components/utils/markdown';
 import PlaytestCard from '@/components/playtest/card';
 import Checkbox from '@/components/utils/checkbox';
@@ -16,6 +16,9 @@ import { useDialog } from '@/components/utils/dialog';
 import { useRouter } from 'next/router';
 import { playtestById } from '@/server/routers/playtests';
 import { ApplicationCard } from '@/components/playtest/details/application';
+import { toast } from 'sonner'
+import Modal from '@/components/utils/modal'
+import Calendar from '@/components/utils/calendar'
 
 type DataType = Awaited<ReturnType<typeof playtestById>>
 type PageProps = ServerSideProps & { 
@@ -69,11 +72,14 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
     const isAccepted = userApplication?.status === "accepted"
     
     const [agreed, setAgreed] = useState(isApplicant)
+    const [showTimePicker, setShowTimePicker] = useState(false)
     const applyMutation = trpcClient.playtests.apply.useMutation()
     const cancelMutation = trpcClient.playtests.cancelApplication.useMutation()
     const acceptMutation = trpcClient.playtests.accept.useMutation()
     const rejectMutation = trpcClient.playtests.reject.useMutation()
     const closeMutation = trpcClient.playtests.close.useMutation()
+    const reopenMutation = trpcClient.playtests.reopen.useMutation()
+    const rescheduleMutation = trpcClient.playtests.reschedule.useMutation()
     const reviewMutation = trpcClient.users.review.useMutation()
     const { setDialog } = useDialog()
 
@@ -84,6 +90,8 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
         || acceptMutation.isLoading
         || rejectMutation.isLoading
         || closeMutation.isLoading
+        || reopenMutation.isLoading
+        || rescheduleMutation.isLoading
         || reviewMutation.isLoading
         || cancelMutation.isLoading
 
@@ -92,6 +100,28 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
            isApplicant
         || playtest.closedManually 
         || playtest.applicationDeadline < Date.now()
+
+    function csvExport() {
+        function format(...args: string[]) {
+            return args.map(arg => `"${arg.replace(/"/g, '""')}"`).join(",")
+        }
+
+        const header = format("Username", "Email", "Credit as") + '\r\n'
+
+        const body = playtest.applications
+            .filter(app => (app.status === "accepted"))
+            .map(app => applicants.find(applicant => applicant.userId === app.applicantId)!)
+            .map(app => format(app.userName, app.emails[0], app.playerProfile.creditName || app.userName))
+            .join("\r\n")
+
+        const csv = header + body
+        const csvBlob = new Blob([csv], { type: 'text/csv' })
+        const url = window.URL.createObjectURL(csvBlob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `${playtest.name} - playtesters.csv`
+        link.click()
+    }
 
     return (
         <Page userCtx={userCtx}>
@@ -152,7 +182,16 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
 
                 { /* APPLICATIONS LIST */ }
                 <section className={styles.applications}>
-                    <h3>Applications</h3>
+                    <h3>
+                        Applications
+
+                        { !!playtest.applications.filter(app => app.status === "accepted").length && (
+                            <button onClick={csvExport}>
+                                <FontAwesomeIcon icon={faFile} />
+                                Download Playtester Recap
+                            </button>
+                        )}
+                    </h3>
 
                     { !applicationList.length ? (
                         <div className={styles.placeholder}>
@@ -169,7 +208,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
                                     application={application}
                                     isCreator={isCreator}
                                     emails={emails}
-                                    disabled={disabled || applicationDisabled}
+                                    disabled={disabled}
                                     
                                     onAccept={async () => {                
                                         await acceptMutation.mutateAsync({ playtestId: playtest._id, applicantId: applicant.userId })
@@ -180,7 +219,6 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
                                         await refetch()
                                     }}
                                     onCancel={async () => {
-                                        console.log("test trek")
                                         await cancelMutation.mutateAsync(playtest._id)
                                         await refetch()
                                     }}
@@ -201,23 +239,86 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
 
                 { /* CLOSE APPLICATIONS BTN */ }
                 { isCreator && (
-                    <button 
-                        className={styles.closeBtn}
-                        disabled={disabled || applicationDisabled}
-                        onClick={() => setDialog("Are you sure? This cannot be undone.", async confirm => {
-                            if (!confirm) return;
-                            await closeMutation.mutateAsync(playtest._id)
-                            await refetch()
-                        })}>
-                            { (playtest.closedManually || Date.now() > playtest.applicationDeadline)
-                                ? "Applications Closed"
-                                : "Close Applications"
-                            }
-                            <FontAwesomeIcon icon={faClose} />
-                    </button>
+                    (playtest.closedManually) ? (
+                        <button
+                            className={styles.closeBtn}
+                            disabled={disabled}
+                            onClick={async () => {
+                                await reopenMutation.mutateAsync(playtest._id)
+                                await refetch()
+                                toast("Applications re-opened")
+                            }}>
+                                Re-open applications
+                                <FontAwesomeIcon icon={faArrowRotateLeft} />
+                        </button>
+                    ) : (Date.now() > playtest.applicationDeadline) ? (
+                        <button
+                            className={styles.closeBtn}
+                            disabled={disabled}
+                            onClick={() => setShowTimePicker(true)}>
+                                Set new Application Deadline
+                                <FontAwesomeIcon icon={faArrowRotateLeft} />
+                        </button>
+                    ) : (
+                        <button
+                            className={styles.closeBtn}
+                            disabled={disabled}
+                            onClick={async () => {
+                                await closeMutation.mutateAsync(playtest._id)
+                                await refetch()
+                                toast("Applications closed manually")
+                            }}>
+                                Close applications
+                                <FontAwesomeIcon icon={faClose} />
+                        </button>
+                    )
                 )}
             </div>
+
+            { showTimePicker && (
+                <TimePickerModal
+                    onCancel={() => setShowTimePicker(false)}
+                    onSubmit={async (newDeadline) => {
+                        setShowTimePicker(false)
+                        await rescheduleMutation.mutateAsync({ playtestId: playtest._id, newDeadline })
+                        await refetch()
+                        toast("Applications re-opened until " + new Date(newDeadline).toDateString())
+                    }} />
+            )}
         </Page>
+    )
+}
+
+const TimePickerModal: FC<{ onCancel: () => void, onSubmit: (newDeadline: number) => void }> = ({ onCancel, onSubmit }) => {
+    const [time, setTime] = useState(Date.now() + 1000 * 60 * 60 * 25)
+
+    return (
+        <Modal onCancel={onCancel} className={styles.timeModal}>
+            <h3>New Application Deadline</h3>
+            
+            <p>Note: re-opening applications will allow the playtest to show up on the home page again, but won't send notifications to playtesters.</p>
+
+            <div className={styles.row}>
+                <label>New Deadline:</label>
+
+                <Calendar
+                    value={time}
+                    onChange={newValue => newValue && setTime(newValue)}
+                    min={Date.now() + 1000 * 60 * 60 * 24}
+                    placeholder="Applications must remain open at least 2 days..."/>
+            </div>
+
+            <div className={styles.actions}>
+                <button onClick={onCancel}>
+                    <FontAwesomeIcon icon={faClose} />
+                    Cancel
+                </button>
+                <button onClick={() => onSubmit(time)}>
+                    <FontAwesomeIcon icon={faCheck} />
+                    OK
+                </button>
+            </div>
+        </Modal>
     )
 }
 

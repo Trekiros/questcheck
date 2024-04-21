@@ -345,6 +345,44 @@ const close = protectedProcedure
         return !!result.modifiedCount
     })
 
+const reopen = protectedProcedure
+    .input(z.string().max(30))
+    .mutation(async ({ input, ctx: { auth: { userId } } }) => {
+        const playtestCol = await Collections.playtests()
+        const result = await playtestCol.updateOne(
+            { 
+                _id: new ObjectId(input),
+                userId,
+                closedManually: true,
+            },
+            { $set: {
+                closedManually: false,
+            } },
+        )
+
+        return !!result.modifiedCount
+    })
+
+const reschedule = protectedProcedure
+    .input(z.object({ 
+        playtestId: z.string().max(30), 
+        newDeadline: z.number().refine(n => n > Date.now() + 1000 * 60 * 60 * 24),
+    }))
+    .mutation(async ({ input: { playtestId, newDeadline }, ctx: { auth: { userId } } }) => {
+        const playtestCol = await Collections.playtests()
+        const result = await playtestCol.updateOne(
+            { 
+                _id: new ObjectId(playtestId),
+                userId,
+            },
+            { $set: {
+                applicationDeadline: newDeadline,
+            } },
+        )
+
+        return !!result.modifiedCount
+    })
+
 export const PlaytestRouter = router({
     create,
     search,
@@ -354,4 +392,6 @@ export const PlaytestRouter = router({
     accept,
     reject,
     close,
+    reopen,
+    reschedule,
 })
