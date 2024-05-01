@@ -34,7 +34,6 @@ const App = ({ Component, pageProps: { session, ...pageProps }}: AppProps) => {
 					additionalLinkTags={[
 						{ rel: "icon", href: "/ico.ico" },
 					]}
-
 				/>
 
 				<Component {...pageProps} />

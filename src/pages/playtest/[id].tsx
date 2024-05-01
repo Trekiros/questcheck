@@ -185,7 +185,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
                     <h3>
                         Applications
 
-                        { !!playtest.applications.filter(app => app.status === "accepted").length && (
+                        { isCreator && !!playtest.applications.filter(app => app.status === "accepted").length && (
                             <button onClick={csvExport}>
                                 <FontAwesomeIcon icon={faFile} />
                                 Download Playtester Recap
