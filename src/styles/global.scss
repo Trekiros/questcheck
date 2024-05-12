@@ -2,195 +2,220 @@
 @import './mixins';
 
 @font-face {
-    font-family: mc;
-    src: url("/mc.ttf");
+  font-family: mc;
+  src: url("/mc.ttf");
 }
 
 // General style & layout
-html { @include scrollable; scrollbar-gutter: unset }
-html, body, main, #__next {min-height: 100%; background: #433; color: $gold; margin: 0; padding:0 }
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+html {
+  @include scrollable;
+  scrollbar-gutter: unset
 }
 
-body, input, button { font-size: 10pt; }
+html, body, main, #__next {
+  min-height: 100%;
+  background: #433;
+  color: $gold;
+  margin: 0;
+  padding: 0
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 
 a {
-    color: #fff;
-    text-underline-offset: 2px;
+  color: #fff;
+  text-underline-offset: 2px;
 
-    &:hover {
-        color: #e7ab62;
-    }
+  &:hover {
+    color: #e7ab62;
+  }
 }
 
 .content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 div, button, nav, section, main, body, ul, li, input, footer {
-    box-sizing: border-box;
-    gap: 1em; // Does nothing unless there is display:flex or display:grid
+  box-sizing: border-box;
+  gap: 1em; // Does nothing unless there is display:flex or display:grid
 }
 
 main {
-    padding-top: $topNavHeight;
-    min-height: 100dvh;
+  padding-top: $topNavHeight;
+  min-height: 100dvh;
 }
 
-h1, h2 { margin: 0 }
+h1, h2 {
+  margin: 0
+}
+
 button {
-    position: relative;
-    @include clickable;
+  position: relative;
+  @include clickable;
 }
 
 kbd {
-    padding: 2px;
-    color: #fff;
-    outline: 1px solid #fff;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: color 300ms, outline-color 300ms;
+  padding: 2px;
+  color: #fff;
+  outline: 1px solid #fff;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: color 300ms, outline-color 300ms;
 
-    &:hover {
-        color: #aaa;
-        outline-color: #aaa;
-    }
+  &:hover {
+    color: #aaa;
+    outline-color: #aaa;
+  }
 }
 
 input {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
-    padding: 1em;
-    border: none;
-    outline: none;
-    border-radius: 8px;
-    color: $gold;
-    background: #fff1;
-    transition: background-color 0.3s;
-    &:hover { background: #fff3 }
-    &::placeholder { color: #aaa }
+  padding: 1em;
+  border: none;
+  outline: none;
+  border-radius: 8px;
+  color: $gold;
+  background: #fff1;
+  transition: background-color 0.3s;
 
-    &[type='number'] {
-      
-      appearance: 'textfield';
-      -moz-appearance: textfield;
+  &:hover {
+    background: #fff3
+  }
 
-      &::-webkit-inner-spin-button, 
-      &::-webkit-outer-spin-button { appearance: none; margin: 0 }
+  &::placeholder {
+    color: #aaa
+  }
+
+  &[type='number'] {
+
+    appearance: 'textfield';
+    -moz-appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      appearance: none;
+      margin: 0
     }
+  }
 }
 
-textarea { 
-    min-height: 100px;
-    width: 100%!important;
-    border: none;
-    outline: none;
-    background: none;
-    color: $gold;
-    transition: background-color 0.3s;
-    padding: 8px;
-    box-sizing: border-box;
-    border-radius: 8px;
+textarea {
+  min-height: 100px;
+  width: 100% !important;
+  border: none;
+  outline: none;
+  background: none;
+  color: $gold;
+  transition: background-color 0.3s;
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: 8px;
 
-    @include scrollable;
+  @include scrollable;
 
-    &:hover { background: #fff3 }
+  &:hover {
+    background: #fff3
+  }
 }
 
 .tooltipContainer {
-    position: relative;
+  position: relative;
 
-    &:hover {
-        .tooltip {
-            display: initial;
-            opacity: 1;
-        }
-    }    
-
+  &:hover {
     .tooltip {
-        position: absolute;
-        bottom: calc(100% + 8px);
-        left: 50%;
-        transform: translateX(-50%);
-        min-width: 200px;
-        padding: 1em;
-        border-radius: 8px;
-        background: #433;
-        z-index: 1;
-        display: none;
-        opacity: 0;
-        transition: opacity 0.3s;
-        box-shadow: 0 0 20px 2px #fff1;
-        font-weight: normal;
-        user-select: text;
-
-        &::before {
-            content: "";
-            width: 0;
-            border-top: 8px solid #433;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        &.down {
-            bottom: unset;
-            top: calc(100% + 8px);
-
-            &::before {
-                top: unset;
-                bottom: 100%;
-                border-top: 8px solid transparent;
-                border-left: 8px solid transparent;
-                border-right: 8px solid transparent;
-                border-bottom: 8px solid #433;
-            }
-        }
-        &.left {
-            bottom: 50%;
-            left: unset;
-            right: calc(100% + 8px);
-            transform: translateY(50%);
-
-            &::before {
-                top: 50%;
-                left: 100%;
-                transform: translateY(-50%);
-                border-top: 8px solid transparent;
-                border-left: 8px solid #433;
-                border-right: 8px solid transparent;
-                border-bottom: 8px solid transparent;
-            }
-        }
-        &.right {
-            bottom: 50%;
-            left: calc(100% + 8px);
-            transform: translateY(50%);
-
-            &::before {
-                top: 50%;
-                left: unset;
-                right: 100%;
-                transform: translateY(-50%);
-                border-top: 8px solid transparent;
-                border-left: 8px solid transparent;
-                border-right: 8px solid #433;
-                border-bottom: 8px solid transparent;
-            }
-        }
+      display: initial;
+      opacity: 1;
     }
+  }
+
+  .tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 200px;
+    padding: 1em;
+    border-radius: 8px;
+    background: #433;
+    z-index: 1;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    box-shadow: 0 0 20px 2px #fff1;
+    font-weight: normal;
+    user-select: text;
+
+    &::before {
+      content: "";
+      width: 0;
+      border-top: 8px solid #433;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    &.down {
+      bottom: unset;
+      top: calc(100% + 8px);
+
+      &::before {
+        top: unset;
+        bottom: 100%;
+        border-top: 8px solid transparent;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 8px solid #433;
+      }
+    }
+
+    &.left {
+      bottom: 50%;
+      left: unset;
+      right: calc(100% + 8px);
+      transform: translateY(50%);
+
+      &::before {
+        top: 50%;
+        left: 100%;
+        transform: translateY(-50%);
+        border-top: 8px solid transparent;
+        border-left: 8px solid #433;
+        border-right: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+      }
+    }
+
+    &.right {
+      bottom: 50%;
+      left: calc(100% + 8px);
+      transform: translateY(50%);
+
+      &::before {
+        top: 50%;
+        left: unset;
+        right: 100%;
+        transform: translateY(-50%);
+        border-top: 8px solid transparent;
+        border-left: 8px solid transparent;
+        border-right: 8px solid #433;
+        border-bottom: 8px solid transparent;
+      }
+    }
+  }
 }
 
 button .tooltip {
-    text-align: left;
-    font-weight: normal;
-    user-select: text;
+  text-align: left;
+  font-weight: normal;
+  user-select: text;
 }
 
 .invalid {
@@ -199,115 +224,144 @@ button .tooltip {
 }
 
 .block {
-    background: #544;
-    border-radius: 6px;
-    padding: 1em;
-    max-width: 600px;
-    margin: 1em auto;
+  background: #544;
+  border-radius: 6px;
+  padding: 1em;
+  max-width: 600px;
+  margin: 1em auto;
 
-    :first-child { margin-top: 0 }
-    :last-child { margin-bottom: 0 }
+  :first-child {
+    margin-top: 0
+  }
+
+  :last-child {
+    margin-bottom: 0
+  }
 }
 
 footer {
-    background: linear-gradient(0deg, #433 70%, #322 100%);
-    padding: 2em;
-    width: 100%;
+  background: linear-gradient(0deg, #433 70%, #322 100%);
+  padding: 2em;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-evenly;
+
+  > div {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-evenly;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
 
-    > div {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
+  .header {
+    font-family: mc;
+    letter-spacing: 1px;
+    font-size: 1.5em;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+  }
+
+  li {
+    margin: 4px;
+    list-style: none;
+    text-align: left;
+  }
+
+  a {
+    font-size: 1.1em;
+    color: #fff;
+    transition: color 0.2s;
+    text-decoration: none;
+
+    &:hover {
+      color: #aaa
     }
+  }
 
-    .header {
-        font-family: mc;
-        letter-spacing: 1px;
-        font-size: 1.5em;
-    }
+  svg {
+    height: 1.5em !important;
+    margin: 0 8px;
+  }
 
-    ul {
-        margin: 0;
-        padding: 0;
-    }
-
-    li {
-        margin: 4px;
-        list-style: none;
-        text-align: left;
-    }
-
-    a {
-        font-size: 1.1em;
-        color: #fff;
-        transition: color 0.2s;
-        text-decoration: none;
-
-        &:hover {
-            color: #aaa
-        }
-    }
-
-    svg {
-        height: 1.5em!important;
-        margin: 0 8px;
-    }
-
-    @media (width < 800px) {
-        flex-direction: column;
-        align-items: center;
-    }
+  @media (width < 800px) {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 html .toast {
-    width: min(400px, 90%);
-    background: #544;
-    border-radius: 8px;
-    box-shadow: 0 0 10px 0 #fff8;
-    padding: 2em;
-    
-    h3 {
-        margin: 0;
-        font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
-        font-weight: normal;
-        font-size: 2em;
-    }
+  width: min(400px, 90%);
+  background: #544;
+  border-radius: 8px;
+  box-shadow: 0 0 10px 0 #fff8;
+  padding: 2em;
+
+  h3 {
+    margin: 0;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-weight: normal;
+    font-size: 2em;
+  }
 }
 
 p {
-    margin: 0;
-    &:not(:last-child) { margin-bottom: 1em }
+  margin: 0;
+
+  &:not(:last-child) {
+    margin-bottom: 1em
+  }
 }
 
 // Using html selector to increase specificity
 html {
-    .systemTag { background: #464 }
-    .engineTag { background: #557 }
-    .genreTag  { background: #466 }
-    .materialTag  { background: #844 }
+  .systemTag {
+    background: #464
+  }
 
-    button.systemTag:hover{ background: #686 }
-    button.engineTag:hover{ background: #779 }
-    button.genreTag:hover{ background: #688 }
-    button.materialTag:hover{ background: #a66 }
+  .engineTag {
+    background: #557
+  }
+
+  .genreTag {
+    background: #466
+  }
+
+  .materialTag {
+    background: #844
+  }
+
+  button.systemTag:hover {
+    background: #686
+  }
+
+  button.engineTag:hover {
+    background: #779
+  }
+
+  button.genreTag:hover {
+    background: #688
+  }
+
+  button.materialTag:hover {
+    background: #a66
+  }
 }
 
 .logo {
-    font-size: $topNavHeight * 0.4;
-    font-family: mc;
-    font-weight: normal;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    text-decoration: none;
+  font-size: $topNavHeight * 0.4;
+  font-family: mc;
+  font-weight: normal;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  text-decoration: none;
 
-    img {
-        height: calc($topNavHeight - 16px);
-        width: calc(($topNavHeight - 16px) * 45 / 64)
-    }
+  img {
+    height: calc($topNavHeight - 16px);
+    width: calc(($topNavHeight - 16px) * 45 / 64)
+  }
 }
