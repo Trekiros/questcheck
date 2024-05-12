@@ -43,7 +43,7 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
         <li className={`${styles.playtest} ${!playtest && styles.summary}`}>
             <section className={styles.header}>
                 { !!summary ? (
-                    <Link 
+                    <Link
                         title={summary.name}
                         href={'/playtest/' + summary._id}
                         className={styles.name}>
@@ -52,7 +52,7 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
                 ) : (
                     <h1>{playtest.name}</h1>
                 )}
-                
+
                 { author && (
                     <div className={styles.author}>
                         <Link
@@ -60,7 +60,7 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
                                 author.publisherProfile.twitterProof ? `https://twitter.com/${author.publisherProfile.twitterProof}`
                               : author.publisherProfile.youtubeProof ? `https://www.youtube.com/channel/${author.publisherProfile.youtubeProof}`
                               : author.publisherProfile.manualProof!
-                            } 
+                            }
                             target="_blank">
                                 {author.userName}
 
@@ -76,45 +76,43 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
 
             <section className={styles.body}>
                 <div className={styles.stakes}>
-                    <div className={styles.row}>
-                        <label>Type:</label>
-                        {common.task}
-                    </div>
-                    <div className={styles.row}>
-                        <label>Bounty:</label>
-                        {common.bounty}
-                    </div>
+                    <label>Type:</label>
+                    {common.task}
+
+                    <label>Bounty:</label>
+                    {common.bounty}
+
                     { !!common.maxPositions && (
-                        <div className={styles.row}>
+                        <>
                             <label>Spots:</label>
                             {common.maxPositions}
-                        </div>
+                        </>
                     )}
                     { ((Date.now() < common.applicationDeadline) && (!common.closedManually)) && (
-                        <div className={styles.row}>
-                            <label>Open until:</label>
-                            {new Date(common.applicationDeadline).toDateString()}
-                        </div>
+                       <>
+                           <label>Open until:</label>
+                           {new Date(common.applicationDeadline).toDateString()}
+                       </>
                     )}
                     { ((playtest?.bountyContract.type === "template") && (playtest.bountyContract.templateValues["Deadline"])) && (
-                        <div className={styles.row}>
+                        <>
                             <label>Due date:</label>
                             {playtest.bountyContract.templateValues["Deadline"]}
-                        </div>
+                        </>
                     )}
                     { !!common.tags.length && (
-                        <div className={styles.row}>
+                        <>
                             <label>Tags:</label>
                             <div className={styles.tags}>
                                 {common.tags.map(tag => (
-                                    <span 
-                                        key={tag} 
+                                    <span
+                                        key={tag}
                                         className={tagClassName(tag)}>
                                             {tag}
                                     </span>
                                 ))}
                             </div>
-                        </div>
+                        </>
                     ) }
                 </div>
 
@@ -124,7 +122,7 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
                     ) : (
                         <Markdown text={playtest.description} />
                     )}
-                    
+
                 </div>
 
             </section>
@@ -142,20 +140,20 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
 
                         <h3>Playtest Agreement</h3>
 
-                        By submitting an application to this playtest, you agree that if the publisher accepts your application, 
+                        By submitting an application to this playtest, you agree that if the publisher accepts your application,
                         the following agreement will come into effect.
 
                         <p>
                             Important Note:<br />
                             The contract you end up signing with the publisher is what will arbitrate your relationship with the publisher.
                             Quest Check only exists to facilitate your meeting with publishers, not to moderate it.
-                            By applying to a playtest on this website, you agree that Quest Check is not your lawyer, does not provide legal advice, 
+                            By applying to a playtest on this website, you agree that Quest Check is not your lawyer, does not provide legal advice,
                             and will not be held accountable for any legal dispute between you and the publisher related to this playtest.
                         </p>
 
                         <ContractPDF
-                            playtest={playtest} 
-                            user={author} 
+                            playtest={playtest}
+                            user={author}
                             text={contract || ""} />
                     </>}
                 </section>
@@ -172,7 +170,7 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
             { !!summary && (
                 <section className={styles.summary}>
                     {
-                        summary.closedManually ? <div className={styles.closed}><FontAwesomeIcon icon={faLock}/> Closed Manually</div> 
+                        summary.closedManually ? <div className={styles.closed}><FontAwesomeIcon icon={faLock}/> Closed Manually</div>
                       : (summary.applicationDeadline < Date.now()) && <div className={styles.closed}><FontAwesomeIcon icon={faLock}/> Applications closed</div>
                     }
 

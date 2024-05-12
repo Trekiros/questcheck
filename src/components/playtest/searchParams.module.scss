@@ -5,6 +5,7 @@
     display: flex;
     flex-direction: column;
     padding: 1em;
+    font-size: 10pt;
 
     @media (width >= 800px) {
         background: linear-gradient(270deg, #fff3 0%, #0003 4px);

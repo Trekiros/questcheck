@@ -2,9 +2,15 @@
     list-style: none;
     background: #322;
     position: relative;
+    box-shadow: rgba(0,0,0, 0.2) 0px 8px 24px;
 
     > * {
         padding: 1em;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
     }
 
     .name {
@@ -19,6 +25,7 @@
     .author {
         display: flex;
         justify-content: flex-end;
+        align-items: center;
         
         a {
             display: flex;
@@ -34,9 +41,11 @@
         display: flex;
         flex-direction: column;
 
-        .row {
+        .stakes {
             display: grid;
-            grid-template-columns: 80px 1fr;
+            grid-template-columns: auto 1fr;
+            gap: 0.5em 2em;
+
             label { font-weight: bold }
         }
 
