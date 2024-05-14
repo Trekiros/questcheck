@@ -1,6 +1,6 @@
 .playtest {
     list-style: none;
-    background: #322;
+    background: var(--color-background-light);
     position: relative;
     box-shadow: rgba(0,0,0, 0.2) 0px 8px 24px;
 
@@ -11,6 +11,7 @@
     .header {
         display: flex;
         justify-content: space-between;
+        background-color: rgba(0,0,0,0.2);
     }
 
     .name {
@@ -37,7 +38,6 @@
     }
 
     .body {
-        background: #544;
         display: flex;
         flex-direction: column;
 
@@ -56,7 +56,7 @@
 
             > * {
                 border-radius: 4px;
-                padding: 4px;
+                padding: 4px 8px;
             }
         }
 
@@ -76,6 +76,7 @@
     .summary {
         display: grid;
         gap: 6px;
+        background-color: rgba(0,0,0,0.2);
 
         > * {
             display: flex;

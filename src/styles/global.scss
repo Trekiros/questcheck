@@ -9,13 +9,23 @@
 // General style & layout
 html {
   @include scrollable;
-  scrollbar-gutter: unset
+  scrollbar-gutter: unset;
+
+  --color-background: #15171f;
+  --color-background-light: #282a3a;
+  --color-grey: #9aa2ab;
+  --color-grey-light: #c4d3da;
+  --color-white: #ffffff;
+  --color-primary: #20dd95;
 }
 
 html, body, main, #__next {
   min-height: 100%;
-  background: #433;
-  color: $gold;
+  background: #0F2027;  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to left, #2C5364, #203A43, #15171f);  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to left, #2C5364, #203A43, #15171f); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+
+  color: var(--color-white);
   margin: 0;
   padding: 0
 }
@@ -25,11 +35,11 @@ body {
 }
 
 a {
-  color: #fff;
+  color: var(--color-white);
   text-underline-offset: 2px;
 
   &:hover {
-    color: #e7ab62;
+    color: var(--color-primary);
   }
 }
 
@@ -60,15 +70,15 @@ button {
 
 kbd {
   padding: 2px;
-  color: #fff;
-  outline: 1px solid #fff;
+  color: var(--color-white);
+  outline: 1px solid var(--color-white);
   border-radius: 2px;
   cursor: pointer;
   transition: color 300ms, outline-color 300ms;
 
   &:hover {
-    color: #aaa;
-    outline-color: #aaa;
+    color: var(--color-grey-light);
+    outline-color: var(--color-grey-light);
   }
 }
 
@@ -79,16 +89,16 @@ input {
   border: none;
   outline: none;
   border-radius: 8px;
-  color: $gold;
-  background: #fff1;
+  color: var(--color-white);
+  background: var(--color-background);
   transition: background-color 0.3s;
 
   &:hover {
-    background: #fff3
+    background: var(--color-grey);
   }
 
   &::placeholder {
-    color: #aaa
+    color: var(--color-grey-light);
   }
 
   &[type='number'] {
@@ -110,7 +120,7 @@ textarea {
   border: none;
   outline: none;
   background: none;
-  color: $gold;
+  color: var(--color-white);
   transition: background-color 0.3s;
   padding: 8px;
   box-sizing: border-box;
@@ -119,7 +129,7 @@ textarea {
   @include scrollable;
 
   &:hover {
-    background: #fff3
+    background: var(--color-grey);
   }
 }
 
@@ -141,19 +151,19 @@ textarea {
     min-width: 200px;
     padding: 1em;
     border-radius: 8px;
-    background: #433;
+    background: var(--color-background);
     z-index: 1;
     display: none;
     opacity: 0;
     transition: opacity 0.3s;
-    box-shadow: 0 0 20px 2px #fff1;
+    box-shadow: 0 0 20px 2px var(--color-grey);
     font-weight: normal;
     user-select: text;
 
     &::before {
       content: "";
       width: 0;
-      border-top: 8px solid #433;
+      border-top: 8px solid var(--color-background);
       border-left: 8px solid transparent;
       border-right: 8px solid transparent;
       position: absolute;
@@ -172,7 +182,7 @@ textarea {
         border-top: 8px solid transparent;
         border-left: 8px solid transparent;
         border-right: 8px solid transparent;
-        border-bottom: 8px solid #433;
+        border-bottom: 8px solid var(--color-grey);
       }
     }
 
@@ -187,7 +197,7 @@ textarea {
         left: 100%;
         transform: translateY(-50%);
         border-top: 8px solid transparent;
-        border-left: 8px solid #433;
+        border-left: 8px solid var(--color-grey);
         border-right: 8px solid transparent;
         border-bottom: 8px solid transparent;
       }
@@ -205,7 +215,7 @@ textarea {
         transform: translateY(-50%);
         border-top: 8px solid transparent;
         border-left: 8px solid transparent;
-        border-right: 8px solid #433;
+        border-right: 8px solid var(--color-grey);
         border-bottom: 8px solid transparent;
       }
     }
@@ -224,7 +234,7 @@ button .tooltip {
 }
 
 .block {
-  background: #544;
+  background: var(--color-grey);
   border-radius: 6px;
   padding: 1em;
   max-width: 600px;
@@ -240,7 +250,7 @@ button .tooltip {
 }
 
 footer {
-  background: linear-gradient(0deg, #433 70%, #322 100%);
+  background: linear-gradient(180deg, var(--color-background-light) 70%, var(--color-background) 100%);
   padding: 2em;
   width: 100%;
   display: flex;
@@ -273,12 +283,12 @@ footer {
 
   a {
     font-size: 1.1em;
-    color: #fff;
+    color: var(--color-white);
     transition: color 0.2s;
     text-decoration: none;
 
     &:hover {
-      color: #aaa
+      color: var(--color-grey)
     }
   }
 
@@ -295,9 +305,9 @@ footer {
 
 html .toast {
   width: min(400px, 90%);
-  background: #544;
+  background: var(--color-background);
   border-radius: 8px;
-  box-shadow: 0 0 10px 0 #fff8;
+  box-shadow: 0 0 10px 0 var(--color-grey);
   padding: 2em;
 
   h3 {
@@ -319,35 +329,35 @@ p {
 // Using html selector to increase specificity
 html {
   .systemTag {
-    background: #464
+    background: #358e35
   }
 
   .engineTag {
-    background: #557
+    background: #4566ba
   }
 
   .genreTag {
-    background: #466
+    background: #22646a
   }
 
   .materialTag {
-    background: #844
+    background: #ba4545
   }
 
   button.systemTag:hover {
-    background: #686
+    background: #62dd62
   }
 
   button.engineTag:hover {
-    background: #779
+    background: #6a62dd
   }
 
   button.genreTag:hover {
-    background: #688
+    background: #49e6c2
   }
 
   button.materialTag:hover {
-    background: #a66
+    background: #dd6262
   }
 }
 
