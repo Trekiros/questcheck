@@ -140,7 +140,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
                         <Link target="_blank" href={playtest.feedbackURL}>Playtest Survey</Link>
 
                         { isCreator && (
-                            <div className='tooltip' style={{ background: "#211" }}>
+                            <div className='tooltip'>
                                 This section is only visible to playtesters whose application you have accepted.
                             </div>
                         )}
@@ -261,7 +261,7 @@ const PlaytestDetailsPage: FC<PageProps> = ({ userCtx, initialData, emails }) =>
                         </button>
                     ) : (
                         <button
-                            className={styles.closeBtn}
+                            className={`${styles.closeBtn} btn-danger`}
                             disabled={disabled}
                             onClick={async () => {
                                 await closeMutation.mutateAsync(playtest._id)

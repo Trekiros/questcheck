@@ -1,6 +1,4 @@
 .playtestList {
-    width: min(100%, 600px);
-    margin: auto auto;
     display: grid;
 
     .cards {
@@ -11,8 +9,6 @@
         color: #aaa;
         display: grid;
         align-items: center;
-        justify-content: center;
-        text-align: center;
     }
 
     .page {

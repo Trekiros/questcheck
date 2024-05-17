@@ -396,6 +396,7 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                                             </div>
 
                                             <button
+                                                className="btn-danger"
                                                 onClick={() => update(clone => clone.playerProfile.systems.splice(i, 1))}
                                                 disabled={disabled}>
                                                 <FontAwesomeIcon icon={faMultiply} />
@@ -416,6 +417,7 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                             </ul> }
 
                             <button
+                                className="btn-primary"
                                 onClick={() => update(clone => clone.playerProfile.systems.push({ system: '', familiarity: 1, details: ''}))}
                                 disabled={disabled || user.playerProfile.systems.length >= 20}>
                                 <FontAwesomeIcon icon={faPlus} />
