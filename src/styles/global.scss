@@ -12,12 +12,19 @@ html {
   scrollbar-gutter: unset;
 
   --color-background: #15171f;
+  --color-background-rgb: 21, 23, 31;
   --color-darken: rgba(21, 23, 31, 0.33);
   --color-background-light: #282a3a;
   --color-grey: #9aa2ab;
+  --color-grey-rgb: 154, 162, 171;
   --color-grey-light: #c4d3da;
   --color-white: #ffffff;
   --color-primary: #20dd95;
+  --color-primary-rgb: 32, 221, 149;
+  --color-warn: #e89939;
+  --color-warn-rgb: 232, 153, 57;
+  --color-error: #e8394d;
+  --color-error-rgb: 232, 57, 77;
 }
 
 html, body, main, #__next {
@@ -41,6 +48,24 @@ a {
 
   &:hover {
     color: var(--color-primary);
+  }
+}
+
+.btn-primary {
+  background-color: rgba(var(--color-primary-rgb), 0.5);
+
+  &:hover:not(.disabled) {
+    background-color: rgba(var(--color-primary-rgb), 1);
+    text-shadow: 0 0 2px rgba(var(--color-background-rgb), 0.5);
+  }
+}
+
+.btn-danger {
+  background-color: rgba(var(--color-error-rgb), 0.5);
+
+  &:hover:not(.disabled) {
+    background-color: rgba(var(--color-error-rgb), 1);
+    text-shadow: 0 0 2px rgba(var(--color-background-rgb), 0.5);
   }
 }
 
@@ -95,7 +120,7 @@ input {
   transition: background-color 0.3s;
 
   &:hover {
-    background: var(--color-grey);
+    background: var(--color-background-light);
   }
 
   &::placeholder {
@@ -120,7 +145,7 @@ textarea {
   width: 100% !important;
   border: none;
   outline: none;
-  background: none;
+  background-color: var(--color-background);
   color: var(--color-white);
   transition: background-color 0.3s;
   padding: 8px;
@@ -130,7 +155,7 @@ textarea {
   @include scrollable;
 
   &:hover {
-    background: var(--color-grey);
+    background: var(--color-background-light);
   }
 }
 
@@ -378,7 +403,7 @@ html {
 }
 
 .page-content {
-  background-color: var(--color-darken);
+  //background-color: var(--color-darken);
   padding: 1em 2em;
   width: min(100%, 900px);
   margin: auto auto 3rem;

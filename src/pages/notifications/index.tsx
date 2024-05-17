@@ -60,7 +60,7 @@ const NotificationPage: FC<PageProps> = ({ userCtx, discordServers }) => {
 
     return (
         <Page userCtx={userCtx}>
-            <div className={styles.notifPage}>
+            <div className={`${styles.notifPage} page-content`}>
                 { (discordServers.status === 'Success') ? <>
                     <div className={styles.header}>
                         <h1>Notification Settings</h1>

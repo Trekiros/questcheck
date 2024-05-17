@@ -11,7 +11,7 @@ const AboutPage: FC<ServerSideProps> = ({ userCtx }) => {
         <Page userCtx={userCtx}>
             <NextSeo title="About" />
 
-            <div className={styles.about}>
+            <div className={`${styles.about} page-content`}>
                 <h1>What is QuestCheck?</h1>
 
                 <section>
