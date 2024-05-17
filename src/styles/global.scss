@@ -12,6 +12,7 @@ html {
   scrollbar-gutter: unset;
 
   --color-background: #15171f;
+  --color-darken: rgba(21, 23, 31, 0.33);
   --color-background-light: #282a3a;
   --color-grey: #9aa2ab;
   --color-grey-light: #c4d3da;
@@ -374,4 +375,11 @@ html {
     height: calc($topNavHeight - 16px);
     width: calc(($topNavHeight - 16px) * 45 / 64)
   }
+}
+
+.page-content {
+  background-color: var(--color-darken);
+  padding: 1em 2em;
+  width: min(100%, 900px);
+  margin: auto auto 3rem;
 }

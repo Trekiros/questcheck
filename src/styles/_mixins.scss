@@ -61,7 +61,7 @@
     background-color: #fff1;
     transition: background-color 0.3s;
     
-    &:hover:not(.disabled) { background-color: #fff3 }
+    &:hover:not(.disabled) { background-color: var(--color-primary) }
 
     &:disabled {
         background: transparent;

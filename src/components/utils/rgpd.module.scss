@@ -15,7 +15,7 @@
     justify-content: center;
     gap: 2em;
     
-    background: #544;
+    background: var(--color-background);
     box-shadow: 0 0 100px 0px black;
 
     > * {

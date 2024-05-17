@@ -203,7 +203,7 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
 
     return (
         <Page userCtx={userCtx}>
-            <div className={`${styles.settings} ${disabled && styles.disabled}`}>
+            <div className={`${styles.settings} ${disabled && styles.disabled} page-content`}>
                 <NextSeo title="User Settings" />
 
                 <h1>User Settings</h1>
