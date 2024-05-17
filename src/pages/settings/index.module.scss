@@ -9,12 +9,9 @@
 }
 
 .settings {
-    padding: 1em;
     display: flex;
     flex-direction: column;
-    width: min(100%, 800px);
     align-items: stretch;
-    margin: auto auto;
 
     hr { width: 100% }
 
@@ -164,8 +161,8 @@
 
             .warning {
                 padding-left: 1em;
-                border-left: 1px solid #c83;
-                color: #c83;
+                border-left: 1px solid #e89939;
+                color: #e89939;
             }
         }
     }

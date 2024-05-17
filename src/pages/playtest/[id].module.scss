@@ -20,7 +20,7 @@
 
     .applicationForm {
         padding: 1em;
-        background: #544;
+        background: var(--color-background);
         display: grid;
 
         .agreeBtn { justify-content: start }

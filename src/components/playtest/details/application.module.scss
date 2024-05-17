@@ -2,7 +2,7 @@
     display: grid;
     gap: 1em;
     padding: 1em;
-    background: #544;
+    background: var(--color-background);
 
     .userName {
         font-size: 1.5em;

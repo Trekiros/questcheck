@@ -42,7 +42,7 @@
     width: 400px;
     max-height: 300px;
     @include scrollable;
-    background: linear-gradient(180deg, transparent 0%, #544 3px);
+    background: linear-gradient(180deg, transparent 0%, var(--color-background) 3px);
 
     display: flex;
     flex-direction: column;

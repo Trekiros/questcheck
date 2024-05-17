@@ -6,7 +6,7 @@
     width: 400px;
     max-height: 200px;
     @include scrollable;
-    background: #544;
+    background: var(--color-background);
     overflow: auto;
 
     display: flex;
@@ -20,7 +20,7 @@
     padding: 10px;
     border-radius: 4px;
     text-align: left;
-    color: white;
+    color: var(--color-white);
 
     &:hover, &:checked, &:focus, &:active {
         background: #fff1;
