@@ -7,7 +7,7 @@
     display: grid;
 
     .secret {
-        background: #655;
+        background: var(--color-background-light);
         padding: 1em;
         display: grid;
 
@@ -20,7 +20,7 @@
 
     .applicationForm {
         padding: 1em;
-        background: #544;
+        background: var(--color-background);
         display: grid;
 
         .agreeBtn { justify-content: start }
@@ -46,7 +46,7 @@
             gap: 1em;
         }
 
-        .placeholder { color: #aaa }
+        .placeholder { color: var(--color-grey-light) }
     }
 }
 

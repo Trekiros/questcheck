@@ -2,10 +2,6 @@
 @import '../../styles/variables';
 
 .notifPage {
-    padding: 2em 1em;
-    width: min(100%, 800px);
-    min-height: calc(100dvh - $topNavHeight);
-    margin: auto auto;
     display: flex;
     flex-direction: column;
     gap: 1em;
@@ -63,7 +59,6 @@
     }
 
     .discord {
-        background: #544;
         padding: 1em;
         display: grid;
 

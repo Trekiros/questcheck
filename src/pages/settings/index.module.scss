@@ -5,16 +5,13 @@
 
     h3 { margin: 0 }
 
-    .errorMessage { color: #f88 }
+    .errorMessage { color: var(--color-error) }
 }
 
 .settings {
-    padding: 1em;
     display: flex;
     flex-direction: column;
-    width: min(100%, 800px);
     align-items: stretch;
-    margin: auto auto;
 
     hr { width: 100% }
 
@@ -34,7 +31,7 @@
     }
 
     &:not(.disabled) .invalid {
-        outline: 1px solid #f88;
+        outline: 1px solid var(--color-error);
     }
 
     .username, .emails {
@@ -43,8 +40,8 @@
         align-items: center;
         gap: 8px;
 
-        .free { display: flex; gap: 8px; color: #8f8 }
-        .taken { display: flex; gap: 8px; color: #f88 }
+        .free { display: flex; gap: 8px; color: var(--color-primary) }
+        .taken { display: flex; gap: 8px; color: var(--color-error) }
 
         > button {
             padding: 10px;
@@ -162,10 +159,16 @@
                 padding: 4px 0;
             }
 
+            span svg {
+                outline: none;
+                color: inherit;
+                padding: 0;
+            }
+
             .warning {
                 padding-left: 1em;
-                border-left: 1px solid #c83;
-                color: #c83;
+                border-left: 1px solid var(--color-warn);
+                color: var(--color-warn);
             }
         }
     }

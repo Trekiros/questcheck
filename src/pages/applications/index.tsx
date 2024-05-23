@@ -28,7 +28,7 @@ const PlaytestListPage: FC<{} & ServerSideProps> = ({ userCtx }) => {
 
     return (
         <Page userCtx={userCtx}>
-            <div className={styles.playtestList}>
+            <div className={`${styles.playtestList} page-content`}>
                 <NextSeo title="My Playtests" />
 
                 <h1>My Playtests</h1>

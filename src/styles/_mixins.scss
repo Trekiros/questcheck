@@ -47,7 +47,7 @@
     text-align: center;
     border-radius: 8px;
     border: none;
-    color: $gold;
+    color: var(--color-white);
     padding: 1em 2em;
     font-size: 1em;
     font-weight: bold;
@@ -58,10 +58,13 @@
     align-items: center;
     justify-content: center;
 
-    background-color: #fff1;
-    transition: background-color 0.3s;
+    background-color: rgba(var(--color-grey-rgb), 0.33);
+    transition: background-color 0.3s, text-shadow 0.3s;
     
-    &:hover:not(.disabled) { background-color: #fff3 }
+    &:hover:not(.disabled) {
+        background-color: rgba(var(--color-grey-rgb), 0.66);
+        text-shadow: 0 0 2px rgba(var(--color-background-rgb), 0.5);
+    }
 
     &:disabled {
         background: transparent;
