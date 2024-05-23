@@ -242,7 +242,7 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                         }
                         
                         { errorPaths["userName"] && (
-                            <div className='tooltip' style={{ background: "#322"}}>
+                            <div className='tooltip'>
                                 { user.userName.length < 4 && <p>Must be at least 4 characters.</p> }
                                 { user.userName.length > 50 && <p>Must be at most 50 characters.</p> }
                                 { !isAlphanumeric(user.userName) && <p>This must use alpha-numeric characters only.</p>}
@@ -385,7 +385,7 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                                                             className={`tooltipContainer ${familiarity >= star ? styles.familiar : ''}`}
                                                             onClick={() => update(clone => clone.playerProfile.systems[i].familiarity = star)}>
                                                                 <FontAwesomeIcon icon={faStar} />
-                                                                <div className="tooltip" style={{background: "#322"}} onClick={e => e.stopPropagation()}>
+                                                                <div className="tooltip" onClick={e => e.stopPropagation()}>
                                                                     {SystemFamiliarityList[star - 1]}
                                                                 </div>
                                                         </button>
@@ -459,7 +459,9 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                                         if (enabled) update(clone => clone.publisherProfile.twitterProof = twitterUsername)
                                         else update(clone => clone.publisherProfile.twitterProof = '')
                                     }}>
-                                        Twitter <FontAwesomeIcon icon={faTwitter} /> / <FontAwesomeIcon icon={faXTwitter} />
+                                        <span>
+                                            Twitter <FontAwesomeIcon icon={faTwitter} /> / <FontAwesomeIcon icon={faXTwitter} />
+                                        </span>
                                 </Checkbox>
                                 { !twitterUsername && (
                                     <span className={styles.warning}>
@@ -495,7 +497,9 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                                         })
                                         else update(clone => clone.publisherProfile.youtubeProof = '')
                                     }}>
-                                        Youtube <FontAwesomeIcon icon={faYoutube} />
+                                        <span>
+                                            Youtube <FontAwesomeIcon icon={faYoutube} />
+                                        </span>
                                 </Checkbox>
                                 { (youtube.status !== 'success') && (
                                     <span className={styles.warning}>

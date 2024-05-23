@@ -24,7 +24,7 @@ const BasicInfoEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChan
                     onBlur={() => onChange({ ...value, name: value.name.trim() })} />
 
                 {errorPaths["name"] && (
-                    <div className="tooltip" style={{ background: "#322" }}>
+                    <div className="tooltip">
                         {value.name.length < PlaytestSchema.shape.name.minLength! && <p>The name should be at least {PlaytestSchema.shape.name.minLength!} characters long</p>}
                         {value.name.length > PlaytestSchema.shape.name.maxLength! && <p>The name must be no more than {PlaytestSchema.shape.name.maxLength!} characters long</p>}
                     </div>
