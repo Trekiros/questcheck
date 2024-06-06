@@ -100,18 +100,6 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
                             {playtest.bountyContract.templateValues["Deadline"]}
                         </>
                     )}
-                    { ((Date.now() < common.applicationDeadline) && (!common.closedManually)) && (
-                        <div className={styles.row}>
-                            <label>Open until:</label>
-                            {new Date(common.applicationDeadline).toDateString()}
-                        </div>
-                    )}
-                    { ((playtest?.bountyContract.type === "template") && (playtest.bountyContract.templateValues["Deadline"])) && (
-                        <div className={styles.row}>
-                            <label>Due date:</label>
-                            {playtest.bountyContract.templateValues["Deadline"]}
-                        </div>
-                    )}
                     { !!common.tags.length && (
                         <>
                             <label>Tags:</label>
