@@ -16,10 +16,13 @@
 
     .name {
         font-size: 2em;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 1;
+
+        @media (width > 800px) {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 1;
+        }
 
         &:hover { text-decoration: underline }
     }
