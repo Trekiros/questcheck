@@ -1,9 +1,11 @@
-import { Playtest } from "@/model/playtest";
+import { Playtest, PlaytestSchema } from "@/model/playtest";
 import { Collections } from "../mongodb";
 import { Filter } from "mongodb";
 import { NotificationFrequency, NotificationSetting } from "@/model/notifications";
 import { discordSend } from "../discord";
-import { User } from "@/model/user";
+import { User, UserSchema } from "@/model/user";
+import { protectedProcedure, publicProcedure, router } from "../trpc";
+import { z } from "zod";
 
 // Checks that a playtest matches the filters of a notification setting in memory.
 function memMatch(playtest: Playtest, notification: NotificationSetting) {
@@ -168,7 +170,7 @@ export async function playtestCreatedNotification(playtest: Playtest, author: Us
     // 1) "playerProfile.notifications" => returns all of the user's notifs, including non-matching ones
     // 2) "playerProfile.notifications.$" => returns the first matching notif only, even though the playtest might match more than one
 
-    console.log('New playtest creates, id:', playtest._id, '\t\tSending notifications to ', notifications.length, ' targets')
+    console.log('New playtest created, id:', playtest._id, '\t\tSending notifications to ', notifications.length, ' targets')
 
     await Promise.all(
         notifications.map(notification => discordSend(
@@ -237,3 +239,19 @@ export async function applicationAcceptedNotification(playtest: Playtest, applic
         )
     }
 }
+
+export const NotificationRouter = router({
+    playtestCreatedNotification: publicProcedure
+        .input(z.object({
+            secret: z.string(),
+            playtest: PlaytestSchema,
+            author: UserSchema,
+        }))
+        .mutation(async ({ input: { secret, playtest, author } }) => {
+            if (secret !== process.env.INTERNAL_SECRET) throw new Error("Unauthorized")
+            
+            return await playtestCreatedNotification(playtest, author)
+        }),
+
+    
+})

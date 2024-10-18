@@ -1,22 +1,23 @@
-import { authMiddleware } from "@clerk/nextjs";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Clerk middleware setup
-export default authMiddleware({
-    publicRoutes: [
-        '/',
-        '/about',
+const isPublicRoute = createRouteMatcher([
+    '/',
+    '/about',
 
-        // Playtests
-        '/playtest/:id',
-        
-        // API
-        '/api/trpc/:any',
+    // Playtests
+    '/playtest/:id',
 
-        // Legal
-        "/privacy",
-        "/tos",
-    ],
-});
+    // API
+    '/api/trpc/:any',
+
+    // Legal
+    "/privacy",
+    "/tos",
+])
+
+export default clerkMiddleware((auth, req) => {
+    if (!isPublicRoute(req)) auth().protect()
+})
 
 export const config = {
   matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],

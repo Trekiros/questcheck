@@ -31,7 +31,7 @@ export const UserSchema = z.object({
     isPublisher: z.boolean(),
 
     playerProfile: z.object({
-        creditName: z.string().max(50),
+        creditName: z.string().max(50).optional(),
         systems: z.array(z.object({
             system: SystemNameSchema, 
             familiarity: z.number().min(1).max(5),

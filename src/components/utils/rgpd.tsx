@@ -7,6 +7,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChartSimple, faGear, faUser } from "@fortawesome/free-solid-svg-icons";
 import Checkbox from "./checkbox";
+import { AxiomWebVitals } from "next-axiom";
 
 type PropType = {}
 
@@ -126,6 +127,7 @@ const RGPD: FC<PropType> = () => {
     return <>
         { preferences.useSpeedInsights && <SpeedInsights /> }
         { preferences.useAnalytics && <Analytics />}
+        { preferences.useAnalytics && <AxiomWebVitals />}
     </>
 }
 

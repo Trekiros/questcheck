@@ -4,7 +4,7 @@ import { protectedProcedure, router } from "../trpc";
 import { Prettify, keys } from "@/model/utils";
 import { ObjectId, UpdateFilter } from "mongodb";
 import { Writeable, z } from "zod";
-import { clerkClient } from "@clerk/nextjs";
+import { clerkClient } from "@clerk/nextjs/server";
 import { ReviewInputSchema } from "@/model/reviews";
 import { ApplicationStatusMap } from "@/model/playtest";
 import { getDiscordServers } from "../discord";

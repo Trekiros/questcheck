@@ -347,12 +347,12 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                         <input
                             placeholder="Name or username..."
                             disabled={disabled}
-                            className={(UserSchema.shape.playerProfile.shape.creditName.maxLength! < user.playerProfile.creditName.length) ? styles.invalid : undefined}
+                            className={(UserSchema.shape.playerProfile.shape.creditName._def.innerType.maxLength! < (user.playerProfile.creditName?.length || 0)) ? styles.invalid : undefined}
                             type='text'
                             value={user.playerProfile.creditName}
                             onChange={e => {
                                 update(clone => {
-                                    if (UserSchema.shape.playerProfile.shape.creditName.maxLength! < e.target.value.length) return;
+                                    if (UserSchema.shape.playerProfile.shape.creditName._def.innerType.maxLength! < e.target.value.length) return;
 
                                     clone.playerProfile.creditName = e.target.value
                                 })

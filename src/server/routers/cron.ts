@@ -1,10 +1,9 @@
 import { Collections } from '../mongodb';
 import { protectedProcedure, router } from '../trpc';
-import { AggregationCursor, Filter, ObjectId, WithId } from 'mongodb';
+import { WithId } from 'mongodb';
 import { sendBatchNotifications } from './notifications';
-import { User } from '@/model/user';
 import { Playtest } from '@/model/playtest';
-import { arrMap, idToString, keys } from '@/model/utils';
+import { arrMap } from '@/model/utils';
 
 // Run the cron task, but only if it's been at least 3 hours since the last job
 // The job is configured to be ran every day, but it's started from a public, un-authenticated API endpoint

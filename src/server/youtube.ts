@@ -1,4 +1,4 @@
-import { clerkClient } from "@clerk/nextjs"
+import { clerkClient } from "@clerk/nextjs/server"
 import { z } from "zod"
 
 export type YoutubeInfo = (
@@ -22,7 +22,8 @@ const YoutubeResponseSchema = z.object({
 })
 
 export async function getYoutubeInfo(userId: string): Promise<YoutubeInfo> {
-    const googleToken = (await clerkClient.users.getUserOauthAccessToken(userId, "oauth_google").catch(() => []))[0]
+    const { data: googleTokens } = await clerkClient.users.getUserOauthAccessToken(userId, "oauth_google").catch(() => ({ data: [] }))
+    const googleToken = googleTokens[0]
     if (!googleToken) return { status: "no google provider" }
     if (!googleToken.scopes?.includes("https://www.googleapis.com/auth/youtube.readonly")) return { status: "no youtube access" }
     

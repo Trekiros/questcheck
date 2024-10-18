@@ -1,5 +1,5 @@
 import { NotificationSetting } from "@/model/notifications";
-import { clerkClient } from "@clerk/nextjs";
+import { clerkClient } from "@clerk/nextjs/server";
 import { z } from "zod";
 
 // Discord's API has a rate limiter of 50 requests per second
@@ -80,7 +80,7 @@ export async function getDiscordServers(userId: string): Promise<
     }
 > {
     // 1. Fetch installed guilds (= owned guilds with the bot on it)
-    const [clerkUser, accessTokens] = await Promise.all([
+    const [clerkUser, { data: accessTokens }] = await Promise.all([
         clerkClient.users.getUser(userId),
         clerkClient.users.getUserOauthAccessToken(userId, "oauth_discord"),
     ] as const)

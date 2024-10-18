@@ -4,7 +4,7 @@ import { z } from "zod";
 import { AggregationCursor, Filter, FindCursor, ObjectId, WithId } from "mongodb";
 import {  protectedProcedure, router, publicProcedure } from "../trpc";
 import { arrMap, pojoMap } from "@/model/utils";
-import { PublicUser, PublicUserSchema, User, newUser } from "@/model/user";
+import { PublicUser, PublicUserSchema, User } from "@/model/user";
 import { getPermissions } from "./users";
 import { applicationAcceptedNotification, applicationCreatedNotification, playtestCreatedNotification } from "./notifications";
 
@@ -28,9 +28,7 @@ const create =  protectedProcedure
         if (!result.acknowledged) throw new Error('Internal server error')
 
         // Not awaited - this shouldn't block the publisher's UI.
-        setTimeout(async () => {
-            await playtestCreatedNotification({...newPlaytest, _id: result.insertedId.toString() }, user)
-        })
+        playtestCreatedNotification({...newPlaytest, _id: result.insertedId.toString() }, user)
 
         return result.insertedId.toString()
     })
@@ -113,7 +111,6 @@ const search = publicProcedure
                 .map(({ playerProfile, ...user }) => ({ ...user, _id: user._id.toString() }))
                 .toArray()
         const usersById = arrMap(users, user => user.userId)
-
 
         // Map playtests to their authors
         const result: (PlaytestSummary & { author?: Omit<PublicUser, "playerProfile"> })[] = playtests.map(playtest => ({ 

@@ -77,27 +77,27 @@ const PlaytestCard: FC<PropType> = ({ author, playtest, summary, emails }) => {
             <section className={styles.body}>
                 <div className={styles.stakes}>
                     <label>Type:</label>
-                    {common.task}
+                    <span>{common.task}</span>
 
                     <label>Bounty:</label>
-                    {common.bounty}
+                    <span>{common.bounty}</span>
 
                     { !!common.maxPositions && (
                         <>
                             <label>Spots:</label>
-                            {common.maxPositions}
+                            <span>{common.maxPositions}</span>
                         </>
                     )}
                     { ((Date.now() < common.applicationDeadline) && (!common.closedManually)) && (
                        <>
                            <label>Open until:</label>
-                           {new Date(common.applicationDeadline).toDateString()}
+                           <span>{new Date(common.applicationDeadline).toDateString()}</span>
                        </>
                     )}
                     { ((playtest?.bountyContract.type === "template") && (playtest.bountyContract.templateValues["Deadline"])) && (
                         <>
                             <label>Due date:</label>
-                            {playtest.bountyContract.templateValues["Deadline"]}
+                            <span>{playtest.bountyContract.templateValues["Deadline"]}</span>
                         </>
                     )}
                     { !!common.tags.length && (

@@ -67,12 +67,13 @@ const BasicInfoEditor: FC<Omit<EditorPropType, 'confirmBtn'>> = ({ value, onChan
 
             <section className={styles.row}>
                 <label>Maximum playtesters:</label>
-
+                
                 <input
                     placeholder="(optional)..."
                     type='number'
                     className={errorPaths['maxPositions'] ? styles.invalid : undefined}
                     value={value.maxPositions}
+                    min={1}
                     onChange={e => onChange({ ...value, maxPositions: e.target.value ? Number(e.target.value) : undefined})} />
             </section>
 

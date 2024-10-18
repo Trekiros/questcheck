@@ -12,8 +12,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faDiscord, faGithub, faWordpress, faYoutube } from '@fortawesome/free-brands-svg-icons'
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
 
-export { useReportWebVitals } from 'next-axiom';
-
 const App = ({ Component, pageProps: { session, ...pageProps }}: AppProps) => {
   	return (
 		<ClerkProvider>
