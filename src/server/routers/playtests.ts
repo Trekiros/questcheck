@@ -27,8 +27,8 @@ const create =  protectedProcedure
         const result = await playtests.insertOne(newPlaytest)
         if (!result.acknowledged) throw new Error('Internal server error')
 
-        // Not awaited - this shouldn't block the publisher's UI.
-        playtestCreatedNotification({...newPlaytest, _id: result.insertedId.toString() }, user)
+        // Ideally, this should not be awaited - but on Vercel's serverless, if we don't await this, the process is killed before the background job completes
+        await playtestCreatedNotification({...newPlaytest, _id: result.insertedId.toString() }, user)
 
         return result.insertedId.toString()
     })
