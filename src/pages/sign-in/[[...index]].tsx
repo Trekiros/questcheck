@@ -26,6 +26,7 @@ export const ClerkTheme: NonNullable<React.ComponentProps<typeof SignIn>['appear
         colorDanger: '#f88',
         colorSuccess: '#8f8',
         colorWarning: '#8aa',
+        colorNeutral: "white",
         colorInputBackground: '#fff1',
         borderRadius: '8px',
         spacingUnit: '1em',

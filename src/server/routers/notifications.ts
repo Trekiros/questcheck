@@ -3,9 +3,7 @@ import { Collections } from "../mongodb";
 import { Filter } from "mongodb";
 import { NotificationFrequency, NotificationSetting } from "@/model/notifications";
 import { discordSend } from "../discord";
-import { User, UserSchema } from "@/model/user";
-import { protectedProcedure, publicProcedure, router } from "../trpc";
-import { z } from "zod";
+import { User } from "@/model/user";
 
 // Checks that a playtest matches the filters of a notification setting in memory.
 function memMatch(playtest: Playtest, notification: NotificationSetting) {
@@ -239,19 +237,3 @@ export async function applicationAcceptedNotification(playtest: Playtest, applic
         )
     }
 }
-
-export const NotificationRouter = router({
-    playtestCreatedNotification: publicProcedure
-        .input(z.object({
-            secret: z.string(),
-            playtest: PlaytestSchema,
-            author: UserSchema,
-        }))
-        .mutation(async ({ input: { secret, playtest, author } }) => {
-            if (secret !== process.env.INTERNAL_SECRET) throw new Error("Unauthorized")
-            
-            return await playtestCreatedNotification(playtest, author)
-        }),
-
-    
-})
