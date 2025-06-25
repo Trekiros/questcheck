@@ -33,6 +33,8 @@ const RGPD: FC<PropType> = () => {
         const preferenceStr = localStorage.getItem('preferences')
 
         if (preferenceStr === null) {
+            if (window.name === "cookies rejected") return;
+
             setVisible(true)
         } else {
             setPreferences(JSON.parse(preferenceStr))
@@ -57,6 +59,7 @@ const RGPD: FC<PropType> = () => {
 
     function handleDisagree() {
         setVisible(false)
+        window.name = "cookies rejected"
     }
 
     if (visible) {

@@ -566,11 +566,11 @@ const SettingsPage: FC<PageProps> = ({ userCtx, youtube }) => {
                                     This extension allows you to iterate extremely quickly, as spreadsheets are easy to set up and modify for any purpose.
                                 </li>
                                 <li>
-                                    <Link href="https://www.drivethrurpg.com/product/437880/Pestos-Guide-to-Testing?src=questcheck" target="_blank">Pesto's Guide to Testing</Link>: a comprehensive guide to TTRPG testing full of advice for new and experienced creators alike,
-                                    by <Link href="https://twitter.com/PestoEnthusiast" target="_blank">Spencer Hibnick</Link>.
+                                    <Link href="https://pestopublications.itch.io/pestos-guide-to-testing" target="_blank">Pesto's Guide to Testing</Link>: a comprehensive guide to TTRPG testing full of advice for new and experienced creators alike,
+                                    by <Link href="https://bsky.app/profile/pestoenthusiast.bsky.social" target="_blank">Spencer Hibnick</Link>.
                                 </li>
                                 <li>
-                                    <Link href="https://www.youtube.com/watch?v=on7endO4lPY" target="_blank">Playtesting - How to Get Good Feedback on Yout Game</Link>, by Extra Credits on Youtube. 
+                                    <Link href="https://www.youtube.com/watch?v=on7endO4lPY" target="_blank">Playtesting - How to Get Good Feedback on Your Game</Link>, by Extra Credits on Youtube. 
                                     This is a short 7 minutes video, which covers all of the most important points of how to interpret playtest feedback.
                                     Though it was made with video games rather than tabletop RPGs in mind, pretty much all of it can be applied to TTRPG design.
                                 </li>
